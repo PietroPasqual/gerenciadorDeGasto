@@ -7,12 +7,12 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { AuthLayout, BotaoGoogle } from './auth-layout'
+import { AuthLayout } from './auth-layout'
 import { loginSchema, type LoginForm } from './schemas'
 import { useAuthStore } from '@/store/auth'
 
 export function LoginPage() {
-  const { entrar, entrarComGoogle, recuperarSenha, session } = useAuthStore()
+  const { entrar, recuperarSenha, session } = useAuthStore()
   const navegar = useNavigate()
   const [enviando, setEnviando] = useState(false)
 
@@ -94,20 +94,6 @@ export function LoginPage() {
           Entrar
         </Button>
       </form>
-
-      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-        <span className="h-px flex-1 bg-border" />
-        ou
-        <span className="h-px flex-1 bg-border" />
-      </div>
-
-      <BotaoGoogle
-        onClick={() => {
-          entrarComGoogle().catch((erro) =>
-            toast.error(erro instanceof Error ? erro.message : 'Falha ao entrar com Google'),
-          )
-        }}
-      />
     </AuthLayout>
   )
 }

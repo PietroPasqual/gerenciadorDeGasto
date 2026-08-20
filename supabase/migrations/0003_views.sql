@@ -108,7 +108,8 @@ as $$
     case when c.limite_centavos is null or c.limite_centavos = 0 then 0
       else round((coalesce(s.total, 0)::numeric / c.limite_centavos::numeric) * 100, 2)
     end
-  from public.categories c, uid
+  from public.categories c
+  cross join uid
   left join somados s on s.cid = c.id
   where c.user_id = uid.id
   order by c.ordem, c.nome;
@@ -145,7 +146,8 @@ as $$
     select pid, sum(total)::bigint as total from gastos group by pid
   )
   select p.id, p.nome, p.tipo, coalesce(s.total, 0)::bigint
-    from public.payment_methods p, uid
+    from public.payment_methods p
+    cross join uid
     left join somados s on s.pid = p.id
    where p.user_id = uid.id and p.ativo
    order by p.ordem, p.nome;

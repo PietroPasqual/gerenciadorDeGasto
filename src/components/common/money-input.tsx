@@ -1,58 +1,66 @@
 import * as React from 'react'
 import { Input } from '@/components/ui/input'
-import { centavosParaTexto, parseParaCentavos } from '@/lib/money'
+import { centavosParaTexto } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
 interface MoneyInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> {
   /** Valor em centavos */
   value: number | null
-  /** Chamado no blur/Enter, já convertido para centavos */
+  /** Chamado a cada dígito digitado, já convertido para centavos */
   onValueChange: (centavos: number) => void
 }
 
+const LIMITE_DIGITOS = 15 // até R$ 999.999.999.999,99 — não precisa de mais
+
+function posicionarNoFim(el: HTMLInputElement | null) {
+  if (!el) return
+  const fim = el.value.length
+  el.setSelectionRange(fim, fim)
+}
+
 /**
- * Input de dinheiro. Enquanto o usuário digita, guarda o texto cru;
- * ao sair do campo (ou Enter) converte para centavos e propaga.
+ * Input de dinheiro estilo "caixa eletrônico": os dígitos entram da direita
+ * para a esquerda, como em apps bancários. Digitar "1" em cima de "0,00"
+ * vira "0,01", "12" vira "0,12", "123" vira "1,23"...
  */
 export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
-  ({ value, onValueChange, className, onBlur, onKeyDown, ...props }, ref) => {
-    const [texto, setTexto] = React.useState(() => centavosParaTexto(value))
-    const [editando, setEditando] = React.useState(false)
+  ({ value, onValueChange, className, onFocus, onClick, ...props }, ref) => {
+    const localRef = React.useRef<HTMLInputElement | null>(null)
+    const [centavos, setCentavos] = React.useState(() => Math.abs(value ?? 0))
 
     React.useEffect(() => {
-      if (!editando) setTexto(centavosParaTexto(value))
-    }, [value, editando])
+      setCentavos(Math.abs(value ?? 0))
+    }, [value])
 
-    const confirmar = () => {
-      const centavos = parseParaCentavos(texto)
-      const final = centavos ?? 0
-      setEditando(false)
-      setTexto(centavosParaTexto(final))
-      if (final !== (value ?? 0)) onValueChange(final)
-    }
+    const texto = centavosParaTexto(centavos)
+
+    React.useEffect(() => {
+      if (document.activeElement === localRef.current) posicionarNoFim(localRef.current)
+    }, [texto])
 
     return (
       <Input
-        ref={ref}
-        inputMode="decimal"
+        ref={(el) => {
+          localRef.current = el
+          if (typeof ref === 'function') ref(el)
+          else if (ref) (ref as { current: HTMLInputElement | null }).current = el
+        }}
+        inputMode="numeric"
         className={cn('tabular text-right', className)}
         value={texto}
         onFocus={(e) => {
-          setEditando(true)
-          e.currentTarget.select()
+          posicionarNoFim(e.currentTarget)
+          onFocus?.(e)
         }}
-        onChange={(e) => setTexto(e.target.value)}
-        onBlur={(e) => {
-          confirmar()
-          onBlur?.(e)
+        onClick={(e) => {
+          posicionarNoFim(e.currentTarget)
+          onClick?.(e)
         }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') confirmar()
-          if (e.key === 'Escape') {
-            setEditando(false)
-            setTexto(centavosParaTexto(value))
-          }
-          onKeyDown?.(e)
+        onChange={(e) => {
+          const digitos = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, LIMITE_DIGITOS)
+          const novo = digitos === '' ? 0 : Number(digitos)
+          setCentavos(novo)
+          onValueChange(novo)
         }}
         {...props}
       />

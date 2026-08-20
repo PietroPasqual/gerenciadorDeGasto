@@ -1,0 +1,157 @@
+import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import {
+  ArrowRight,
+  CalendarDays,
+  HelpCircle,
+  LineChart,
+  PiggyBank,
+  Settings,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
+import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
+import { NumeroAnimado } from '@/components/common/numero-animado'
+import { EstadoErro } from '@/components/common/estados'
+import { useRecurso } from '@/lib/hooks'
+import { obterResumoMensal } from '@/services/reports'
+import { nomeDoMes, periodoAtual } from '@/lib/dates'
+import { formatCentavos } from '@/lib/money'
+import { useAuthStore } from '@/store/auth'
+import { usePeriodoStore } from '@/store/periodo'
+import { cn } from '@/lib/utils'
+
+const ATALHOS = [
+  {
+    para: '/mes',
+    titulo: 'Controle mensal',
+    descricao: 'Entradas, gastos fixos, gastos do mês e investimentos.',
+    Icone: CalendarDays,
+  },
+  {
+    para: '/comparativo',
+    titulo: 'Comparativo anual',
+    descricao: 'Entrada x gastos nos 12 meses do ano.',
+    Icone: LineChart,
+  },
+  { para: '/metas', titulo: 'Metas e wishlist', descricao: 'O quanto você já guardou para cada objetivo.', Icone: Target },
+  { para: '/configuracoes', titulo: 'Configurações', descricao: 'Categorias, limites, formas de pagamento e tema.', Icone: Settings },
+  { para: '/ajuda', titulo: 'Ajuda', descricao: 'Como usar cada tela do app.', Icone: HelpCircle },
+]
+
+export function DashboardPage() {
+  const perfil = useAuthStore((s) => s.profile)
+  const definirPeriodo = usePeriodoStore((s) => s.definirPeriodo)
+  const hoje = periodoAtual()
+
+  // Resumo vem pronto do banco (função SQL resumo_mensal) — o painel não carrega linhas.
+  const { dados: resumo, carregando, erro, recarregar } = useRecurso(
+    () => obterResumoMensal(hoje.ano, hoje.mes),
+    [hoje.ano, hoje.mes],
+  )
+
+  const primeiroNome = (perfil?.nome ?? '').split(' ')[0]
+
+  return (
+    <div className="space-y-6">
+      <CabecalhoPagina
+        titulo={primeiroNome ? `Olá, ${primeiroNome}` : 'Olá'}
+        descricao={`Aqui está o resumo de ${nomeDoMes(hoje.mes)} de ${hoje.ano}.`}
+      />
+
+      {erro && <EstadoErro mensagem={erro} onTentarNovamente={() => void recarregar()} />}
+
+      {carregando && !resumo ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-28 w-full" />
+          ))}
+        </div>
+      ) : resumo ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <CardResumo rotulo="Entradas" valor={resumo.total_entradas} Icone={TrendingUp} className="text-success" />
+          <CardResumo rotulo="Saídas" valor={resumo.total_saidas} Icone={TrendingDown} className="text-destructive" />
+          <CardResumo
+            rotulo="Saldo"
+            valor={resumo.saldo}
+            Icone={Wallet}
+            className={resumo.saldo < 0 ? 'text-destructive' : 'text-foreground'}
+          />
+          <Card>
+            <CardContent className="space-y-2 p-5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Investido</p>
+                <PiggyBank className="h-4 w-4 text-primary" />
+              </div>
+              <p className="tabular text-xl font-semibold">{formatCentavos(resumo.total_investido)}</p>
+              <Progress value={Math.min(resumo.percentual_investido, 100)} />
+              <p className="text-xs text-muted-foreground">
+                {Number(resumo.percentual_investido).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}% do que
+                entrou no mês
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {ATALHOS.map((atalho, indice) => (
+          <motion.div
+            key={atalho.para}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 * indice, duration: 0.3 }}
+          >
+            <Link
+              to={atalho.para}
+              onClick={() => atalho.para === '/mes' && definirPeriodo(hoje)}
+              className="group block h-full"
+            >
+              <Card className="h-full transition-all group-hover:-translate-y-1 group-hover:shadow-md">
+                <CardHeader>
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary-soft text-primary">
+                    <atalho.Icone className="h-5 w-5" />
+                  </span>
+                  <CardTitle className="flex items-center gap-2">
+                    {atalho.titulo}
+                    <ArrowRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+                  </CardTitle>
+                  <CardDescription>{atalho.descricao}</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function CardResumo({
+  rotulo,
+  valor,
+  Icone,
+  className,
+}: {
+  rotulo: string
+  valor: number
+  Icone: React.ComponentType<{ className?: string }>
+  className?: string
+}) {
+  return (
+    <Card>
+      <CardContent className="space-y-2 p-5">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">{rotulo}</p>
+          <Icone className={cn('h-4 w-4', className)} />
+        </div>
+        <NumeroAnimado valor={valor} className={cn('tabular block text-xl font-semibold', className)} />
+      </CardContent>
+    </Card>
+  )
+}

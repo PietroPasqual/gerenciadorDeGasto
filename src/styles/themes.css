@@ -1,0 +1,131 @@
+/*
+  Tema de cor = um bloco de CSS variables trocado no <html data-tema="...">.
+  Nada de classes duplicadas por tema: os componentes usam sempre
+  `bg-primary`, `text-muted-foreground` etc., e só as variáveis mudam.
+  Dark mode é a classe `.dark` no <html>, combinável com qualquer tema.
+*/
+
+:root {
+  --radius: 1rem;
+
+  --background: 40 40% 99%;
+  --foreground: 260 12% 18%;
+  --card: 0 0% 100%;
+  --card-foreground: 260 12% 18%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 260 12% 18%;
+  --muted: 260 20% 96%;
+  --muted-foreground: 260 8% 46%;
+  --border: 260 16% 91%;
+  --input: 260 16% 91%;
+
+  --secondary: 260 20% 96%;
+  --secondary-foreground: 260 12% 22%;
+  --accent: 260 20% 95%;
+  --accent-foreground: 260 12% 22%;
+
+  --destructive: 0 72% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 152 55% 42%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 38 90% 12%;
+}
+
+/* ---------------------------- Temas claros ---------------------------- */
+:root,
+[data-tema='rosa'] {
+  --primary: 340 65% 62%;
+  --primary-foreground: 0 0% 100%;
+  --primary-soft: 340 80% 96%;
+  --ring: 340 65% 62%;
+  --background: 350 60% 99%;
+  --accent: 340 60% 96%;
+  --accent-foreground: 340 40% 28%;
+}
+
+[data-tema='azul'] {
+  --primary: 212 70% 55%;
+  --primary-foreground: 0 0% 100%;
+  --primary-soft: 212 85% 96%;
+  --ring: 212 70% 55%;
+  --background: 210 60% 99%;
+  --accent: 212 65% 96%;
+  --accent-foreground: 212 45% 26%;
+}
+
+[data-tema='verde'] {
+  --primary: 158 55% 42%;
+  --primary-foreground: 0 0% 100%;
+  --primary-soft: 158 60% 95%;
+  --ring: 158 55% 42%;
+  --background: 150 45% 99%;
+  --accent: 158 50% 95%;
+  --accent-foreground: 158 45% 22%;
+}
+
+[data-tema='roxo'] {
+  --primary: 270 55% 60%;
+  --primary-foreground: 0 0% 100%;
+  --primary-soft: 270 70% 96%;
+  --ring: 270 55% 60%;
+  --background: 270 50% 99%;
+  --accent: 270 55% 96%;
+  --accent-foreground: 270 40% 28%;
+}
+
+/* ----------------------------- Dark mode ------------------------------ */
+.dark {
+  --background: 260 18% 10%;
+  --foreground: 260 15% 94%;
+  --card: 260 16% 13%;
+  --card-foreground: 260 15% 94%;
+  --popover: 260 16% 13%;
+  --popover-foreground: 260 15% 94%;
+  --muted: 260 14% 18%;
+  --muted-foreground: 260 10% 66%;
+  --border: 260 14% 22%;
+  --input: 260 14% 22%;
+  --secondary: 260 14% 18%;
+  --secondary-foreground: 260 15% 92%;
+  --accent: 260 14% 20%;
+  --accent-foreground: 260 15% 92%;
+  --destructive: 0 65% 58%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 152 48% 48%;
+  --warning: 38 85% 58%;
+  --warning-foreground: 38 90% 10%;
+}
+
+.dark[data-tema='rosa'],
+.dark:not([data-tema]) {
+  --primary: 340 62% 66%;
+  --primary-soft: 340 30% 20%;
+  --ring: 340 62% 66%;
+  --accent: 340 22% 20%;
+  --accent-foreground: 340 60% 92%;
+}
+
+.dark[data-tema='azul'] {
+  --primary: 212 68% 62%;
+  --primary-soft: 212 35% 20%;
+  --ring: 212 68% 62%;
+  --accent: 212 25% 20%;
+  --accent-foreground: 212 60% 92%;
+}
+
+.dark[data-tema='verde'] {
+  --primary: 158 50% 50%;
+  --primary-soft: 158 30% 18%;
+  --ring: 158 50% 50%;
+  --accent: 158 22% 19%;
+  --accent-foreground: 158 55% 90%;
+}
+
+.dark[data-tema='roxo'] {
+  --primary: 270 60% 70%;
+  --primary-soft: 270 30% 21%;
+  --ring: 270 60% 70%;
+  --accent: 270 25% 21%;
+  --accent-foreground: 270 60% 93%;
+}

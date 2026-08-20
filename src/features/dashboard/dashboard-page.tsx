@@ -18,8 +18,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
 import { NumeroAnimado } from '@/components/common/numero-animado'
 import { EstadoErro } from '@/components/common/estados'
+import { Donut } from '@/components/common/donut'
 import { useRecurso } from '@/lib/hooks'
-import { obterResumoMensal } from '@/services/reports'
+import { obterResumoMensal, obterGastosPorCategoria } from '@/services/reports'
 import { nomeDoMes, periodoAtual } from '@/lib/dates'
 import { formatCentavos } from '@/lib/money'
 import { useAuthStore } from '@/store/auth'
@@ -55,6 +56,11 @@ export function DashboardPage() {
     [hoje.ano, hoje.mes],
   )
 
+  const { dados: gastosCategoria } = useRecurso(
+    () => obterGastosPorCategoria(hoje.ano, hoje.mes),
+    [hoje.ano, hoje.mes],
+  )
+
   const primeiroNome = (perfil?.nome ?? '').split(' ')[0]
 
   return (
@@ -65,6 +71,21 @@ export function DashboardPage() {
       />
 
       {erro && <EstadoErro mensagem={erro} onTentarNovamente={() => void recarregar()} />}
+
+      {gastosCategoria && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Gastos por categoria</CardTitle>
+            <CardDescription>Como as saídas de {nomeDoMes(hoje.mes)} se dividem.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Donut
+              dados={gastosCategoria.map((g) => ({ nome: g.nome, valor: g.gasto_centavos, cor: g.cor }))}
+              vazioTexto="Nenhum gasto lançado neste mês ainda."
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {carregando && !resumo ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

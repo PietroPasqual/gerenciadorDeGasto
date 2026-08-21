@@ -47,9 +47,56 @@ export function LayoutApp() {
       {/* Topo */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
         <div className="container flex h-16 items-center justify-between gap-4">
-          <NavLink to="/painel" aria-label="finZ — ir para o painel">
-            <Marca />
-          </NavLink>
+          <div className="flex min-w-0 items-center gap-1.5">
+            {/* No celular tudo cabe num menu só: a barra de abas não cabia na
+                largura da tela e vinha cortada no meio de "Comparativo anual". */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild className="sm:hidden">
+                <Button variant="ghost" size="icon" className="-ml-2" aria-label="Abrir menu">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-[15rem]">
+                {NAVEGACAO.map(({ para, rotulo, Icone }) => {
+                  const ativo = local.pathname === para
+                  return (
+                    <DropdownMenuItem key={para} asChild>
+                      <NavLink
+                        to={para}
+                        className={cn(ativo && 'bg-primary-soft font-medium text-accent-foreground')}
+                      >
+                        <Icone className={cn(!ativo && 'text-muted-foreground')} />
+                        {rotulo}
+                      </NavLink>
+                    </DropdownMenuItem>
+                  )
+                })}
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuLabel className="normal-case tracking-normal">
+                  <span className="block truncate text-sm font-medium text-foreground">
+                    {perfil?.nome || 'Minha conta'}
+                  </span>
+                </DropdownMenuLabel>
+                <DropdownMenuItem onSelect={alternarEscuro}>
+                  {escuro ? <Sun /> : <Moon />}
+                  {escuro ? 'Tema claro' : 'Tema escuro'}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => void sair()}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <LogOut />
+                  Sair da conta
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <NavLink to="/painel" aria-label="finZ — ir para o painel">
+              <Marca />
+            </NavLink>
+          </div>
 
           {/* Telas grandes: as ações ficam à mostra, há espaço de sobra. */}
           <div className="hidden items-center gap-1 sm:flex">
@@ -69,47 +116,6 @@ export function LayoutApp() {
             </Button>
           </div>
 
-          {/* No celular tudo cabe num menu só: a barra de abas não cabia na
-              largura da tela e vinha cortada no meio de "Comparativo anual". */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild className="sm:hidden">
-              <Button variant="ghost" size="icon" aria-label="Abrir menu">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[15rem]">
-              {NAVEGACAO.map(({ para, rotulo, Icone }) => {
-                const ativo = local.pathname === para
-                return (
-                  <DropdownMenuItem key={para} asChild>
-                    <NavLink
-                      to={para}
-                      className={cn(ativo && 'bg-primary-soft font-medium text-accent-foreground')}
-                    >
-                      <Icone className={cn(!ativo && 'text-muted-foreground')} />
-                      {rotulo}
-                    </NavLink>
-                  </DropdownMenuItem>
-                )
-              })}
-
-              <DropdownMenuSeparator />
-
-              <DropdownMenuLabel className="normal-case tracking-normal">
-                <span className="block truncate text-sm font-medium text-foreground">
-                  {perfil?.nome || 'Minha conta'}
-                </span>
-              </DropdownMenuLabel>
-              <DropdownMenuItem onSelect={alternarEscuro}>
-                {escuro ? <Sun /> : <Moon />}
-                {escuro ? 'Tema claro' : 'Tema escuro'}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => void sair()} className="text-destructive focus:text-destructive">
-                <LogOut />
-                Sair da conta
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
 
         {/* Navegação em abas só a partir de sm; no celular ela vive no menu ☰

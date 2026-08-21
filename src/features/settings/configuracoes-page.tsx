@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { SwitchTrack } from '@/components/ui/switch'
 import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
-import { Campo, Cabecalho, Linha } from '@/components/common/linha-planilha'
+import { Cabecalho, Linha } from '@/components/common/linha-planilha'
 import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { EstadoErro, EstadoVazio } from '@/components/common/estados'
@@ -233,7 +233,9 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
             </Cabecalho>
             {dados.categorias.map((categoria) => (
               <Linha key={categoria.id} template={TEMPLATE_CATEGORIA}>
-                <Campo rotulo="Nome">
+                {/* Os quatro campos cabem numa linha até no celular; empilhados
+                    com rótulo cada categoria ocupava mais de 250px. */}
+                <div className="flex items-center gap-1 md:contents">
                   <Input
                     data-celula
                     aria-label="Nome da categoria"
@@ -241,10 +243,8 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
                     onBlur={(e) => {
                       if (e.target.value !== categoria.nome) void acoes.editarCategoria(categoria.id, { nome: e.target.value })
                     }}
-                    className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                    className="min-w-0 flex-1 border-transparent bg-transparent px-2 font-medium hover:border-input focus:bg-card md:px-3 md:font-normal"
                   />
-                </Campo>
-                <Campo rotulo="Limite mensal">
                   <MoneyInput
                     data-celula
                     aria-label="Limite mensal da categoria"
@@ -252,27 +252,26 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
                     onValueChange={(valor) =>
                       void acoes.editarCategoria(categoria.id, { limite_centavos: valor === 0 ? null : valor })
                     }
-                    className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                    className="w-[5.5rem] shrink-0 border-transparent bg-transparent px-2 hover:border-input focus:bg-card md:w-full md:px-3"
                   />
-                </Campo>
-                <Campo rotulo="Cor" className="md:flex md:justify-center">
                   <input
                     type="color"
                     aria-label="Cor da categoria"
                     value={categoria.cor}
                     onChange={(e) => void acoes.editarCategoria(categoria.id, { cor: e.target.value })}
-                    className="h-8 w-12 cursor-pointer rounded-md border border-input bg-card p-1"
+                    className="h-8 w-8 shrink-0 cursor-pointer rounded-md border border-input bg-card p-1 md:mx-auto md:w-12"
                   />
-                </Campo>
-                <div className="flex justify-end">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => void acoes.excluirCategoria(categoria.id)}
-                    aria-label={`Excluir categoria ${categoria.nome}`}
-                  >
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
+                  <div className="flex shrink-0 justify-end">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 md:h-9 md:w-9"
+                      onClick={() => void acoes.excluirCategoria(categoria.id)}
+                      aria-label={`Excluir categoria ${categoria.nome}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
                 </div>
               </Linha>
             ))}
@@ -280,22 +279,26 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
         )}
 
         <div className="grid grid-cols-1 gap-2 pt-1 md:grid-cols-[1fr,10rem,2.5rem]">
-          <Input
-            placeholder="Nova categoria"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-            aria-label="Nome da nova categoria"
-          />
-          <MoneyInput
-            value={limiteCentavos}
-            onValueChange={setLimiteCentavos}
-            onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-            aria-label="Limite da nova categoria"
-          />
-          <Button size="icon" onClick={adicionar} aria-label="Adicionar categoria">
-            <Plus className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2 md:contents">
+            <Input
+              placeholder="Nova categoria"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+              aria-label="Nome da nova categoria"
+              className="min-w-0 flex-1"
+            />
+            <MoneyInput
+              value={limiteCentavos}
+              onValueChange={setLimiteCentavos}
+              onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+              aria-label="Limite da nova categoria"
+              className="w-24 shrink-0 md:w-full"
+            />
+            <Button size="icon" className="shrink-0" onClick={adicionar} aria-label="Adicionar categoria">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -332,7 +335,7 @@ function AbaFormasPagamento({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
           </Cabecalho>
           {dados.formasPagamento.map((forma) => (
             <Linha key={forma.id} template={TEMPLATE_FORMA}>
-              <Campo rotulo="Nome">
+              <div className="flex items-center gap-1 md:contents">
                 <Input
                   data-celula
                   aria-label="Nome da forma de pagamento"
@@ -340,15 +343,17 @@ function AbaFormasPagamento({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
                   onBlur={(e) => {
                     if (e.target.value !== forma.nome) void acoes.editarForma(forma.id, { nome: e.target.value })
                   }}
-                  className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                  className="min-w-0 flex-1 border-transparent bg-transparent px-2 font-medium hover:border-input focus:bg-card md:px-3 md:font-normal"
                 />
-              </Campo>
-              <Campo rotulo="Tipo">
                 <Select
                   value={forma.tipo}
                   onValueChange={(valor) => void acoes.editarForma(forma.id, { tipo: valor as TipoPagamento })}
                 >
-                  <SelectTrigger data-celula aria-label="Tipo da forma de pagamento" className="border-transparent bg-transparent hover:border-input">
+                  <SelectTrigger
+                    data-celula
+                    aria-label="Tipo da forma de pagamento"
+                    className="w-[6.5rem] shrink-0 border-transparent bg-transparent px-2 text-xs hover:border-input md:w-full md:px-3 md:text-sm"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -359,44 +364,51 @@ function AbaFormasPagamento({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
                     ))}
                   </SelectContent>
                 </Select>
-              </Campo>
-              <div className="flex justify-end">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => void acoes.excluirForma(forma.id)}
-                  aria-label={`Excluir forma de pagamento ${forma.nome}`}
-                >
-                  <Trash2 className="h-4 w-4 text-muted-foreground" />
-                </Button>
+                <div className="flex shrink-0 justify-end">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 md:h-9 md:w-9"
+                    onClick={() => void acoes.excluirForma(forma.id)}
+                    aria-label={`Excluir forma de pagamento ${forma.nome}`}
+                  >
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </div>
               </div>
             </Linha>
           ))}
         </GradeEditavel>
 
         <div className="grid grid-cols-1 gap-2 pt-1 md:grid-cols-[1fr,10rem,2.5rem]">
-          <Input
-            placeholder="Nova forma (ex.: Crédito 2)"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-            aria-label="Nome da nova forma de pagamento"
-          />
-          <Select value={tipo} onValueChange={(v) => setTipo(v as TipoPagamento)}>
-            <SelectTrigger aria-label="Tipo da nova forma de pagamento">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TIPOS.map((t) => (
-                <SelectItem key={t.valor} value={t.valor}>
-                  {t.rotulo}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button size="icon" onClick={adicionar} aria-label="Adicionar forma de pagamento">
-            <Plus className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2 md:contents">
+            <Input
+              placeholder="Nova forma (ex.: Crédito 2)"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+              aria-label="Nome da nova forma de pagamento"
+              className="min-w-0 flex-1"
+            />
+            <Select value={tipo} onValueChange={(v) => setTipo(v as TipoPagamento)}>
+              <SelectTrigger
+                aria-label="Tipo da nova forma de pagamento"
+                className="w-[6.5rem] shrink-0 px-2 text-xs md:w-full md:px-3 md:text-sm"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TIPOS.map((t) => (
+                  <SelectItem key={t.valor} value={t.valor}>
+                    {t.rotulo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button size="icon" className="shrink-0" onClick={adicionar} aria-label="Adicionar forma de pagamento">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -443,7 +455,7 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
             </Cabecalho>
             {dados.metas.map((meta) => (
               <Linha key={meta.id} template={TEMPLATE_META}>
-                <Campo rotulo="Meta">
+                <div className="flex items-center gap-1 md:contents">
                   <Input
                     data-celula
                     aria-label="Nome da meta"
@@ -451,27 +463,26 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
                     onBlur={(e) => {
                       if (e.target.value !== meta.nome) void acoes.editarMeta(meta.id, { nome: e.target.value })
                     }}
-                    className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                    className="min-w-0 flex-1 border-transparent bg-transparent px-2 font-medium hover:border-input focus:bg-card md:px-3 md:font-normal"
                   />
-                </Campo>
-                <Campo rotulo="Valor-alvo">
                   <MoneyInput
                     data-celula
                     aria-label="Valor-alvo da meta"
                     value={meta.valor_meta_centavos}
                     onValueChange={(v) => void acoes.editarMeta(meta.id, { valor_meta_centavos: v })}
-                    className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                    className="w-[5.5rem] shrink-0 border-transparent bg-transparent px-2 hover:border-input focus:bg-card md:w-full md:px-3"
                   />
-                </Campo>
-                <div className="flex justify-end">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => void acoes.excluirMeta(meta.id)}
-                    aria-label={`Excluir meta ${meta.nome}`}
-                  >
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
+                  <div className="flex shrink-0 justify-end">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 md:h-9 md:w-9"
+                      onClick={() => void acoes.excluirMeta(meta.id)}
+                      aria-label={`Excluir meta ${meta.nome}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
                 </div>
               </Linha>
             ))}
@@ -479,24 +490,34 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
         )}
 
         <div className="grid grid-cols-1 gap-2 pt-1 md:grid-cols-[1fr,10rem,2.5rem]">
-          <Input
-            placeholder="Nova meta"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-            disabled={noLimite}
-            aria-label="Nome da nova meta"
-          />
-          <MoneyInput
-            value={valorCentavos}
-            onValueChange={setValorCentavos}
-            onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-            disabled={noLimite}
-            aria-label="Valor-alvo da nova meta"
-          />
-          <Button size="icon" onClick={adicionar} disabled={noLimite} aria-label="Adicionar meta">
-            <Plus className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2 md:contents">
+            <Input
+              placeholder="Nova meta"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+              disabled={noLimite}
+              aria-label="Nome da nova meta"
+              className="min-w-0 flex-1"
+            />
+            <MoneyInput
+              value={valorCentavos}
+              onValueChange={setValorCentavos}
+              onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+              disabled={noLimite}
+              aria-label="Valor-alvo da nova meta"
+              className="w-24 shrink-0 md:w-full"
+            />
+            <Button
+              size="icon"
+              className="shrink-0"
+              onClick={adicionar}
+              disabled={noLimite}
+              aria-label="Adicionar meta"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

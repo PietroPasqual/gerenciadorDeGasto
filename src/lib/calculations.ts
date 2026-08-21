@@ -23,6 +23,37 @@ export interface ResumoCalculado {
   percentualInvestido: number
 }
 
+/**
+ * Janela em que um gasto fixo vale. `null` de um lado = sem limite ali.
+ * ano e mes andam em par (o banco garante isso com um check).
+ */
+export interface Vigencia {
+  inicio_ano: number | null
+  inicio_mes: number | null
+  fim_ano: number | null
+  fim_mes: number | null
+}
+
+/**
+ * O gasto fixo entra na conta deste mês?
+ *
+ * Espelho exato de `public.fixo_vigente` (migration 0005) — o painel e o
+ * comparativo somam no banco, e o controle mensal soma aqui; as duas contas
+ * têm que dar o mesmo número. Comparamos ano*12 + mes para não precisar de
+ * duas condições encadeadas (ano maior OU ano igual e mês maior ou igual).
+ */
+export function estaVigente(v: Vigencia, ano: number, mes: number): boolean {
+  const alvo = ano * 12 + mes
+  // `== null` (frouxo) de propósito, pegando null E undefined: enquanto a
+  // migration 0005 não tiver rodado, o Supabase devolve linhas SEM estes
+  // campos. Com uma comparação estrita isso viraria NaN, todo gasto fixo
+  // deixaria de ser vigente e as saídas do mês despencariam em silêncio. Sem
+  // vigência informada, o certo é o comportamento de antes: vale sempre.
+  const inicio = v.inicio_ano == null || v.inicio_mes == null ? null : v.inicio_ano * 12 + v.inicio_mes
+  const fim = v.fim_ano == null || v.fim_mes == null ? null : v.fim_ano * 12 + v.fim_mes
+  return (inicio === null || alvo >= inicio) && (fim === null || alvo <= fim)
+}
+
 /** entradas - saídas (pode ser negativo) */
 export function calcularSaldo(totalEntradas: number, totalSaidas: number): number {
   return totalEntradas - totalSaidas

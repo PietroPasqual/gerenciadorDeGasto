@@ -13,7 +13,7 @@ import type {
 import { useRecurso } from '@/lib/hooks'
 import { executarOtimista } from '@/lib/otimista'
 import { tempId } from '@/lib/utils'
-import { calcularResumoMensal } from '@/lib/calculations'
+import { calcularResumoMensal, estaVigente } from '@/lib/calculations'
 import { listarCategorias } from '@/services/categories'
 import { listarFormasPagamento } from '@/services/payment-methods'
 import * as metasSvc from '@/services/goals'
@@ -145,13 +145,26 @@ export function useControleMensal(ano: number, mes: number) {
       ativo: true,
       ordem: (dados?.gastosFixos.length ?? 0) + 1,
       created_at: new Date().toISOString(),
+      // Nasce valendo a partir do mês que está aberto na tela: quem cadastra
+      // um gasto fixo em agosto está dizendo "começo a pagar isto agora", não
+      // "sempre paguei isto". O contrário inventaria saída em janeiro.
+      inicio_ano: ano,
+      inicio_mes: mes,
+      fim_ano: null,
+      fim_mes: null,
       ...dadosNovos,
     }
     await executarOtimista({
       snapshot: snapshot(),
       aplicar: () => mutar((d) => ({ ...d, gastosFixos: [...d.gastosFixos, provisorio] })),
       restaurar: (s) => definirDados(s),
-      acao: () => fixosSvc.criarGastoFixo({ ...dadosNovos, ordem: provisorio.ordem }),
+      acao: () =>
+        fixosSvc.criarGastoFixo({
+          ...dadosNovos,
+          ordem: provisorio.ordem,
+          inicio_ano: provisorio.inicio_ano,
+          inicio_mes: provisorio.inicio_mes,
+        }),
       confirmar: (salvo) =>
         mutar((d) => ({ ...d, gastosFixos: d.gastosFixos.map((g) => (g.id === provisorio.id ? salvo : g)) })),
       mensagemErro: 'Não foi possível adicionar o gasto fixo',
@@ -351,11 +364,19 @@ export function useControleMensal(ano: number, mes: number) {
   const gastos = dados?.lancamentos.filter((l) => l.tipo === 'gasto') ?? []
   const entradasAvulsas = dados?.lancamentos.filter((l) => l.tipo === 'entrada') ?? []
 
+  /**
+   * A definição do gasto fixo é única, mas só conta nos meses da vigência
+   * dele. `dados.gastosFixos` continua com a lista inteira (a tabela mostra
+   * todos, marcando os que não valem no mês) — quem soma usa só estes.
+   * Mesma regra da função SQL, para o painel e esta tela não divergirem.
+   */
+  const fixosDoMes = (dados?.gastosFixos ?? []).filter((f) => estaVigente(f, ano, mes))
+
   const resumo = calcularResumoMensal({
     entradasAvulsas: dados?.entradas ?? [],
     entradasLancamentos: entradasAvulsas,
     gastos,
-    gastosFixos: dados?.gastosFixos ?? [],
+    gastosFixos: fixosDoMes,
     investimentos: [...(dados?.aportes ?? []), ...(dados?.investimentos ?? [])],
   })
 
@@ -364,6 +385,7 @@ export function useControleMensal(ano: number, mes: number) {
     dados,
     gastos,
     entradasAvulsas,
+    fixosDoMes,
     resumo,
     acoes: {
       adicionarEntrada,

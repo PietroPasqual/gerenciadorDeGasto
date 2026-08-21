@@ -33,7 +33,7 @@ import { useEhMobile } from '@/lib/hooks'
 
 export function ControleMensalPage() {
   const { ano, mes, definirPeriodo } = usePeriodoStore()
-  const { dados, gastos, resumo, carregando, erro, recarregar, acoes } = useControleMensal(ano, mes)
+  const { dados, gastos, fixosDoMes, resumo, carregando, erro, recarregar, acoes } = useControleMensal(ano, mes)
   const [aba, definirAba] = useAbaMes()
 
   /**
@@ -69,8 +69,11 @@ export function ControleMensalPage() {
     if (!dados) return { porCategoria: [], porFormaPagamento: [], porMeta: [] }
 
     const gastosDoMes = dados.lancamentos.filter((l) => l.tipo === 'gasto')
-    const porCategoriaMapa = agruparPorChave([...gastosDoMes, ...dados.gastosFixos], (i) => i.category_id)
-    const porFormaMapa = agruparPorChave([...gastosDoMes, ...dados.gastosFixos], (i) => i.payment_method_id)
+    // `fixosDoMes` e não `dados.gastosFixos`: aqui também só entram os fixos
+    // vigentes neste mês, senão os painéis de categoria e forma de pagamento
+    // discordariam do total de saídas logo acima deles.
+    const porCategoriaMapa = agruparPorChave([...gastosDoMes, ...fixosDoMes], (i) => i.category_id)
+    const porFormaMapa = agruparPorChave([...gastosDoMes, ...fixosDoMes], (i) => i.payment_method_id)
 
     return {
       porCategoria: dados.categorias.map((c) => ({
@@ -90,7 +93,7 @@ export function ControleMensalPage() {
         valor: dados.aportes.find((a) => a.goal_id === m.id)?.valor_centavos ?? 0,
       })),
     }
-  }, [dados])
+  }, [dados, fixosDoMes])
 
   // Lançamento rápido do celular (M2). No desktop a linha de adição da
   // tabela continua sendo o caminho, então o FAB e a sheet só existem abaixo
@@ -233,6 +236,8 @@ export function ControleMensalPage() {
 
               <SecaoMes id="fixos" aba={aba}>
                 <TabelaGastosFixos
+                  ano={ano}
+                  mes={mes}
                   gastosFixos={dados.gastosFixos}
                   pagamentos={dados.pagamentos}
                   formasPagamento={dados.formasPagamento}

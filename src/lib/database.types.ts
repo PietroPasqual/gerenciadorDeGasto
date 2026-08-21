@@ -186,6 +186,12 @@ export interface Database {
           ativo: boolean
           ordem: number
           created_at: string
+          // Vigência (migration 0005): null de um lado = sem limite daquele
+          // lado. ano e mes andam sempre em par (check no banco).
+          inicio_ano: number | null
+          inicio_mes: number | null
+          fim_ano: number | null
+          fim_mes: number | null
         }
         Insert: {
           id?: string
@@ -198,6 +204,10 @@ export interface Database {
           ativo?: boolean
           ordem?: number
           created_at?: string
+          inicio_ano?: number | null
+          inicio_mes?: number | null
+          fim_ano?: number | null
+          fim_mes?: number | null
         }
         Update: {
           nome?: string
@@ -207,6 +217,10 @@ export interface Database {
           dia_vencimento?: number | null
           ativo?: boolean
           ordem?: number
+          inicio_ano?: number | null
+          inicio_mes?: number | null
+          fim_ano?: number | null
+          fim_mes?: number | null
         }
         Relationships: []
       }

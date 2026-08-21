@@ -5,6 +5,7 @@ import {
   calcularPercentualLimite,
   calcularResumoMensal,
   calcularSaldo,
+  estaVigente,
   mediaMensal,
   nivelDoLimite,
   progressoDaMeta,
@@ -184,5 +185,59 @@ describe('mediaMensal', () => {
 
   it('devolve 0 quando o ano inteiro está zerado', () => {
     expect(mediaMensal([0, 0, 0])).toBe(0)
+  })
+})
+
+describe('estaVigente', () => {
+  const janela = (ia: number | null, im: number | null, fa: number | null, fm: number | null) => ({
+    inicio_ano: ia,
+    inicio_mes: im,
+    fim_ano: fa,
+    fim_mes: fm,
+  })
+
+  it('sem vigência informada, vale em qualquer mês', () => {
+    expect(estaVigente(janela(null, null, null, null), 2020, 1)).toBe(true)
+    expect(estaVigente(janela(null, null, null, null), 2099, 12)).toBe(true)
+  })
+
+  it('a linha que ainda não passou pela migration 0005 continua valendo', () => {
+    // Sem os campos (undefined, não null) o comportamento tem que ser o de
+    // antes — e não sumir das saídas.
+    expect(estaVigente({} as never, 2026, 3)).toBe(true)
+  })
+
+  it('não vale antes do início', () => {
+    const v = janela(2026, 8, null, null)
+    expect(estaVigente(v, 2026, 7)).toBe(false)
+    expect(estaVigente(v, 2026, 8)).toBe(true)
+    expect(estaVigente(v, 2026, 9)).toBe(true)
+    expect(estaVigente(v, 2025, 12)).toBe(false)
+    expect(estaVigente(v, 2027, 1)).toBe(true)
+  })
+
+  it('não vale depois do fim', () => {
+    const v = janela(null, null, 2026, 6)
+    expect(estaVigente(v, 2026, 6)).toBe(true)
+    expect(estaVigente(v, 2026, 7)).toBe(false)
+    expect(estaVigente(v, 2027, 1)).toBe(false)
+  })
+
+  it('janela fechada inclui as duas pontas', () => {
+    const v = janela(2026, 2, 2026, 6)
+    expect(estaVigente(v, 2026, 1)).toBe(false)
+    expect(estaVigente(v, 2026, 2)).toBe(true)
+    expect(estaVigente(v, 2026, 6)).toBe(true)
+    expect(estaVigente(v, 2026, 7)).toBe(false)
+  })
+
+  it('a virada de ano não confunde a comparação', () => {
+    const v = janela(2026, 11, 2027, 2)
+    expect(estaVigente(v, 2026, 10)).toBe(false)
+    expect(estaVigente(v, 2026, 12)).toBe(true)
+    expect(estaVigente(v, 2027, 2)).toBe(true)
+    expect(estaVigente(v, 2027, 3)).toBe(false)
+    // mês maior num ano anterior não pode "ganhar" de um mês menor no ano seguinte
+    expect(estaVigente(janela(2027, 1, null, null), 2026, 12)).toBe(false)
   })
 })

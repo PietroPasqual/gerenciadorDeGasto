@@ -11,7 +11,7 @@ const SECOES = [
     itens: [
       'Escolha ano e mês no topo — as setas andam de mês em mês.',
       'Entradas: tudo que entrou (salário, freela, reembolso). O total aparece no resumo lateral.',
-      'Gastos fixos: cadastre uma vez; a linha se repete em todos os meses. O “pago?” é marcado mês a mês.',
+      'Gastos fixos: cadastre uma vez e diga desde quando paga (e até quando, se já encerrou). A linha se repete só nesses meses — assim um aluguel que começou em agosto não aparece em janeiro. O “pago?” é marcado mês a mês.',
       'Gastos do mês: digite na linha pontilhada e pressione Enter. Clique em qualquer célula para editar.',
       'Investimentos: informe quanto guardou em cada meta. O donut do resumo mostra o % do que entrou.',
     ],

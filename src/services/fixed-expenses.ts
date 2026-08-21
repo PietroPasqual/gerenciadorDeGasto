@@ -3,7 +3,13 @@ import type { FixedExpense, FixedExpensePayment } from '@/lib/database.types'
 import { unwrap, userIdAtual } from './base'
 
 /**
- * A definição do gasto fixo é única e vale para todos os meses.
+ * A definição do gasto fixo é única, mas vale só dentro da VIGÊNCIA dele:
+ * de (inicio_ano, inicio_mes) até (fim_ano, fim_mes), qualquer um dos lados
+ * podendo ser nulo para "sem limite". Antes da migration 0005 não havia
+ * vigência nenhuma e um aluguel cadastrado em agosto era somado também em
+ * janeiro. Quem filtra por mês é o chamador (as funções SQL fazem isso no
+ * banco; no cliente é `estaVigente`, em src/lib/calculations.ts).
+ *
  * O que muda mês a mês é apenas o "pago?" (tabela fixed_expense_payments).
  */
 export async function listarGastosFixos(): Promise<FixedExpense[]> {
@@ -17,6 +23,10 @@ export async function criarGastoFixo(dados: {
   valor_centavos: number
   dia_vencimento?: number | null
   ordem?: number
+  inicio_ano?: number | null
+  inicio_mes?: number | null
+  fim_ano?: number | null
+  fim_mes?: number | null
 }): Promise<FixedExpense> {
   const user_id = await userIdAtual()
   return unwrap(
@@ -28,7 +38,20 @@ export async function criarGastoFixo(dados: {
 export async function atualizarGastoFixo(
   id: string,
   mudancas: Partial<
-    Pick<FixedExpense, 'nome' | 'payment_method_id' | 'category_id' | 'valor_centavos' | 'dia_vencimento' | 'ativo' | 'ordem'>
+    Pick<
+      FixedExpense,
+      | 'nome'
+      | 'payment_method_id'
+      | 'category_id'
+      | 'valor_centavos'
+      | 'dia_vencimento'
+      | 'ativo'
+      | 'ordem'
+      | 'inicio_ano'
+      | 'inicio_mes'
+      | 'fim_ano'
+      | 'fim_mes'
+    >
   >,
 ): Promise<FixedExpense> {
   return unwrap(await supabase.from('fixed_expenses').update(mudancas).eq('id', id).select().single())

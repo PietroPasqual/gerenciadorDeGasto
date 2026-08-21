@@ -15,6 +15,7 @@ import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { EstadoErro, EstadoVazio } from '@/components/common/estados'
 import { CampoSheet, CartaoConfig, SheetConfig } from './components/sheet-config'
+import { BotaoCor, COR_PADRAO, SeletorCor } from '@/components/common/seletor-cor'
 import { formatCentavos } from '@/lib/money'
 import { useEhMobile } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
@@ -252,7 +253,7 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
 
   const adicionar = () => {
     if (!nome.trim()) return
-    void acoes.criarCategoria(nome.trim(), limiteCentavos === 0 ? null : limiteCentavos, '#f6a5c0')
+    void acoes.criarCategoria(nome.trim(), limiteCentavos === 0 ? null : limiteCentavos, COR_PADRAO)
     setNome('')
     setLimiteCentavos(0)
   }
@@ -343,12 +344,10 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
                   }
                   className="border-transparent bg-transparent hover:border-input focus:bg-card"
                 />
-                <input
-                  type="color"
-                  aria-label="Cor da categoria"
-                  value={categoria.cor}
-                  onChange={(e) => void acoes.editarCategoria(categoria.id, { cor: e.target.value })}
-                  className="mx-auto h-8 w-12 cursor-pointer rounded-md border border-input bg-card p-1"
+                <BotaoCor
+                  rotulo={`Cor da categoria ${categoria.nome}`}
+                  valor={categoria.cor}
+                  onChange={(cor) => void acoes.editarCategoria(categoria.id, { cor })}
                 />
                 <AcoesLinha
                   indice={indiceDe(categoria.id)}
@@ -367,7 +366,7 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => setRascunho({ id: null, nome: '', limite: 0, cor: '#f6a5c0' })}
+            onClick={() => setRascunho({ id: null, nome: '', limite: 0, cor: COR_PADRAO })}
           >
             <Plus className="h-4 w-4" />
             Nova categoria
@@ -427,11 +426,9 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
             />
           </CampoSheet>
           <CampoSheet rotulo="Cor">
-            <input
-              type="color"
-              value={rascunho?.cor ?? '#f6a5c0'}
-              onChange={(e) => setRascunho((r) => r && { ...r, cor: e.target.value })}
-              className="h-11 w-full cursor-pointer rounded-lg border border-input bg-card p-1"
+            <SeletorCor
+              valor={rascunho?.cor ?? COR_PADRAO}
+              onChange={(cor) => setRascunho((r) => r && { ...r, cor })}
             />
           </CampoSheet>
         </SheetConfig>

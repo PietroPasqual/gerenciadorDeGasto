@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Download } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton, SkeletonTabela } from '@/components/ui/skeleton'
@@ -9,6 +10,7 @@ import { SeletorPeriodo } from '@/components/common/seletor-periodo'
 import { EstadoErro } from '@/components/common/estados'
 import { Fab } from '@/components/common/fab'
 import { SheetGasto, type DadosGasto } from './components/sheet-gasto'
+import type { Transaction } from '@/lib/database.types'
 import { usePeriodoStore } from '@/store/periodo'
 import { useControleMensal } from './use-controle-mensal'
 import { exportarMesCSV } from './exportar'
@@ -63,8 +65,47 @@ export function ControleMensalPage() {
   // tabela continua sendo o caminho, então o FAB e a sheet só existem abaixo
   // de sm.
   const [sheetAberta, setSheetAberta] = useState(false)
+  const [gastoEditando, setGastoEditando] = useState<Transaction | null>(null)
 
-  const salvarGastoDaSheet = (d: DadosGasto) => acoes.adicionarLancamento({ ...d, tipo: 'gasto' })
+  const abrirNovo = () => {
+    setGastoEditando(null)
+    setSheetAberta(true)
+  }
+
+  const abrirEdicao = (gasto: Transaction) => {
+    setGastoEditando(gasto)
+    setSheetAberta(true)
+  }
+
+  const salvarGastoDaSheet = (d: DadosGasto) => {
+    if (gastoEditando) acoes.editarLancamento(gastoEditando.id, d)
+    else acoes.adicionarLancamento({ ...d, tipo: 'gasto' })
+  }
+
+  /**
+   * Excluir com desfazer. Optamos por excluir de imediato e recriar no
+   * desfazer (em vez de adiar a exclusão): se a pessoa sair da tela antes do
+   * prazo, um delete adiado nunca rodaria e o gasto voltaria sozinho.
+   * O registro recriado ganha um id novo, o que é invisível na tela.
+   */
+  const excluirComDesfazer = (gasto: Transaction) => {
+    acoes.removerLancamento(gasto.id)
+    toast('Gasto excluído', {
+      description: gasto.descricao,
+      action: {
+        label: 'Desfazer',
+        onClick: () =>
+          acoes.adicionarLancamento({
+            data: gasto.data,
+            descricao: gasto.descricao,
+            payment_method_id: gasto.payment_method_id,
+            category_id: gasto.category_id,
+            valor_centavos: gasto.valor_centavos,
+            tipo: 'gasto',
+          }),
+      },
+    })
+  }
 
   // Declarada para o menu "⋯" do celular; no desktop o botão fica inline.
   useRegistrarAcoes(
@@ -142,6 +183,7 @@ export function ControleMensalPage() {
               onAdicionar={acoes.adicionarLancamento}
               onEditar={acoes.editarLancamento}
               onRemover={acoes.removerLancamento}
+              onAbrirEdicao={abrirEdicao}
             />
 
             <TabelaInvestimentos
@@ -167,15 +209,20 @@ export function ControleMensalPage() {
 
       {dados && (
         <>
-          <Fab rotulo="Novo gasto" onClick={() => setSheetAberta(true)} />
+          <Fab rotulo="Novo gasto" onClick={abrirNovo} />
           <SheetGasto
             aberta={sheetAberta}
-            onOpenChange={setSheetAberta}
+            onOpenChange={(a) => {
+              setSheetAberta(a)
+              if (!a) setGastoEditando(null)
+            }}
             ano={ano}
             mes={mes}
             formasPagamento={dados.formasPagamento}
             categorias={dados.categorias}
+            gasto={gastoEditando}
             onSalvar={salvarGastoDaSheet}
+            onExcluir={gastoEditando ? () => excluirComDesfazer(gastoEditando) : undefined}
           />
         </>
       )}

@@ -30,8 +30,11 @@ export function SeletorPeriodo({
     onChange({ ano: novoAno, mes: novoMes })
   }
 
+  // flex-wrap + larguras menores no celular: com os alvos de 44px do M3 a
+  // linha estourava 360px e criava rolagem horizontal no documento. O M7
+  // troca este componente por uma faixa deslizante de meses.
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       {mostrarMes && (
         <Button variant="outline" size="icon" onClick={() => navegar(-1)} aria-label="Mês anterior">
           <ChevronLeft className="h-4 w-4" />
@@ -40,7 +43,7 @@ export function SeletorPeriodo({
 
       {mostrarMes && (
         <Select value={String(mesAtual)} onValueChange={(v) => onChange({ ano, mes: Number(v) })}>
-          <SelectTrigger className="w-[9.5rem]" aria-label="Mês">
+          <SelectTrigger className="w-[8rem] md:w-[9.5rem]" aria-label="Mês">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -54,7 +57,7 @@ export function SeletorPeriodo({
       )}
 
       <Select value={String(ano)} onValueChange={(v) => onChange({ ano: Number(v), mes: mesAtual })}>
-        <SelectTrigger className="w-[6.5rem]" aria-label="Ano">
+        <SelectTrigger className="w-[5.5rem] md:w-[6.5rem]" aria-label="Ano">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

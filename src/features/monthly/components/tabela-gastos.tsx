@@ -9,6 +9,7 @@ import { MoneyInput } from '@/components/common/money-input'
 import { SelectSimples } from '@/components/common/select-simples'
 import { EstadoVazio } from '@/components/common/estados'
 import { formatCentavos } from '@/lib/money'
+import { formatDataISO } from '@/lib/dates'
 import { totalDeItens } from '@/lib/calculations'
 import { primeiroDiaISO, paraDataISO, periodoAtual } from '@/lib/dates'
 import type { Category, PaymentMethod, Transaction } from '@/lib/database.types'
@@ -33,6 +34,7 @@ export function TabelaGastos({
   onAdicionar,
   onEditar,
   onRemover,
+  onAbrirEdicao,
 }: {
   ano: number
   mes: number
@@ -49,6 +51,8 @@ export function TabelaGastos({
   }) => void
   onEditar: (id: string, mudancas: Partial<Transaction>) => void
   onRemover: (id: string) => void
+  /** Só no celular: tocar no card abre a sheet de edição (M4). */
+  onAbrirEdicao?: (gasto: Transaction) => void
 }) {
   const [descricao, setDescricao] = useState('')
   const [data, setData] = useState(() => dataPadrao(ano, mes))
@@ -75,9 +79,10 @@ export function TabelaGastos({
     <Card>
       <CardHeader className="pb-3">
         <CardTitle>Gastos do mês</CardTitle>
-        <CardDescription>
+        <CardDescription className="hidden md:block">
           Digite na última linha e pressione Enter. Use Tab/Enter para andar entre as células.
         </CardDescription>
+        <CardDescription className="md:hidden">Toque num gasto para editar.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
         {gastos.length === 0 ? (
@@ -86,7 +91,60 @@ export function TabelaGastos({
             descricao="Comece pelo primeiro gasto do mês na linha abaixo."
           />
         ) : (
-          <GradeEditavel className="space-y-2 md:space-y-0">
+          <>
+            {/* CELULAR: card em modo leitura. Editar seis campos minúsculos
+                dentro de 360px era ilegível e nenhum alvo chegava a 44px;
+                aqui o card só mostra, e tocar abre a sheet (mesma do FAB),
+                onde os campos têm tamanho de dedo. Inline segue valendo de
+                md para cima. */}
+            <ul className="space-y-2 md:hidden">
+              {gastos.map((gasto) => {
+                const categoria = categorias.find((c) => c.id === gasto.category_id)
+                const forma = formasPagamento.find((f) => f.id === gasto.payment_method_id)
+                return (
+                  <li key={gasto.id}>
+                    <button
+                      type="button"
+                      onClick={() => onAbrirEdicao?.(gasto)}
+                      className="flex w-full flex-col gap-1 rounded-xl border border-border px-3 py-2.5 text-left transition-colors active:bg-accent/60"
+                    >
+                      <span className="flex items-baseline justify-between gap-3">
+                        <span className="min-w-0 flex-1 truncate text-corpo font-medium">
+                          {gasto.descricao}
+                        </span>
+                        <span className="tabular shrink-0 text-corpo font-semibold">
+                          {formatCentavos(gasto.valor_centavos)}
+                        </span>
+                      </span>
+                      <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+                        <span className="tabular">{formatDataISO(gasto.data)}</span>
+                        {forma && (
+                          <>
+                            <span aria-hidden>·</span>
+                            <span>{forma.nome}</span>
+                          </>
+                        )}
+                        {categoria && (
+                          <>
+                            <span aria-hidden>·</span>
+                            <span className="flex items-center gap-1">
+                              <span
+                                aria-hidden
+                                className="h-2 w-2 shrink-0 rounded-full"
+                                style={{ backgroundColor: categoria.cor }}
+                              />
+                              {categoria.nome}
+                            </span>
+                          </>
+                        )}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+
+            <GradeEditavel className="space-y-2 md:space-y-0">
             <Cabecalho template={TEMPLATE}>
               <span>Descrição</span>
               <span className="text-right">Valor</span>
@@ -102,7 +160,11 @@ export function TabelaGastos({
                 (por isso o `pr-9` na 1ª faixa). No desktop `md:contents`
                 desmonta os agrupamentos e devolve tudo para as 6 colunas. */}
             {gastos.map((gasto) => (
-              <Linha key={gasto.id} template={TEMPLATE} className="relative gap-1.5 md:static">
+              <Linha
+                key={gasto.id}
+                template={TEMPLATE}
+                className="relative hidden gap-1.5 md:grid md:static"
+              >
                 <div className="flex items-center gap-2 pr-9 md:contents md:pr-0">
                   <Input
                     data-celula
@@ -133,21 +195,21 @@ export function TabelaGastos({
                         onEditar(gasto.id, { data: e.target.value })
                       }
                     }}
-                    className="h-9 w-full border-transparent bg-transparent px-1.5 text-xs text-muted-foreground hover:border-input focus:bg-card md:h-10 md:px-3 md:text-sm md:text-foreground"
+                    className="w-full border-transparent bg-transparent px-2 text-muted-foreground hover:border-input focus:bg-card md:px-3 md:text-foreground"
                   />
                   <SelectSimples
                     ariaLabel="Forma de pagamento do gasto"
                     valor={gasto.payment_method_id}
                     opcoes={formasPagamento}
                     onChange={(valor) => onEditar(gasto.id, { payment_method_id: valor })}
-                    className="h-9 px-2 text-xs md:h-10 md:px-3 md:text-sm"
+                    className="px-2 md:px-3"
                   />
                   <SelectSimples
                     ariaLabel="Categoria do gasto"
                     valor={gasto.category_id}
                     opcoes={categorias}
                     onChange={(valor) => onEditar(gasto.id, { category_id: valor })}
-                    className="h-9 px-2 text-xs md:h-10 md:px-3 md:text-sm"
+                    className="px-2 md:px-3"
                   />
                 </div>
 
@@ -155,7 +217,7 @@ export function TabelaGastos({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 md:h-9 md:w-9"
+                    
                     onClick={() => onRemover(gasto.id)}
                     aria-label={`Excluir gasto ${gasto.descricao}`}
                   >
@@ -164,12 +226,14 @@ export function TabelaGastos({
                 </div>
               </Linha>
             ))}
-          </GradeEditavel>
+            </GradeEditavel>
+          </>
         )}
 
         {/* Adição rápida (estilo planilha) */}
+        {/* Adição inline é do desktop; no celular quem lança é o FAB (M2). */}
         <div
-          className={`grid grid-cols-1 gap-1.5 rounded-xl border border-dashed border-border p-3 md:gap-2 md:border-0 md:p-0 md:pt-1 ${TEMPLATE}`}
+          className={`hidden grid-cols-1 gap-1.5 rounded-xl border border-dashed border-border p-3 md:grid md:gap-2 md:border-0 md:p-0 md:pt-1 ${TEMPLATE}`}
         >
           <div className="flex items-center gap-2 md:contents">
             <Input
@@ -195,7 +259,7 @@ export function TabelaGastos({
               value={data}
               onChange={(e) => setData(e.target.value)}
               aria-label="Data do novo gasto"
-              className="h-9 w-full px-1.5 text-xs md:h-10 md:px-3 md:text-sm"
+              className="w-full px-2 md:px-3"
             />
             <SelectSimples
               ariaLabel="Forma de pagamento do novo gasto"
@@ -203,7 +267,7 @@ export function TabelaGastos({
               placeholder="Forma"
               opcoes={formasPagamento}
               onChange={setFormaId}
-              className="h-9 border-input px-2 text-xs md:h-10 md:px-3 md:text-sm"
+              className="border-input px-2 md:px-3"
             />
             <SelectSimples
               ariaLabel="Categoria do novo gasto"
@@ -211,7 +275,7 @@ export function TabelaGastos({
               placeholder="Categoria"
               opcoes={categorias}
               onChange={setCategoriaId}
-              className="h-9 border-input px-2 text-xs md:h-10 md:px-3 md:text-sm"
+              className="border-input px-2 md:px-3"
             />
           </div>
 
@@ -220,7 +284,7 @@ export function TabelaGastos({
           <Button
             onClick={adicionar}
             aria-label="Adicionar gasto"
-            className="h-9 w-full md:h-10 md:w-10 md:p-0"
+            className="w-full md:h-10 md:w-10 md:p-0"
           >
             <Plus className="h-4 w-4" />
             <span className="md:hidden">Adicionar gasto</span>

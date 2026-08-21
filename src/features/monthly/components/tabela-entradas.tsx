@@ -77,7 +77,7 @@ export function TabelaEntradas({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 md:h-10 md:w-10"
+                      
                       onClick={() => onRemover(entrada.id)}
                       aria-label={`Excluir entrada ${entrada.descricao}`}
                     >

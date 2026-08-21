@@ -265,7 +265,7 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 md:h-9 md:w-9"
+                      
                       onClick={() => void acoes.excluirCategoria(categoria.id)}
                       aria-label={`Excluir categoria ${categoria.nome}`}
                     >
@@ -368,7 +368,7 @@ function AbaFormasPagamento({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 md:h-9 md:w-9"
+                    
                     onClick={() => void acoes.excluirForma(forma.id)}
                     aria-label={`Excluir forma de pagamento ${forma.nome}`}
                   >
@@ -476,7 +476,7 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 md:h-9 md:w-9"
+                      
                       onClick={() => void acoes.excluirMeta(meta.id)}
                       aria-label={`Excluir meta ${meta.nome}`}
                     >

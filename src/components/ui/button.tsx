@@ -19,7 +19,9 @@ const buttonVariants = cva(
         default: 'h-10 px-5 py-2',
         sm: 'h-8 rounded-full px-3 text-xs',
         lg: 'h-12 rounded-full px-7 text-base',
-        icon: 'h-9 w-9 rounded-full',
+        // 44px no celular (alvo mínimo), 36px a partir de md, onde o ponteiro
+        // é preciso e a densidade importa mais.
+        icon: 'h-11 w-11 rounded-full md:h-9 md:w-9',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },

@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Check, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Cabecalho, Linha, Total } from '@/components/common/linha-planilha'
 import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { SelectSimples } from '@/components/common/select-simples'
 import { EstadoVazio } from '@/components/common/estados'
+import { cn } from '@/lib/utils'
 import { formatCentavos } from '@/lib/money'
 import { totalDeItens } from '@/lib/calculations'
 import type { Category, FixedExpense, FixedExpensePayment, PaymentMethod } from '@/lib/database.types'
@@ -123,33 +123,28 @@ export function TabelaGastosFixos({
                       valor={gasto.payment_method_id}
                       opcoes={formasPagamento}
                       onChange={(valor) => onEditar(gasto.id, { payment_method_id: valor })}
-                      className="h-9 px-2 text-xs md:h-10 md:px-3 md:text-sm"
+                      className="px-2 md:px-3"
                     />
                     <SelectSimples
                       ariaLabel="Categoria do gasto fixo"
                       valor={gasto.category_id}
                       opcoes={categorias}
                       onChange={(valor) => onEditar(gasto.id, { category_id: valor })}
-                      className="h-9 px-2 text-xs md:h-10 md:px-3 md:text-sm"
+                      className="px-2 md:px-3"
                     />
-                    <label className="flex shrink-0 items-center gap-1.5 pl-1 md:justify-center md:pl-0">
-                      <span className="text-[0.7rem] uppercase tracking-wide text-muted-foreground md:hidden">
-                        pago
-                      </span>
-                      <Checkbox
-                        data-celula
-                        checked={pago}
-                        onCheckedChange={(marcado) => onAlternarPago(gasto.id, marcado === true)}
-                        aria-label={`Marcar ${gasto.nome} como pago`}
-                      />
-                    </label>
+                    <BotaoPago
+                      id={gasto.id}
+                      nome={gasto.nome}
+                      pago={pago}
+                      onAlternar={onAlternarPago}
+                    />
                   </div>
 
                   <div className="absolute right-1.5 top-1.5 md:static md:flex md:justify-end">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 md:h-9 md:w-9"
+                      
                       onClick={() => onRemover(gasto.id)}
                       aria-label={`Excluir gasto fixo ${gasto.nome}`}
                     >
@@ -191,5 +186,48 @@ export function TabelaGastosFixos({
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * "Pago?" como um botão único que embrulha rótulo + quadradinho.
+ *
+ * Tentei antes um <label htmlFor> em volta do Checkbox do Radix — o HTML diz
+ * que button é rotulável, mas na prática o clique no rótulo não chega ao
+ * botão. Aqui o alvo inteiro (44px no celular) É o controle, e role/aria-
+ * checked preservam a semântica de caixa de seleção.
+ */
+function BotaoPago({
+  id,
+  nome,
+  pago,
+  onAlternar,
+}: {
+  id: string
+  nome: string
+  pago: boolean
+  onAlternar: (id: string, pago: boolean) => void
+}) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={pago}
+      aria-label={`Marcar ${nome} como pago`}
+      data-celula
+      onClick={() => onAlternar(id, !pago)}
+      className="flex min-h-[2.75rem] shrink-0 items-center gap-1.5 rounded-lg px-1 md:min-h-0 md:justify-center md:px-0"
+    >
+      <span className="text-[0.7rem] uppercase tracking-wide text-muted-foreground md:hidden">pago</span>
+      <span
+        aria-hidden
+        className={cn(
+          'grid h-5 w-5 shrink-0 place-items-center rounded-md border transition-colors',
+          pago ? 'border-primary bg-primary text-primary-foreground' : 'border-input',
+        )}
+      >
+        {pago && <Check className="h-3.5 w-3.5" />}
+      </span>
+    </button>
   )
 }

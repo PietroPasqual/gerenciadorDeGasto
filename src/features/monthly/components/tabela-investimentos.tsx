@@ -4,7 +4,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Cabecalho, Campo, Linha, Total } from '@/components/common/linha-planilha'
+import { Cabecalho, Linha, Total } from '@/components/common/linha-planilha'
 import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { EstadoVazio } from '@/components/common/estados'
@@ -75,18 +75,16 @@ export function TabelaInvestimentos({
             </Cabecalho>
             {metas.map((meta) => (
               <Linha key={meta.id} template={TEMPLATE}>
-                <Campo rotulo="Meta">
-                  <span className="block truncate py-2 text-sm font-medium">{meta.nome}</span>
-                </Campo>
-                <Campo rotulo="Valor guardado">
+                <div className="flex items-center gap-2 md:contents">
+                  <span className="min-w-0 flex-1 truncate py-2 text-sm font-medium">{meta.nome}</span>
                   <MoneyInput
                     data-celula
                     aria-label={`Valor guardado na meta ${meta.nome}`}
                     value={valorDaMeta(meta.id)}
                     onValueChange={(valor) => onSalvarAporte(meta.id, valor)}
-                    className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                    className="w-28 shrink-0 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:w-full md:font-normal"
                   />
-                </Campo>
+                </div>
               </Linha>
             ))}
           </GradeEditavel>
@@ -98,7 +96,7 @@ export function TabelaInvestimentos({
           <GradeEditavel className="space-y-2 md:space-y-0">
             {investimentos.map((investimento) => (
               <Linha key={investimento.id} template={TEMPLATE_AVULSO}>
-                <Campo rotulo="Descrição">
+                <div className="flex items-center gap-2 md:contents">
                   <Input
                     data-celula
                     aria-label="Descrição do investimento"
@@ -108,49 +106,52 @@ export function TabelaInvestimentos({
                         onEditarAvulso(investimento.id, { descricao: e.target.value })
                       }
                     }}
-                    className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                    className="min-w-0 flex-1 border-transparent bg-transparent hover:border-input focus:bg-card"
                   />
-                </Campo>
-                <Campo rotulo="Valor">
                   <MoneyInput
                     data-celula
                     aria-label="Valor do investimento"
                     value={investimento.valor_centavos}
                     onValueChange={(valor) => onEditarAvulso(investimento.id, { valor_centavos: valor })}
-                    className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                    className="w-28 shrink-0 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:w-full md:font-normal"
                   />
-                </Campo>
-                <div className="flex justify-end">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onRemoverAvulso(investimento.id)}
-                    aria-label={`Excluir investimento ${investimento.descricao}`}
-                  >
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
+                  <div className="flex shrink-0 justify-end">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 md:h-10 md:w-10"
+                      onClick={() => onRemoverAvulso(investimento.id)}
+                      aria-label={`Excluir investimento ${investimento.descricao}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
                 </div>
               </Linha>
             ))}
           </GradeEditavel>
 
           <div className={`grid grid-cols-1 gap-2 ${TEMPLATE_AVULSO}`}>
-            <Input
-              placeholder="Aporte sem meta (ex.: Tesouro Selic)"
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-              aria-label="Descrição do novo investimento"
-            />
-            <MoneyInput
-              value={valorCentavos}
-              onValueChange={setValorCentavos}
-              onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-              aria-label="Valor do novo investimento"
-            />
-            <Button size="icon" onClick={adicionar} aria-label="Adicionar investimento">
-              <Plus className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2 md:contents">
+              <Input
+                placeholder="Aporte sem meta (ex.: Tesouro Selic)"
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+                aria-label="Descrição do novo investimento"
+                className="min-w-0 flex-1"
+              />
+              <MoneyInput
+                value={valorCentavos}
+                onValueChange={setValorCentavos}
+                onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+                aria-label="Valor do novo investimento"
+                className="w-28 shrink-0 md:w-full"
+              />
+              <Button size="icon" className="shrink-0" onClick={adicionar} aria-label="Adicionar investimento">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 

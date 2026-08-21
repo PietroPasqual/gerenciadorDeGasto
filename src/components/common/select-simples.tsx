@@ -16,7 +16,7 @@ export const SelectSimples = React.forwardRef<
     ariaLabel: string
     className?: string
   }
->(({ valor, onChange, opcoes, placeholder = 'Selecionar', rotuloVazio = 'Sem definir', ariaLabel, className }, ref) => (
+>(({ valor, onChange, opcoes, placeholder = 'Definir', rotuloVazio = 'Sem definir', ariaLabel, className }, ref) => (
   <Select
     value={valor ?? SEM_VALOR}
     onValueChange={(novo) => onChange(novo === SEM_VALOR ? null : novo)}
@@ -27,7 +27,12 @@ export const SelectSimples = React.forwardRef<
       aria-label={ariaLabel}
       className={cn('border-transparent bg-transparent hover:border-input', className)}
     >
-      <SelectValue placeholder={placeholder} />
+      {/* Sem seleção, o gatilho mostra o `placeholder` (curto, cabe no
+          celular) em vez do rótulo longo do item vazio — que continua
+          aparecendo dentro da lista. */}
+      <SelectValue placeholder={placeholder}>
+        {valor ? opcoes.find((o) => o.id === valor)?.nome : placeholder}
+      </SelectValue>
     </SelectTrigger>
     <SelectContent>
       <SelectItem value={SEM_VALOR}>{rotuloVazio}</SelectItem>

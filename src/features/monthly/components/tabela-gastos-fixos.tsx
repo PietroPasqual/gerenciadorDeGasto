@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Cabecalho, Campo, Linha, Total } from '@/components/common/linha-planilha'
+import { Cabecalho, Linha, Total } from '@/components/common/linha-planilha'
 import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { SelectSimples } from '@/components/common/select-simples'
@@ -13,7 +13,10 @@ import { formatCentavos } from '@/lib/money'
 import { totalDeItens } from '@/lib/calculations'
 import type { Category, FixedExpense, FixedExpensePayment, PaymentMethod } from '@/lib/database.types'
 
-const TEMPLATE = 'md:grid-cols-[1.4fr,1fr,1fr,9rem,5rem,2.5rem]'
+// Colunas: Nome | Valor | Forma | Categoria | Pago? | Ações — agrupadas em duas
+// faixas no celular (ver `md:contents` abaixo). O "pago?" fica na 2ª faixa
+// para o nome do gasto não ficar espremido na 1ª.
+const TEMPLATE = 'md:grid-cols-[1.4fr,9rem,1fr,1fr,5rem,2.5rem]'
 
 export function TabelaGastosFixos({
   gastosFixos,
@@ -77,9 +80,9 @@ export function TabelaGastosFixos({
           <GradeEditavel className="space-y-2 md:space-y-0">
             <Cabecalho template={TEMPLATE}>
               <span>Nome</span>
+              <span className="text-right">Valor</span>
               <span>Forma de pagamento</span>
               <span>Categoria</span>
-              <span className="text-right">Valor</span>
               <span className="text-center">Pago?</span>
               <span className="sr-only">Ações</span>
             </Cabecalho>
@@ -87,8 +90,14 @@ export function TabelaGastosFixos({
             {gastosFixos.map((gasto) => {
               const pago = estaPago(gasto.id)
               return (
-                <Linha key={gasto.id} template={TEMPLATE} destacada={pago}>
-                  <Campo rotulo="Nome">
+                <Linha
+                  key={gasto.id}
+                  template={TEMPLATE}
+                  destacada={pago}
+                  className="relative gap-1.5 md:static"
+                >
+                  {/* 1ª linha no celular: nome, valor e o "pago?" */}
+                  <div className="flex items-center gap-2 pr-9 md:contents md:pr-0">
                     <Input
                       data-celula
                       aria-label="Nome do gasto fixo"
@@ -96,51 +105,51 @@ export function TabelaGastosFixos({
                       onBlur={(e) => {
                         if (e.target.value !== gasto.nome) onEditar(gasto.id, { nome: e.target.value })
                       }}
-                      className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                      className="min-w-0 flex-1 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:font-normal"
                     />
-                  </Campo>
-
-                  <Campo rotulo="Forma de pagamento">
-                    <SelectSimples
-                      ariaLabel="Forma de pagamento do gasto fixo"
-                      valor={gasto.payment_method_id}
-                      opcoes={formasPagamento}
-                      onChange={(valor) => onEditar(gasto.id, { payment_method_id: valor })}
-                    />
-                  </Campo>
-
-                  <Campo rotulo="Categoria">
-                    <SelectSimples
-                      ariaLabel="Categoria do gasto fixo"
-                      valor={gasto.category_id}
-                      opcoes={categorias}
-                      onChange={(valor) => onEditar(gasto.id, { category_id: valor })}
-                    />
-                  </Campo>
-
-                  <Campo rotulo="Valor">
                     <MoneyInput
                       data-celula
                       aria-label="Valor do gasto fixo"
                       value={gasto.valor_centavos}
                       onValueChange={(valor) => onEditar(gasto.id, { valor_centavos: valor })}
-                      className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                      className="w-24 shrink-0 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:w-full md:font-normal"
                     />
-                  </Campo>
+                  </div>
 
-                  <Campo rotulo="Pago?" className="md:flex md:justify-center">
-                    <Checkbox
-                      data-celula
-                      checked={pago}
-                      onCheckedChange={(marcado) => onAlternarPago(gasto.id, marcado === true)}
-                      aria-label={`Marcar ${gasto.nome} como pago`}
+                  {/* 2ª linha no celular: forma de pagamento e categoria */}
+                  <div className="grid grid-cols-[1fr,1fr,auto] items-center gap-1.5 md:contents">
+                    <SelectSimples
+                      ariaLabel="Forma de pagamento do gasto fixo"
+                      valor={gasto.payment_method_id}
+                      opcoes={formasPagamento}
+                      onChange={(valor) => onEditar(gasto.id, { payment_method_id: valor })}
+                      className="h-9 px-2 text-xs md:h-10 md:px-3 md:text-sm"
                     />
-                  </Campo>
+                    <SelectSimples
+                      ariaLabel="Categoria do gasto fixo"
+                      valor={gasto.category_id}
+                      opcoes={categorias}
+                      onChange={(valor) => onEditar(gasto.id, { category_id: valor })}
+                      className="h-9 px-2 text-xs md:h-10 md:px-3 md:text-sm"
+                    />
+                    <label className="flex shrink-0 items-center gap-1.5 pl-1 md:justify-center md:pl-0">
+                      <span className="text-[0.7rem] uppercase tracking-wide text-muted-foreground md:hidden">
+                        pago
+                      </span>
+                      <Checkbox
+                        data-celula
+                        checked={pago}
+                        onCheckedChange={(marcado) => onAlternarPago(gasto.id, marcado === true)}
+                        aria-label={`Marcar ${gasto.nome} como pago`}
+                      />
+                    </label>
+                  </div>
 
-                  <div className="flex justify-end">
+                  <div className="absolute right-1.5 top-1.5 md:static md:flex md:justify-end">
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-8 w-8 md:h-9 md:w-9"
                       onClick={() => onRemover(gasto.id)}
                       aria-label={`Excluir gasto fixo ${gasto.nome}`}
                     >
@@ -154,22 +163,26 @@ export function TabelaGastosFixos({
         )}
 
         <div className="grid grid-cols-1 gap-2 pt-1 md:grid-cols-[1fr,10rem,2.5rem]">
-          <Input
-            placeholder="Novo gasto fixo (ex.: Aluguel)"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-            aria-label="Nome do novo gasto fixo"
-          />
-          <MoneyInput
-            value={valorCentavos}
-            onValueChange={setValorCentavos}
-            onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-            aria-label="Valor do novo gasto fixo"
-          />
-          <Button size="icon" onClick={adicionar} aria-label="Adicionar gasto fixo">
-            <Plus className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2 md:contents">
+            <Input
+              placeholder="Novo gasto fixo (ex.: Aluguel)"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+              aria-label="Nome do novo gasto fixo"
+              className="min-w-0 flex-1"
+            />
+            <MoneyInput
+              value={valorCentavos}
+              onValueChange={setValorCentavos}
+              onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+              aria-label="Valor do novo gasto fixo"
+              className="w-24 shrink-0 md:w-full"
+            />
+            <Button size="icon" className="shrink-0" onClick={adicionar} aria-label="Adicionar gasto fixo">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2">

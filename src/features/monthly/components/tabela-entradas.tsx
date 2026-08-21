@@ -3,7 +3,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Campo, Cabecalho, Linha, Total } from '@/components/common/linha-planilha'
+import { Cabecalho, Linha, Total } from '@/components/common/linha-planilha'
 import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { EstadoVazio } from '@/components/common/estados'
@@ -53,9 +53,10 @@ export function TabelaEntradas({
               <span className="sr-only">Ações</span>
             </Cabecalho>
 
+            {/* Só dois campos: cabem na mesma linha até no celular */}
             {entradas.map((entrada) => (
               <Linha key={entrada.id} template={TEMPLATE}>
-                <Campo rotulo="Descrição">
+                <div className="flex items-center gap-2 md:contents">
                   <Input
                     data-celula
                     aria-label="Descrição da entrada"
@@ -63,27 +64,26 @@ export function TabelaEntradas({
                     onBlur={(e) => {
                       if (e.target.value !== entrada.descricao) onEditar(entrada.id, { descricao: e.target.value })
                     }}
-                    className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                    className="min-w-0 flex-1 border-transparent bg-transparent hover:border-input focus:bg-card"
                   />
-                </Campo>
-                <Campo rotulo="Valor">
                   <MoneyInput
                     data-celula
                     aria-label="Valor da entrada"
                     value={entrada.valor_centavos}
                     onValueChange={(valor) => onEditar(entrada.id, { valor_centavos: valor })}
-                    className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                    className="w-28 shrink-0 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:w-full md:font-normal"
                   />
-                </Campo>
-                <div className="flex justify-end">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onRemover(entrada.id)}
-                    aria-label={`Excluir entrada ${entrada.descricao}`}
-                  >
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
+                  <div className="flex shrink-0 justify-end">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 md:h-10 md:w-10"
+                      onClick={() => onRemover(entrada.id)}
+                      aria-label={`Excluir entrada ${entrada.descricao}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
                 </div>
               </Linha>
             ))}
@@ -92,22 +92,26 @@ export function TabelaEntradas({
 
         {/* Linha de adição rápida */}
         <div className={`grid grid-cols-1 gap-2 pt-1 ${TEMPLATE}`}>
-          <Input
-            placeholder="Nova entrada (ex.: Salário)"
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-            aria-label="Descrição da nova entrada"
-          />
-          <MoneyInput
-            value={valorCentavos}
-            onValueChange={setValorCentavos}
-            onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-            aria-label="Valor da nova entrada"
-          />
-          <Button size="icon" onClick={adicionar} aria-label="Adicionar entrada">
-            <Plus className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2 md:contents">
+            <Input
+              placeholder="Nova entrada (ex.: Salário)"
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+              aria-label="Descrição da nova entrada"
+              className="min-w-0 flex-1"
+            />
+            <MoneyInput
+              value={valorCentavos}
+              onValueChange={setValorCentavos}
+              onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+              aria-label="Valor da nova entrada"
+              className="w-28 shrink-0 md:w-full"
+            />
+            <Button size="icon" className="shrink-0" onClick={adicionar} aria-label="Adicionar entrada">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <Total rotulo="Total de entradas" valor={formatCentavos(totalDeItens(entradas))} />

@@ -3,7 +3,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Cabecalho, Campo, Linha, Total } from '@/components/common/linha-planilha'
+import { Cabecalho, Linha, Total } from '@/components/common/linha-planilha'
 import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { SelectSimples } from '@/components/common/select-simples'
@@ -13,7 +13,10 @@ import { totalDeItens } from '@/lib/calculations'
 import { primeiroDiaISO, paraDataISO, periodoAtual } from '@/lib/dates'
 import type { Category, PaymentMethod, Transaction } from '@/lib/database.types'
 
-const TEMPLATE = 'md:grid-cols-[1.4fr,9rem,1fr,1fr,9rem,2.5rem]'
+// Colunas: Descrição | Valor | Data | Forma | Categoria | Ações.
+// Descrição e Valor vêm juntos porque no celular eles formam a 1ª linha do
+// card e o resto forma a 2ª — ver o agrupamento com `md:contents` abaixo.
+const TEMPLATE = 'md:grid-cols-[1.4fr,9rem,9rem,1fr,1fr,2.5rem]'
 
 /** Data padrão da linha nova: hoje se o mês selecionado for o atual, senão dia 1. */
 function dataPadrao(ano: number, mes: number) {
@@ -86,16 +89,21 @@ export function TabelaGastos({
           <GradeEditavel className="space-y-2 md:space-y-0">
             <Cabecalho template={TEMPLATE}>
               <span>Descrição</span>
+              <span className="text-right">Valor</span>
               <span>Data</span>
               <span>Forma de pagamento</span>
               <span>Categoria</span>
-              <span className="text-right">Valor</span>
               <span className="sr-only">Ações</span>
             </Cabecalho>
 
+            {/* No celular a linha tem duas faixas fixas — nada de wrap, para
+                que todos os cards fiquem com a mesma altura e cada controle no
+                mesmo lugar. A lixeira fica ancorada no canto superior direito
+                (por isso o `pr-9` na 1ª faixa). No desktop `md:contents`
+                desmonta os agrupamentos e devolve tudo para as 6 colunas. */}
             {gastos.map((gasto) => (
-              <Linha key={gasto.id} template={TEMPLATE}>
-                <Campo rotulo="Descrição">
+              <Linha key={gasto.id} template={TEMPLATE} className="relative gap-1.5 md:static">
+                <div className="flex items-center gap-2 pr-9 md:contents md:pr-0">
                   <Input
                     data-celula
                     aria-label="Descrição do gasto"
@@ -103,11 +111,18 @@ export function TabelaGastos({
                     onBlur={(e) => {
                       if (e.target.value !== gasto.descricao) onEditar(gasto.id, { descricao: e.target.value })
                     }}
-                    className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                    className="min-w-0 flex-1 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:font-normal"
                   />
-                </Campo>
+                  <MoneyInput
+                    data-celula
+                    aria-label="Valor do gasto"
+                    value={gasto.valor_centavos}
+                    onValueChange={(valor) => onEditar(gasto.id, { valor_centavos: valor })}
+                    className="w-24 shrink-0 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:w-full md:font-normal"
+                  />
+                </div>
 
-                <Campo rotulo="Data">
+                <div className="grid grid-cols-[6.25rem,0.85fr,1.15fr] items-center gap-1.5 md:contents">
                   <Input
                     data-celula
                     type="date"
@@ -118,42 +133,29 @@ export function TabelaGastos({
                         onEditar(gasto.id, { data: e.target.value })
                       }
                     }}
-                    className="border-transparent bg-transparent hover:border-input focus:bg-card"
+                    className="h-9 w-full border-transparent bg-transparent px-1.5 text-xs text-muted-foreground hover:border-input focus:bg-card md:h-10 md:px-3 md:text-sm md:text-foreground"
                   />
-                </Campo>
-
-                <Campo rotulo="Forma de pagamento">
                   <SelectSimples
                     ariaLabel="Forma de pagamento do gasto"
                     valor={gasto.payment_method_id}
                     opcoes={formasPagamento}
                     onChange={(valor) => onEditar(gasto.id, { payment_method_id: valor })}
+                    className="h-9 px-2 text-xs md:h-10 md:px-3 md:text-sm"
                   />
-                </Campo>
-
-                <Campo rotulo="Categoria">
                   <SelectSimples
                     ariaLabel="Categoria do gasto"
                     valor={gasto.category_id}
                     opcoes={categorias}
                     onChange={(valor) => onEditar(gasto.id, { category_id: valor })}
+                    className="h-9 px-2 text-xs md:h-10 md:px-3 md:text-sm"
                   />
-                </Campo>
+                </div>
 
-                <Campo rotulo="Valor">
-                  <MoneyInput
-                    data-celula
-                    aria-label="Valor do gasto"
-                    value={gasto.valor_centavos}
-                    onValueChange={(valor) => onEditar(gasto.id, { valor_centavos: valor })}
-                    className="border-transparent bg-transparent hover:border-input focus:bg-card"
-                  />
-                </Campo>
-
-                <div className="flex justify-end">
+                <div className="absolute right-1.5 top-1.5 md:static md:flex md:justify-end">
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="h-8 w-8 md:h-9 md:w-9"
                     onClick={() => onRemover(gasto.id)}
                     aria-label={`Excluir gasto ${gasto.descricao}`}
                   >
@@ -166,37 +168,62 @@ export function TabelaGastos({
         )}
 
         {/* Adição rápida (estilo planilha) */}
-        <div className={`grid grid-cols-1 gap-2 rounded-xl border border-dashed border-border p-3 md:border-0 md:p-0 md:pt-1 ${TEMPLATE}`}>
-          <Input
-            placeholder="Novo gasto"
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-            aria-label="Descrição do novo gasto"
-          />
-          <Input type="date" value={data} onChange={(e) => setData(e.target.value)} aria-label="Data do novo gasto" />
-          <SelectSimples
-            ariaLabel="Forma de pagamento do novo gasto"
-            valor={formaId}
-            opcoes={formasPagamento}
-            onChange={setFormaId}
-            className="border-input"
-          />
-          <SelectSimples
-            ariaLabel="Categoria do novo gasto"
-            valor={categoriaId}
-            opcoes={categorias}
-            onChange={setCategoriaId}
-            className="border-input"
-          />
-          <MoneyInput
-            value={valorCentavos}
-            onValueChange={setValorCentavos}
-            onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-            aria-label="Valor do novo gasto"
-          />
-          <Button size="icon" onClick={adicionar} aria-label="Adicionar gasto">
+        <div
+          className={`grid grid-cols-1 gap-1.5 rounded-xl border border-dashed border-border p-3 md:gap-2 md:border-0 md:p-0 md:pt-1 ${TEMPLATE}`}
+        >
+          <div className="flex items-center gap-2 md:contents">
+            <Input
+              placeholder="Novo gasto"
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+              aria-label="Descrição do novo gasto"
+              className="min-w-0 flex-1"
+            />
+            <MoneyInput
+              value={valorCentavos}
+              onValueChange={setValorCentavos}
+              onKeyDown={(e) => e.key === 'Enter' && adicionar()}
+              aria-label="Valor do novo gasto"
+              className="w-28 shrink-0 md:w-full"
+            />
+          </div>
+
+          <div className="grid grid-cols-[6.25rem,1fr,1fr] items-center gap-1.5 md:contents">
+            <Input
+              type="date"
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+              aria-label="Data do novo gasto"
+              className="h-9 w-full px-1.5 text-xs md:h-10 md:px-3 md:text-sm"
+            />
+            <SelectSimples
+              ariaLabel="Forma de pagamento do novo gasto"
+              valor={formaId}
+              placeholder="Forma"
+              opcoes={formasPagamento}
+              onChange={setFormaId}
+              className="h-9 border-input px-2 text-xs md:h-10 md:px-3 md:text-sm"
+            />
+            <SelectSimples
+              ariaLabel="Categoria do novo gasto"
+              valor={categoriaId}
+              placeholder="Categoria"
+              opcoes={categorias}
+              onChange={setCategoriaId}
+              className="h-9 border-input px-2 text-xs md:h-10 md:px-3 md:text-sm"
+            />
+          </div>
+
+          {/* No celular um botão de largura total é um alvo bem melhor que um
+              "+" de 36px; no desktop volta a ser o ícone da última coluna. */}
+          <Button
+            onClick={adicionar}
+            aria-label="Adicionar gasto"
+            className="h-9 w-full md:h-10 md:w-10 md:p-0"
+          >
             <Plus className="h-4 w-4" />
+            <span className="md:hidden">Adicionar gasto</span>
           </Button>
         </div>
 

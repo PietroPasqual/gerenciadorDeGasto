@@ -35,20 +35,30 @@ export function AuthLayout({
         </div>
       </div>
 
-      <div className="flex items-center justify-center p-6 sm:p-10">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="w-full max-w-sm space-y-6"
-        >
-          <div className="space-y-2">
-            <h1 className="titulo-serif text-2xl">{titulo}</h1>
-            <p className="text-sm text-muted-foreground">{descricao}</p>
-          </div>
-          {children}
-          {rodape && <div className="text-center text-sm text-muted-foreground">{rodape}</div>}
-        </motion.div>
+      <div className="flex flex-col p-6 sm:p-10">
+        {/* Marca visível no mobile — na tela grande já aparece na coluna decorativa */}
+        <Link to="/" className="mb-8 flex items-center gap-2 lg:hidden">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
+            <Wallet className="h-4 w-4" />
+          </span>
+          <span className="titulo-serif text-lg">Gerenciador de Gastos</span>
+        </Link>
+
+        <div className="flex flex-1 items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="w-full max-w-sm space-y-6"
+          >
+            <div className="space-y-2">
+              <h1 className="titulo-serif text-2xl">{titulo}</h1>
+              <p className="text-sm text-muted-foreground">{descricao}</p>
+            </div>
+            {children}
+            {rodape && <div className="text-center text-sm text-muted-foreground">{rodape}</div>}
+          </motion.div>
+        </div>
       </div>
     </div>
   )

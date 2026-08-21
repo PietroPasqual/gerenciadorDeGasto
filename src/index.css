@@ -39,6 +39,12 @@
   .tabela-scroll {
     @apply w-full overflow-x-auto rounded-lg border border-border;
   }
+
+  /* Sinaliza com um degradê que a barra tem mais conteúdo pra rolar (ex.: nav mobile) */
+  .fade-scroll-x {
+    -webkit-mask-image: linear-gradient(to right, transparent, black 1.5rem, black calc(100% - 1.5rem), transparent);
+    mask-image: linear-gradient(to right, transparent, black 1.5rem, black calc(100% - 1.5rem), transparent);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

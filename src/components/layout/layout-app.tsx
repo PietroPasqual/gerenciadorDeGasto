@@ -64,7 +64,10 @@ export function LayoutApp() {
         </div>
 
         {/* Navegação — vira barra rolável no mobile, sem quebrar o layout */}
-        <nav className="container flex gap-1 overflow-x-auto pb-2" aria-label="Navegação principal">
+        <nav
+          className="container fade-scroll-x flex gap-1 overflow-x-auto pb-2"
+          aria-label="Navegação principal"
+        >
           {NAVEGACAO.map(({ para, rotulo, Icone }) => (
             <NavLink
               key={para}

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { SwitchTrack } from '@/components/ui/switch'
 import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
 import { Campo, Cabecalho, Linha } from '@/components/common/linha-planilha'
 import { GradeEditavel } from '@/components/common/grade-editavel'
@@ -28,6 +29,9 @@ const TIPOS: Array<{ valor: TipoPagamento; rotulo: string }> = [
   { valor: 'credito', rotulo: 'Crédito' },
   { valor: 'boleto', rotulo: 'Boleto' },
 ]
+
+/** Aba estreita no celular para os quatro rótulos caberem lado a lado. */
+const ABA = 'w-full px-1.5 text-xs sm:w-auto sm:px-4 sm:text-sm'
 
 const TEMAS: Array<{ valor: TemaCor; rotulo: string; amostra: string }> = [
   { valor: 'rosa', rotulo: 'Rosa', amostra: 'hsl(340 65% 62%)' },
@@ -55,11 +59,23 @@ export function ConfiguracoesPage() {
         </div>
       ) : dados ? (
         <Tabs defaultValue="aparencia">
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="aparencia">Aparência</TabsTrigger>
-            <TabsTrigger value="categorias">Categorias</TabsTrigger>
-            <TabsTrigger value="pagamento">Formas de pagamento</TabsTrigger>
-            <TabsTrigger value="metas">Metas</TabsTrigger>
+          {/* Quatro colunas iguais numa linha só. O que não deixava caber era
+              "Formas de pagamento": no celular ele vira "Pagamento", e assim
+              some a segunda fileira. */}
+          <TabsList className="grid w-full grid-cols-4 sm:inline-flex sm:w-auto">
+            <TabsTrigger value="aparencia" className={ABA}>
+              Aparência
+            </TabsTrigger>
+            <TabsTrigger value="categorias" className={ABA}>
+              Categorias
+            </TabsTrigger>
+            <TabsTrigger value="pagamento" className={ABA}>
+              <span className="sm:hidden">Pagamento</span>
+              <span className="hidden sm:inline">Formas de pagamento</span>
+            </TabsTrigger>
+            <TabsTrigger value="metas" className={ABA}>
+              Metas
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="aparencia">
@@ -112,7 +128,9 @@ function AbaAparencia() {
           <CardDescription>A cor vale para o app inteiro, inclusive gráficos.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {/* Quatro numa fileira só: as opções cabem sem rolar e a comparação
+              entre as cores fica imediata. */}
+          <div className="grid grid-cols-4 gap-2">
             {TEMAS.map((opcao) => (
               <button
                 key={opcao.valor}
@@ -120,12 +138,14 @@ function AbaAparencia() {
                 onClick={() => definirTema(opcao.valor)}
                 aria-pressed={tema === opcao.valor}
                 className={cn(
-                  'flex flex-col items-center gap-2 rounded-xl border p-3 text-sm transition-all hover:scale-[1.02]',
-                  tema === opcao.valor ? 'border-primary ring-2 ring-primary/40' : 'border-border',
+                  'flex flex-col items-center gap-2 rounded-xl border p-2 text-xs transition-colors sm:text-sm',
+                  tema === opcao.valor
+                    ? 'border-primary bg-primary-soft/60 font-medium'
+                    : 'border-border hover:bg-accent/50',
                 )}
               >
                 <span
-                  className="grid h-10 w-10 place-items-center rounded-full"
+                  className="grid h-9 w-9 place-items-center rounded-full sm:h-10 sm:w-10"
                   style={{ backgroundColor: opcao.amostra }}
                 >
                   {tema === opcao.valor && <Check className="h-4 w-4 text-white" />}
@@ -135,15 +155,21 @@ function AbaAparencia() {
             ))}
           </div>
 
-          <div className="flex items-center justify-between rounded-xl border border-border p-3">
-            <div>
-              <p className="text-sm font-medium">Modo escuro</p>
-              <p className="text-xs text-muted-foreground">Combina com qualquer tema de cor.</p>
-            </div>
-            <Button variant={escuro ? 'default' : 'outline'} size="sm" onClick={alternarEscuro}>
-              {escuro ? 'Ativado' : 'Desativado'}
-            </Button>
-          </div>
+          {/* A linha toda alterna — no celular um alvo de 44px de altura é
+              bem mais fácil de acertar que só o trilho do interruptor. */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={escuro}
+            onClick={alternarEscuro}
+            className="flex w-full items-center justify-between gap-3 rounded-xl border border-border p-3 text-left transition-colors hover:bg-accent/50"
+          >
+            <span>
+              <span className="block text-sm font-medium">Modo escuro</span>
+              <span className="block text-xs text-muted-foreground">Combina com qualquer tema de cor.</span>
+            </span>
+            <SwitchTrack checked={escuro} />
+          </button>
         </CardContent>
       </Card>
 
@@ -157,7 +183,10 @@ function AbaAparencia() {
             <Label htmlFor="nome-perfil">Nome</Label>
             <Input id="nome-perfil" value={nome} onChange={(e) => setNome(e.target.value)} />
           </div>
-          <Button onClick={salvarNome} disabled={salvando || !nome.trim()}>
+          <Button
+            onClick={salvarNome}
+            disabled={salvando || !nome.trim() || nome.trim() === (perfil?.nome ?? '')}
+          >
             Salvar
           </Button>
         </CardContent>

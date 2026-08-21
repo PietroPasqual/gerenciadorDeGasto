@@ -7,12 +7,21 @@ import {
   LineChart,
   LogOut,
   Moon,
+  MoreVertical,
   Settings,
   Sun,
   Target,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Marca } from '@/components/common/marca'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useTemaStore } from '@/store/tema'
@@ -42,7 +51,8 @@ export function LayoutApp() {
             <Marca />
           </NavLink>
 
-          <div className="flex items-center gap-1">
+          {/* Telas grandes: as ações ficam à mostra, há espaço de sobra. */}
+          <div className="hidden items-center gap-1 sm:flex">
             <Button
               variant="ghost"
               size="icon"
@@ -51,13 +61,38 @@ export function LayoutApp() {
             >
               {escuro ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <span className="hidden max-w-[10rem] truncate text-sm text-muted-foreground sm:inline">
+            <span className="max-w-[10rem] truncate text-sm text-muted-foreground">
               {perfil?.nome || 'Minha conta'}
             </span>
             <Button variant="ghost" size="icon" onClick={() => void sair()} aria-label="Sair da conta">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* No celular as mesmas ações vão para um menu, para o topo respirar. */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild className="sm:hidden">
+              <Button variant="ghost" size="icon" aria-label="Abrir menu da conta">
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="normal-case tracking-normal">
+                <span className="block truncate text-sm font-medium text-foreground">
+                  {perfil?.nome || 'Minha conta'}
+                </span>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={alternarEscuro}>
+                {escuro ? <Sun /> : <Moon />}
+                {escuro ? 'Tema claro' : 'Tema escuro'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void sair()} className="text-destructive focus:text-destructive">
+                <LogOut />
+                Sair da conta
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Navegação — vira barra rolável no mobile, sem quebrar o layout */}

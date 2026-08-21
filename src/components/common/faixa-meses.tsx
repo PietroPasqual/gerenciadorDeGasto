@@ -84,7 +84,9 @@ export function FaixaMeses({
                 onClick={() => onChange({ ano, mes: numero })}
                 className={cn(
                   'flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm transition-colors',
-                  ativo ? 'bg-primary font-semibold text-primary-foreground' : 'bg-muted text-muted-foreground',
+                  ativo
+                    ? 'bg-primary-strong font-semibold text-primary-strong-foreground'
+                    : 'bg-muted text-muted-foreground',
                 )}
               >
                 {nome}

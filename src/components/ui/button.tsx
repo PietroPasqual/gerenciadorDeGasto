@@ -8,7 +8,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-sm hover:brightness-105',
+        // primary-strong e não primary: branco sobre o primary puro dá
+        // 3,0:1 a 4,2:1 e reprova AA. Ver a regra 2 em src/styles/themes.css.
+        default: 'bg-primary-strong text-primary-strong-foreground shadow-sm hover:brightness-105',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-accent',
         outline: 'border border-border bg-card hover:bg-accent hover:text-accent-foreground',
         ghost: 'hover:bg-accent hover:text-accent-foreground',

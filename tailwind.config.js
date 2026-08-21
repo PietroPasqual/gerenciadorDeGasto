@@ -18,8 +18,10 @@ export default {
           foreground: 'hsl(var(--primary-foreground))',
           soft: 'hsl(var(--primary-soft))',
           // primary escurecido o suficiente para passar AA como texto sobre o
-          // fundo. Ver a explicacao em src/styles/themes.css.
+          // fundo — e, com o foreground ao lado, como preenchimento EMBAIXO de
+          // texto. Ver a explicacao em src/styles/themes.css.
           strong: 'hsl(var(--primary-strong))',
+          'strong-foreground': 'hsl(var(--primary-strong-foreground))',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',

@@ -118,7 +118,9 @@ export function AbasMes({
               onClick={() => onChange(id)}
               className={cn(
                 'flex min-h-[2.75rem] shrink-0 items-center rounded-full px-4 text-sm transition-colors',
-                ativa ? 'bg-primary text-primary-foreground font-medium' : 'bg-muted text-muted-foreground',
+                ativa
+                  ? 'bg-primary-strong font-medium text-primary-strong-foreground'
+                  : 'bg-muted text-muted-foreground',
               )}
             >
               {rotulo}

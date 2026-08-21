@@ -16,8 +16,11 @@ const buttonVariants = cva(
         link: 'text-primary-strong underline-offset-4 hover:underline',
       },
       size: {
-        default: 'h-10 px-5 py-2',
-        sm: 'h-8 rounded-full px-3 text-xs',
+        // Mesma regra do Input e do SelectTrigger: 44px no celular, 40px de md
+        // para cima. O M3 subiu os campos e os botões de ícone e esqueceu
+        // deste, que é o mais usado do app.
+        default: 'h-11 px-5 py-2 md:h-10',
+        sm: 'h-9 rounded-full px-3 text-xs md:h-8',
         lg: 'h-12 rounded-full px-7 text-base',
         // 44px no celular (alvo mínimo), 36px a partir de md, onde o ponteiro
         // é preciso e a densidade importa mais.

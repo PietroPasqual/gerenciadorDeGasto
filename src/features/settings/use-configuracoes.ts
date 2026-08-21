@@ -24,6 +24,49 @@ export function useConfiguracoes() {
   }, [])
 
   const { dados, definirDados } = recurso
+
+  /**
+   * Reordenação (M11).
+   *
+   * Os serviços já listam por `ordem`, então mover é só reescrever esse campo.
+   * Renumeramos a lista inteira de 1 a n em vez de trocar dois valores entre si
+   * porque `ordem` pode estar repetido ou nulo nas linhas antigas (o valor só
+   * passou a ser preenchido quando a criação começou a mandar
+   * `lista.length + 1`), e aí a troca não mudaria nada. Persistimos só as
+   * linhas cujo número mudou de fato — a lista tem no máximo dez itens.
+   */
+  const trocarVizinho = <T extends { id: string }>(lista: T[], id: string, direcao: -1 | 1) => {
+    const i = lista.findIndex((x) => x.id === id)
+    const j = i + direcao
+    if (i < 0 || j < 0 || j >= lista.length) return null
+    const nova = [...lista]
+    ;[nova[i], nova[j]] = [nova[j], nova[i]]
+    return nova
+  }
+
+  const mover = <T extends { id: string; ordem: number | null }>(opcoes: {
+    lista: T[]
+    id: string
+    direcao: -1 | 1
+    aplicar: (nova: T[]) => void
+    salvar: (id: string, ordem: number) => Promise<unknown>
+    mensagemErro: string
+  }) => {
+    const trocada = trocarVizinho(opcoes.lista, opcoes.id, opcoes.direcao)
+    if (!trocada) return
+    const numerada = trocada.map((item, indice) => ({ ...item, ordem: indice + 1 }))
+    const mudaram = numerada.filter(
+      (item) => opcoes.lista.find((o) => o.id === item.id)?.ordem !== item.ordem,
+    )
+
+    return executarOtimista({
+      snapshot: snapshot(),
+      aplicar: () => opcoes.aplicar(numerada),
+      restaurar: definirDados,
+      acao: () => Promise.all(mudaram.map((item) => opcoes.salvar(item.id, item.ordem as number))),
+      mensagemErro: opcoes.mensagemErro,
+    })
+  }
   const mutar = (transformar: (atual: DadosConfig) => DadosConfig) =>
     definirDados((atual) => (atual ? transformar(atual) : atual))
   const snapshot = () => dados as DadosConfig
@@ -152,6 +195,36 @@ export function useConfiguracoes() {
       mensagemErro: 'Não foi possível excluir a meta',
     })
 
+  const moverForma = (id: string, direcao: -1 | 1) =>
+    mover({
+      lista: snapshot().formasPagamento,
+      id,
+      direcao,
+      aplicar: (formasPagamento) => mutar((d) => ({ ...d, formasPagamento })),
+      salvar: (idItem, ordem) => formasSvc.atualizarFormaPagamento(idItem, { ordem }),
+      mensagemErro: 'Não foi possível reordenar as formas de pagamento',
+    })
+
+  const moverCategoria = (id: string, direcao: -1 | 1) =>
+    mover({
+      lista: snapshot().categorias,
+      id,
+      direcao,
+      aplicar: (categorias) => mutar((d) => ({ ...d, categorias })),
+      salvar: (idItem, ordem) => categoriasSvc.atualizarCategoria(idItem, { ordem }),
+      mensagemErro: 'Não foi possível reordenar as categorias',
+    })
+
+  const moverMeta = (id: string, direcao: -1 | 1) =>
+    mover({
+      lista: snapshot().metas,
+      id,
+      direcao,
+      aplicar: (metas) => mutar((d) => ({ ...d, metas })),
+      salvar: (idItem, ordem) => metasSvc.atualizarMeta(idItem, { ordem }),
+      mensagemErro: 'Não foi possível reordenar as metas',
+    })
+
   return {
     ...recurso,
     acoes: {
@@ -164,6 +237,9 @@ export function useConfiguracoes() {
       criarMeta,
       editarMeta,
       excluirMeta,
+      moverForma,
+      moverCategoria,
+      moverMeta,
     },
   }
 }

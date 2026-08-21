@@ -51,7 +51,7 @@ export function CadastroPage() {
       rodape={
         <>
           Já tem conta?{' '}
-          <Link to="/entrar" className="font-medium text-primary hover:underline">
+          <Link to="/entrar" className="font-medium text-primary-strong hover:underline">
             Entrar
           </Link>
         </>

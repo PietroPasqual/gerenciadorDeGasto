@@ -3,10 +3,31 @@
   Nada de classes duplicadas por tema: os componentes usam sempre
   `bg-primary`, `text-muted-foreground` etc., e só as variáveis mudam.
   Dark mode é a classe `.dark` no <html>, combinável com qualquer tema.
+
+  Duas regras que valem para todos os temas:
+
+  1. DINHEIRO NÃO MUDA DE COR COM O TEMA. --success (entrada) e --destructive
+     (saída) ficam fora dos blocos por tema, de propósito: se o verde de
+     "entrou" virasse rosa no tema rosa, o significado se perderia. O tema
+     troca só a moldura — primary, accent, background.
+
+  2. --primary é cor de PREENCHIMENTO (botão, fatia de gráfico), sempre com
+     texto branco por cima. Para primary como TEXTO sobre o fundo existe
+     --primary-strong: nos temas claros o primary puro fica entre 3,0:1 e
+     4,1:1, abaixo do mínimo AA de 4,5:1. Use text-primary-strong em link e
+     texto; text-primary só sobre primary-soft ou como ícone decorativo.
 */
 
 :root {
   --radius: 1rem;
+
+  /* Elevação: sombra tingida com o primary do tema, nunca cinza puro —
+     cinza sobre fundo levemente colorido dá aspecto sujo. */
+  --sombra-1: 0 1px 2px hsl(var(--primary) / 0.06), 0 1px 3px hsl(var(--primary) / 0.04);
+  --sombra-2: 0 4px 12px hsl(var(--primary) / 0.10), 0 2px 4px hsl(var(--primary) / 0.06);
+
+  /* Densidade das linhas de planilha (seletor compacto/confortável, D3). */
+  --altura-linha: 2.75rem;
 
   --background: 40 40% 99%;
   --foreground: 260 12% 18%;
@@ -36,6 +57,7 @@
 :root,
 [data-tema='rosa'] {
   --primary: 340 65% 62%;
+  --primary-strong: 340 65% 50%;
   --primary-foreground: 0 0% 100%;
   --primary-soft: 340 80% 96%;
   --ring: 340 65% 62%;
@@ -46,6 +68,7 @@
 
 [data-tema='azul'] {
   --primary: 212 70% 55%;
+  --primary-strong: 212 70% 46%;
   --primary-foreground: 0 0% 100%;
   --primary-soft: 212 85% 96%;
   --ring: 212 70% 55%;
@@ -56,6 +79,7 @@
 
 [data-tema='verde'] {
   --primary: 158 55% 42%;
+  --primary-strong: 158 55% 31%;
   --primary-foreground: 0 0% 100%;
   --primary-soft: 158 60% 95%;
   --ring: 158 55% 42%;
@@ -66,6 +90,7 @@
 
 [data-tema='roxo'] {
   --primary: 270 55% 60%;
+  --primary-strong: 270 55% 55%;
   --primary-foreground: 0 0% 100%;
   --primary-soft: 270 70% 96%;
   --ring: 270 55% 60%;
@@ -76,6 +101,11 @@
 
 /* ----------------------------- Dark mode ------------------------------ */
 .dark {
+  /* No escuro a sombra some no fundo: o que separa as camadas é o card ser
+     mais claro que o fundo, então a sombra fica só como profundidade. */
+  --sombra-1: 0 1px 2px hsl(0 0% 0% / 0.35);
+  --sombra-2: 0 6px 16px hsl(0 0% 0% / 0.45);
+
   --background: 260 18% 10%;
   --foreground: 260 15% 94%;
   --card: 260 16% 13%;
@@ -100,6 +130,7 @@
 .dark[data-tema='rosa'],
 .dark:not([data-tema]) {
   --primary: 340 62% 66%;
+  --primary-strong: 340 62% 66%; /* no escuro o primary já passa AA sobre o fundo */
   --primary-soft: 340 30% 20%;
   --ring: 340 62% 66%;
   --accent: 340 22% 20%;
@@ -108,6 +139,7 @@
 
 .dark[data-tema='azul'] {
   --primary: 212 68% 62%;
+  --primary-strong: 212 68% 62%; /* no escuro o primary já passa AA sobre o fundo */
   --primary-soft: 212 35% 20%;
   --ring: 212 68% 62%;
   --accent: 212 25% 20%;
@@ -116,6 +148,7 @@
 
 .dark[data-tema='verde'] {
   --primary: 158 50% 50%;
+  --primary-strong: 158 50% 50%; /* no escuro o primary já passa AA sobre o fundo */
   --primary-soft: 158 30% 18%;
   --ring: 158 50% 50%;
   --accent: 158 22% 19%;
@@ -124,6 +157,7 @@
 
 .dark[data-tema='roxo'] {
   --primary: 270 60% 70%;
+  --primary-strong: 270 60% 70%; /* no escuro o primary já passa AA sobre o fundo */
   --primary-soft: 270 30% 21%;
   --ring: 270 60% 70%;
   --accent: 270 25% 21%;

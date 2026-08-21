@@ -17,6 +17,9 @@ export default {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
           soft: 'hsl(var(--primary-soft))',
+          // primary escurecido o suficiente para passar AA como texto sobre o
+          // fundo. Ver a explicacao em src/styles/themes.css.
+          strong: 'hsl(var(--primary-strong))',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
@@ -50,6 +53,23 @@ export default {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))',
         },
+      },
+      boxShadow: {
+        // Escala de elevacao unica do app; sombra tingida com o primary.
+        1: 'var(--sombra-1)',
+        2: 'var(--sombra-2)',
+      },
+      spacing: {
+        linha: 'var(--altura-linha)',
+      },
+      fontSize: {
+        // Escala fixa: display / titulo / secao / corpo / rotulo.
+        // Nada de text-[13px] avulso pelas telas.
+        display: ['2rem', { lineHeight: '1.15', letterSpacing: '-0.02em' }],
+        titulo: ['1.5rem', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
+        secao: ['1.125rem', { lineHeight: '1.3' }],
+        corpo: ['0.9375rem', { lineHeight: '1.5' }],
+        rotulo: ['0.75rem', { lineHeight: '1.3', letterSpacing: '0.04em' }],
       },
       borderRadius: {
         lg: 'var(--radius)',

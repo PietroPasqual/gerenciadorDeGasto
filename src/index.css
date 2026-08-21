@@ -35,6 +35,14 @@
     @apply font-display font-semibold tracking-tight;
   }
 
+  /* Numero de destaque (saldo do mes, total do ano) em Fraunces. Dado
+     tabular de tabela NAO usa isto: continua em Inter, com tabular-nums,
+     senao as colunas deixam de alinhar. */
+  .numero-serif {
+    @apply font-display font-semibold tracking-tight;
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Wrapper padrão de tabela: rolagem contida, nunca estoura o body */
   .tabela-scroll {
     @apply w-full overflow-x-auto rounded-lg border border-border;

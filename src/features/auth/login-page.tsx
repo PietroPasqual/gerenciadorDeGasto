@@ -57,7 +57,7 @@ export function LoginPage() {
       rodape={
         <>
           Ainda não tem conta?{' '}
-          <Link to="/criar-conta" className="font-medium text-primary hover:underline">
+          <Link to="/criar-conta" className="font-medium text-primary-strong hover:underline">
             Criar conta
           </Link>
         </>
@@ -77,7 +77,7 @@ export function LoginPage() {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="senha">Senha</Label>
-            <button type="button" onClick={aoRecuperar} className="text-xs text-primary hover:underline">
+            <button type="button" onClick={aoRecuperar} className="text-xs text-primary-strong hover:underline">
               Esqueci minha senha
             </button>
           </div>

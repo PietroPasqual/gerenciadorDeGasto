@@ -11,7 +11,7 @@ export function Wordmark({ className }: { className?: string }) {
     <span className={cn('titulo-serif', className)}>
       {/* aria-label: leitores de tela devem falar "finZ", não "fin" + "Z" */}
       <span aria-hidden>
-        fin<span className="text-primary">Z</span>
+        fin<span className="text-primary-strong">Z</span>
       </span>
       <span className="sr-only">finZ</span>
     </span>

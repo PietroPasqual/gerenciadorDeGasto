@@ -149,7 +149,7 @@ export function DashboardPage() {
               onClick={() => atalho.para === '/mes' && definirPeriodo(hoje)}
               className="group block h-full"
             >
-              <Card className="h-full transition-all group-hover:-translate-y-1 group-hover:shadow-md">
+              <Card className="h-full transition-all group-hover:-translate-y-1 group-hover:shadow-2">
                 <CardHeader className="gap-2 p-4 sm:p-6">
                   <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary-soft text-primary sm:h-10 sm:w-10">
                     <atalho.Icone className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -195,8 +195,10 @@ function CardResumo({
         <NumeroAnimado
           valor={valor}
           className={cn(
-            'tabular block font-semibold',
-            destaque ? 'text-xl sm:text-2xl' : 'text-lg sm:text-xl',
+            'block',
+            // Saldo e numero de destaque -> Fraunces. Os demais ficam em Inter
+            // tabular, para as colunas do grid continuarem alinhadas.
+            destaque ? 'numero-serif text-xl sm:text-2xl' : 'tabular font-semibold text-lg sm:text-xl',
             className,
           )}
         />

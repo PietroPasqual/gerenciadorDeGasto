@@ -10,6 +10,8 @@ import { SeletorPeriodo } from '@/components/common/seletor-periodo'
 import { EstadoErro } from '@/components/common/estados'
 import { Fab } from '@/components/common/fab'
 import { SheetGasto, type DadosGasto } from './components/sheet-gasto'
+import { SecaoMes, useAbaMes } from './components/abas-mes'
+import { BarraMesCelular } from './components/barra-mes-celular'
 import type { Transaction } from '@/lib/database.types'
 import { usePeriodoStore } from '@/store/periodo'
 import { useControleMensal } from './use-controle-mensal'
@@ -28,6 +30,7 @@ import { nomeDoMes } from '@/lib/dates'
 export function ControleMensalPage() {
   const { ano, mes, definirPeriodo } = usePeriodoStore()
   const { dados, gastos, resumo, carregando, erro, recarregar, acoes } = useControleMensal(ano, mes)
+  const [aba, definirAba] = useAbaMes()
 
   /**
    * Totais por categoria e por forma de pagamento incluem os gastos fixos
@@ -149,67 +152,103 @@ export function ControleMensalPage() {
       {carregando && !dados ? (
         <EsqueletoMes />
       ) : dados ? (
-        <div className="grid gap-6 lg:grid-cols-[20rem,1fr] xl:grid-cols-[22rem,1fr]">
-          <div className="space-y-6">
-            <ResumoMes ano={ano} mes={mes} resumo={resumo} />
-            <PainelFormasPagamento formas={porFormaPagamento} />
+        <>
+          <BarraMesCelular resumo={resumo} aba={aba} onAbaChange={definirAba} />
+
+          {/* Abaixo de `lg` os dois invólucros de coluna viram `contents`: as
+              seções passam a ser filhas diretas desta coluna flex, então a
+              ordem no celular é a ordem de leitura e o `gap` não sobra quando
+              o SecaoMes não renderiza nada. A partir de `lg` eles voltam a ser
+              as duas colunas da grade. */}
+          <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[20rem,1fr] xl:grid-cols-[22rem,1fr]">
+            <div className="contents lg:flex lg:flex-col lg:gap-6">
+              <SecaoMes id="resumo" aba={aba}>
+                <ResumoMes ano={ano} mes={mes} resumo={resumo} />
+              </SecaoMes>
+              <SecaoMes id="analise" aba={aba}>
+                <PainelFormasPagamento formas={porFormaPagamento} />
+              </SecaoMes>
+            </div>
+
+            <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-6">
+              <SecaoMes id="entradas" aba={aba}>
+                <TabelaEntradas
+                  entradas={dados.entradas}
+                  onAdicionar={acoes.adicionarEntrada}
+                  onEditar={acoes.editarEntrada}
+                  onRemover={acoes.removerEntrada}
+                />
+              </SecaoMes>
+
+              <SecaoMes id="fixos" aba={aba}>
+                <TabelaGastosFixos
+                  gastosFixos={dados.gastosFixos}
+                  pagamentos={dados.pagamentos}
+                  formasPagamento={dados.formasPagamento}
+                  categorias={dados.categorias}
+                  onAdicionar={acoes.adicionarGastoFixo}
+                  onEditar={acoes.editarGastoFixo}
+                  onRemover={acoes.removerGastoFixo}
+                  onAlternarPago={acoes.alternarPago}
+                />
+              </SecaoMes>
+
+              <SecaoMes id="gastos" aba={aba}>
+                <TabelaGastos
+                  ano={ano}
+                  mes={mes}
+                  gastos={gastos}
+                  formasPagamento={dados.formasPagamento}
+                  categorias={dados.categorias}
+                  onAdicionar={acoes.adicionarLancamento}
+                  onEditar={acoes.editarLancamento}
+                  onRemover={acoes.removerLancamento}
+                  onAbrirEdicao={abrirEdicao}
+                />
+              </SecaoMes>
+
+              <SecaoMes id="investir" aba={aba}>
+                <TabelaInvestimentos
+                  metas={dados.metas}
+                  aportes={dados.aportes}
+                  investimentos={dados.investimentos}
+                  onSalvarAporte={acoes.salvarAporteMeta}
+                  onAdicionarAvulso={acoes.adicionarInvestimentoAvulso}
+                  onEditarAvulso={acoes.editarInvestimentoAvulso}
+                  onRemoverAvulso={acoes.removerInvestimentoAvulso}
+                />
+              </SecaoMes>
+
+              <SecaoMes id="analise" aba={aba}>
+                <PainelCategorias categorias={porCategoria} />
+              </SecaoMes>
+
+              <SecaoMes id="analise" aba={aba}>
+                <GraficosMes
+                  porFormaPagamento={porFormaPagamento.map((f) => ({
+                    nome: f.nome,
+                    valor: f.gasto_centavos,
+                  }))}
+                  porMeta={porMeta}
+                  porCategoria={porCategoria.map((c) => ({
+                    nome: c.nome,
+                    valor: c.gasto_centavos,
+                    cor: c.cor,
+                  }))}
+                />
+              </SecaoMes>
+            </div>
           </div>
-
-          <div className="min-w-0 space-y-6">
-            <TabelaEntradas
-              entradas={dados.entradas}
-              onAdicionar={acoes.adicionarEntrada}
-              onEditar={acoes.editarEntrada}
-              onRemover={acoes.removerEntrada}
-            />
-
-            <TabelaGastosFixos
-              gastosFixos={dados.gastosFixos}
-              pagamentos={dados.pagamentos}
-              formasPagamento={dados.formasPagamento}
-              categorias={dados.categorias}
-              onAdicionar={acoes.adicionarGastoFixo}
-              onEditar={acoes.editarGastoFixo}
-              onRemover={acoes.removerGastoFixo}
-              onAlternarPago={acoes.alternarPago}
-            />
-
-            <TabelaGastos
-              ano={ano}
-              mes={mes}
-              gastos={gastos}
-              formasPagamento={dados.formasPagamento}
-              categorias={dados.categorias}
-              onAdicionar={acoes.adicionarLancamento}
-              onEditar={acoes.editarLancamento}
-              onRemover={acoes.removerLancamento}
-              onAbrirEdicao={abrirEdicao}
-            />
-
-            <TabelaInvestimentos
-              metas={dados.metas}
-              aportes={dados.aportes}
-              investimentos={dados.investimentos}
-              onSalvarAporte={acoes.salvarAporteMeta}
-              onAdicionarAvulso={acoes.adicionarInvestimentoAvulso}
-              onEditarAvulso={acoes.editarInvestimentoAvulso}
-              onRemoverAvulso={acoes.removerInvestimentoAvulso}
-            />
-
-            <PainelCategorias categorias={porCategoria} />
-
-            <GraficosMes
-              porFormaPagamento={porFormaPagamento.map((f) => ({ nome: f.nome, valor: f.gasto_centavos }))}
-              porMeta={porMeta}
-              porCategoria={porCategoria.map((c) => ({ nome: c.nome, valor: c.gasto_centavos, cor: c.cor }))}
-            />
-          </div>
-        </div>
+        </>
       ) : null}
 
       {dados && (
         <>
-          <Fab rotulo="Novo gasto" onClick={abrirNovo} />
+          {/* Só na aba de gastos: nas outras o botão de "+" da própria tabela
+              fica embaixo do FAB (ele tapava o total das Entradas), e um FAB
+              que lança GASTO na aba de Entradas ainda por cima mente sobre o
+              que faz. Lançar gasto continua a um toque, na aba ao lado. */}
+          {aba === 'gastos' && <Fab rotulo="Novo gasto" onClick={abrirNovo} />}
           <SheetGasto
             aberta={sheetAberta}
             onOpenChange={(a) => {

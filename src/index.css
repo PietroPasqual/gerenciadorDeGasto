@@ -48,6 +48,16 @@
     @apply w-full overflow-x-auto rounded-lg border border-border;
   }
 
+  /* Rolagem horizontal sem barra à mostra (faixas de pílulas). Diferente do
+     fade-scroll-x: aqui não queremos degradê, porque a 1ª pílula apagada na
+     borda esquerda parece desabilitada. */
+  .sem-barra-rolagem {
+    scrollbar-width: none;
+  }
+  .sem-barra-rolagem::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Sinaliza com um degradê que a barra tem mais conteúdo pra rolar (ex.: nav mobile) */
   .fade-scroll-x {
     -webkit-mask-image: linear-gradient(to right, transparent, black 1.5rem, black calc(100% - 1.5rem), transparent);

@@ -4,7 +4,7 @@
   `bg-primary`, `text-muted-foreground` etc., e só as variáveis mudam.
   Dark mode é a classe `.dark` no <html>, combinável com qualquer tema.
 
-  Duas regras que valem para todos os temas:
+  Três regras que valem para todos os temas:
 
   1. DINHEIRO NÃO MUDA DE COR COM O TEMA. --success (entrada) e --destructive
      (saída) ficam fora dos blocos por tema, de propósito: se o verde de
@@ -16,6 +16,19 @@
      --primary-strong: nos temas claros o primary puro fica entre 3,0:1 e
      4,1:1, abaixo do mínimo AA de 4,5:1. Use text-primary-strong em link e
      texto; text-primary só sobre primary-soft ou como ícone decorativo.
+
+  3. AS CORES DE DINHEIRO SÃO CALIBRADAS PARA O PIOR FUNDO EM QUE APARECEM,
+     que é a faixa de resumo do celular tingida de destructive/10 quando o
+     saldo está negativo (M6). Medido no navegador, o filtro de 10% come
+     ~0,6 de contraste, então cada cor tem folga para isso:
+
+                       fundo   faixa tingida
+       --success        5,3       4,5   (era 3,0 no fundo — reprovava sozinho)
+       --destructive    5,7       4,8
+       --muted-fg       5,6       4,8
+
+     Mexeu no L destas três? Refaça a conta contra o fundo TINGIDO, não
+     contra o card.
 */
 
 :root {
@@ -36,7 +49,7 @@
   --popover: 0 0% 100%;
   --popover-foreground: 260 12% 18%;
   --muted: 260 20% 96%;
-  --muted-foreground: 260 8% 46%;
+  --muted-foreground: 260 8% 42%;
   --border: 260 16% 91%;
   --input: 260 16% 91%;
 
@@ -45,9 +58,9 @@
   --accent: 260 20% 95%;
   --accent-foreground: 260 12% 22%;
 
-  --destructive: 0 72% 55%;
+  --destructive: 0 72% 45%;
   --destructive-foreground: 0 0% 100%;
-  --success: 152 55% 42%;
+  --success: 152 55% 30%;
   --success-foreground: 0 0% 100%;
   --warning: 38 92% 50%;
   --warning-foreground: 38 90% 12%;
@@ -120,8 +133,10 @@
   --secondary-foreground: 260 15% 92%;
   --accent: 260 14% 20%;
   --accent-foreground: 260 15% 92%;
-  --destructive: 0 65% 58%;
-  --destructive-foreground: 0 0% 100%;
+  --destructive: 0 65% 63%;
+  /* Texto escuro, não branco: com o vermelho claro que o modo escuro pede
+     para LER, o branco por cima do botão fica em 3,0:1. */
+  --destructive-foreground: 0 60% 10%;
   --success: 152 48% 48%;
   --warning: 38 85% 58%;
   --warning-foreground: 38 90% 10%;

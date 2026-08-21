@@ -75,14 +75,18 @@ export function TabelaInvestimentos({
             </Cabecalho>
             {metas.map((meta) => (
               <Linha key={meta.id} template={TEMPLATE}>
-                <div className="flex items-center gap-2 md:contents">
-                  <span className="min-w-0 flex-1 truncate py-2 text-sm font-medium">{meta.nome}</span>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 md:contents">
+                  {/* "Reserva de emergência" não cabe ao lado do campo em 360px:
+                      no celular o nome fica inteiro na 1ª linha. */}
+                  <span className="min-w-0 flex-1 basis-full truncate py-1 text-sm font-medium md:basis-auto md:py-2">
+                    {meta.nome}
+                  </span>
                   <MoneyInput
                     data-celula
                     aria-label={`Valor guardado na meta ${meta.nome}`}
                     value={valorDaMeta(meta.id)}
                     onValueChange={(valor) => onSalvarAporte(meta.id, valor)}
-                    className="w-28 shrink-0 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:w-full md:font-normal"
+                    className="ml-auto w-32 shrink-0 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:ml-0 md:w-full md:font-normal"
                   />
                 </div>
               </Linha>
@@ -96,7 +100,7 @@ export function TabelaInvestimentos({
           <GradeEditavel className="space-y-2 md:space-y-0">
             {investimentos.map((investimento) => (
               <Linha key={investimento.id} template={TEMPLATE_AVULSO}>
-                <div className="flex items-center gap-2 md:contents">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 md:contents">
                   <Input
                     data-celula
                     aria-label="Descrição do investimento"
@@ -106,20 +110,19 @@ export function TabelaInvestimentos({
                         onEditarAvulso(investimento.id, { descricao: e.target.value })
                       }
                     }}
-                    className="min-w-0 flex-1 border-transparent bg-transparent hover:border-input focus:bg-card"
+                    className="min-w-0 flex-1 basis-full border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:basis-auto md:font-normal"
                   />
                   <MoneyInput
                     data-celula
                     aria-label="Valor do investimento"
                     value={investimento.valor_centavos}
                     onValueChange={(valor) => onEditarAvulso(investimento.id, { valor_centavos: valor })}
-                    className="w-28 shrink-0 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:w-full md:font-normal"
+                    className="ml-auto w-32 shrink-0 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:ml-0 md:w-full md:font-normal"
                   />
                   <div className="flex shrink-0 justify-end">
                     <Button
                       variant="ghost"
                       size="icon"
-                      
                       onClick={() => onRemoverAvulso(investimento.id)}
                       aria-label={`Excluir investimento ${investimento.descricao}`}
                     >
@@ -132,23 +135,28 @@ export function TabelaInvestimentos({
           </GradeEditavel>
 
           <div className={`grid grid-cols-1 gap-2 ${TEMPLATE_AVULSO}`}>
-            <div className="flex items-center gap-2 md:contents">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 md:contents">
               <Input
                 placeholder="Aporte sem meta (ex.: Tesouro Selic)"
                 value={descricao}
                 onChange={(e) => setDescricao(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && adicionar()}
                 aria-label="Descrição do novo investimento"
-                className="min-w-0 flex-1"
+                className="min-w-0 flex-1 basis-full md:basis-auto"
               />
               <MoneyInput
                 value={valorCentavos}
                 onValueChange={setValorCentavos}
                 onKeyDown={(e) => e.key === 'Enter' && adicionar()}
                 aria-label="Valor do novo investimento"
-                className="w-28 shrink-0 md:w-full"
+                className="ml-auto w-32 shrink-0 md:ml-0 md:w-full"
               />
-              <Button size="icon" className="shrink-0" onClick={adicionar} aria-label="Adicionar investimento">
+              <Button
+                size="icon"
+                className="shrink-0"
+                onClick={adicionar}
+                aria-label="Adicionar investimento"
+              >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>

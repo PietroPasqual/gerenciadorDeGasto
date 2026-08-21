@@ -22,25 +22,31 @@ export function ResumoMes({ ano, mes, resumo }: { ano: number; mes: number; resu
         <CardTitle className="text-2xl">{nomeDoMes(mes)}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ItemResumo
-          Icone={ArrowUpRight}
-          rotulo="Entradas"
-          valor={resumo.totalEntradas}
-          className="text-success"
-        />
-        <ItemResumo
-          Icone={ArrowDownRight}
-          rotulo="Saídas"
-          valor={resumo.totalSaidas}
-          className="text-destructive"
-        />
-        <ItemResumo
-          Icone={Wallet}
-          rotulo="Saldo"
-          valor={resumo.saldo}
-          className={resumo.saldo < 0 ? 'text-destructive' : 'text-foreground'}
-          destaque
-        />
+        {/* No celular estes três números já estão na faixa fixa logo acima
+            (M6), visíveis o tempo todo — repetir aqui só empurraria o donut
+            para fora da tela. Não é função escondida: é a mesma informação em
+            outro lugar da MESMA tela. */}
+        <div className="hidden space-y-4 sm:block">
+          <ItemResumo
+            Icone={ArrowUpRight}
+            rotulo="Entradas"
+            valor={resumo.totalEntradas}
+            className="text-success"
+          />
+          <ItemResumo
+            Icone={ArrowDownRight}
+            rotulo="Saídas"
+            valor={resumo.totalSaidas}
+            className="text-destructive"
+          />
+          <ItemResumo
+            Icone={Wallet}
+            rotulo="Saldo"
+            valor={resumo.saldo}
+            className={resumo.saldo < 0 ? 'text-destructive' : 'text-foreground'}
+            destaque
+          />
+        </div>
 
         <div className="rounded-xl bg-muted/50 p-4">
           <div className="flex items-center gap-4">

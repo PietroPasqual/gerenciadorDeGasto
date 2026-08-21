@@ -13,7 +13,6 @@ import { Campo, Cabecalho, Linha } from '@/components/common/linha-planilha'
 import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { EstadoErro, EstadoVazio } from '@/components/common/estados'
-import { parseParaCentavos } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import type { TemaCor, TipoPagamento } from '@/lib/database.types'
 import { useTemaStore } from '@/store/tema'
@@ -175,13 +174,13 @@ const TEMPLATE_CATEGORIA = 'md:grid-cols-[1fr,10rem,4rem,2.5rem]'
 
 function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
   const [nome, setNome] = useState('')
-  const [limite, setLimite] = useState('')
+  const [limiteCentavos, setLimiteCentavos] = useState(0)
 
   const adicionar = () => {
     if (!nome.trim()) return
-    void acoes.criarCategoria(nome.trim(), parseParaCentavos(limite), '#f6a5c0')
+    void acoes.criarCategoria(nome.trim(), limiteCentavos === 0 ? null : limiteCentavos, '#f6a5c0')
     setNome('')
-    setLimite('')
+    setLimiteCentavos(0)
   }
 
   return (
@@ -259,12 +258,9 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
             onKeyDown={(e) => e.key === 'Enter' && adicionar()}
             aria-label="Nome da nova categoria"
           />
-          <Input
-            placeholder="Limite (opcional)"
-            inputMode="decimal"
-            className="tabular text-right"
-            value={limite}
-            onChange={(e) => setLimite(e.target.value)}
+          <MoneyInput
+            value={limiteCentavos}
+            onValueChange={setLimiteCentavos}
             onKeyDown={(e) => e.key === 'Enter' && adicionar()}
             aria-label="Limite da nova categoria"
           />
@@ -383,7 +379,7 @@ const TEMPLATE_META = 'md:grid-cols-[1fr,10rem,2.5rem]'
 
 function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
   const [nome, setNome] = useState('')
-  const [valor, setValor] = useState('')
+  const [valorCentavos, setValorCentavos] = useState(0)
   const noLimite = dados.metas.length >= MAX_METAS
 
   const adicionar = () => {
@@ -392,9 +388,9 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
       toast.error(`Você já tem ${MAX_METAS} metas. Exclua uma antes de criar outra.`)
       return
     }
-    void acoes.criarMeta(nome.trim(), parseParaCentavos(valor) ?? 0)
+    void acoes.criarMeta(nome.trim(), valorCentavos)
     setNome('')
-    setValor('')
+    setValorCentavos(0)
   }
 
   return (
@@ -462,12 +458,9 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
             disabled={noLimite}
             aria-label="Nome da nova meta"
           />
-          <Input
-            placeholder="Valor-alvo"
-            inputMode="decimal"
-            className="tabular text-right"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
+          <MoneyInput
+            value={valorCentavos}
+            onValueChange={setValorCentavos}
             onKeyDown={(e) => e.key === 'Enter' && adicionar()}
             disabled={noLimite}
             aria-label="Valor-alvo da nova meta"

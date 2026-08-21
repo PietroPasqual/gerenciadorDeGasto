@@ -9,7 +9,7 @@ import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { SelectSimples } from '@/components/common/select-simples'
 import { EstadoVazio } from '@/components/common/estados'
-import { formatCentavos, parseParaCentavos } from '@/lib/money'
+import { formatCentavos } from '@/lib/money'
 import { totalDeItens } from '@/lib/calculations'
 import type { Category, FixedExpense, FixedExpensePayment, PaymentMethod } from '@/lib/database.types'
 
@@ -41,7 +41,7 @@ export function TabelaGastosFixos({
   onAlternarPago: (fixedExpenseId: string, pago: boolean) => void
 }) {
   const [nome, setNome] = useState('')
-  const [valorTexto, setValorTexto] = useState('')
+  const [valorCentavos, setValorCentavos] = useState(0)
 
   const estaPago = (id: string) => pagamentos.find((p) => p.fixed_expense_id === id)?.pago ?? false
   const totalPago = totalDeItens(gastosFixos.filter((g) => estaPago(g.id)))
@@ -52,11 +52,11 @@ export function TabelaGastosFixos({
       nome: nome.trim(),
       payment_method_id: null,
       category_id: null,
-      valor_centavos: parseParaCentavos(valorTexto) ?? 0,
+      valor_centavos: valorCentavos,
       dia_vencimento: null,
     })
     setNome('')
-    setValorTexto('')
+    setValorCentavos(0)
   }
 
   return (
@@ -161,12 +161,9 @@ export function TabelaGastosFixos({
             onKeyDown={(e) => e.key === 'Enter' && adicionar()}
             aria-label="Nome do novo gasto fixo"
           />
-          <Input
-            placeholder="0,00"
-            inputMode="decimal"
-            className="tabular text-right"
-            value={valorTexto}
-            onChange={(e) => setValorTexto(e.target.value)}
+          <MoneyInput
+            value={valorCentavos}
+            onValueChange={setValorCentavos}
             onKeyDown={(e) => e.key === 'Enter' && adicionar()}
             aria-label="Valor do novo gasto fixo"
           />

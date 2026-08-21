@@ -8,7 +8,7 @@ import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { SelectSimples } from '@/components/common/select-simples'
 import { EstadoVazio } from '@/components/common/estados'
-import { formatCentavos, parseParaCentavos } from '@/lib/money'
+import { formatCentavos } from '@/lib/money'
 import { totalDeItens } from '@/lib/calculations'
 import { primeiroDiaISO, paraDataISO, periodoAtual } from '@/lib/dates'
 import type { Category, PaymentMethod, Transaction } from '@/lib/database.types'
@@ -49,23 +49,22 @@ export function TabelaGastos({
 }) {
   const [descricao, setDescricao] = useState('')
   const [data, setData] = useState(() => dataPadrao(ano, mes))
-  const [valorTexto, setValorTexto] = useState('')
+  const [valorCentavos, setValorCentavos] = useState(0)
   const [formaId, setFormaId] = useState<string | null>(null)
   const [categoriaId, setCategoriaId] = useState<string | null>(null)
 
   const adicionar = () => {
-    const valor = parseParaCentavos(valorTexto) ?? 0
-    if (!descricao.trim() && valor === 0) return
+    if (!descricao.trim() && valorCentavos === 0) return
     onAdicionar({
       data: data || dataPadrao(ano, mes),
       descricao: descricao.trim() || 'Gasto',
       payment_method_id: formaId,
       category_id: categoriaId,
-      valor_centavos: valor,
+      valor_centavos: valorCentavos,
       tipo: 'gasto',
     })
     setDescricao('')
-    setValorTexto('')
+    setValorCentavos(0)
     // forma/categoria/data continuam preenchidas: lançar vários seguidos é o caso comum
   }
 
@@ -190,12 +189,9 @@ export function TabelaGastos({
             onChange={setCategoriaId}
             className="border-input"
           />
-          <Input
-            placeholder="0,00"
-            inputMode="decimal"
-            className="tabular text-right"
-            value={valorTexto}
-            onChange={(e) => setValorTexto(e.target.value)}
+          <MoneyInput
+            value={valorCentavos}
+            onValueChange={setValorCentavos}
             onKeyDown={(e) => e.key === 'Enter' && adicionar()}
             aria-label="Valor do novo gasto"
           />

@@ -7,7 +7,7 @@ import { Campo, Cabecalho, Linha, Total } from '@/components/common/linha-planil
 import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { EstadoVazio } from '@/components/common/estados'
-import { formatCentavos, parseParaCentavos } from '@/lib/money'
+import { formatCentavos } from '@/lib/money'
 import { totalDeItens } from '@/lib/calculations'
 import type { Income } from '@/lib/database.types'
 
@@ -25,14 +25,13 @@ export function TabelaEntradas({
   onRemover: (id: string) => void
 }) {
   const [descricao, setDescricao] = useState('')
-  const [valorTexto, setValorTexto] = useState('')
+  const [valorCentavos, setValorCentavos] = useState(0)
 
   const adicionar = () => {
-    const valor = parseParaCentavos(valorTexto) ?? 0
-    if (!descricao.trim() && valor === 0) return
-    onAdicionar(descricao.trim() || 'Entrada', valor)
+    if (!descricao.trim() && valorCentavos === 0) return
+    onAdicionar(descricao.trim() || 'Entrada', valorCentavos)
     setDescricao('')
-    setValorTexto('')
+    setValorCentavos(0)
   }
 
   return (
@@ -100,12 +99,9 @@ export function TabelaEntradas({
             onKeyDown={(e) => e.key === 'Enter' && adicionar()}
             aria-label="Descrição da nova entrada"
           />
-          <Input
-            placeholder="0,00"
-            inputMode="decimal"
-            className="tabular text-right"
-            value={valorTexto}
-            onChange={(e) => setValorTexto(e.target.value)}
+          <MoneyInput
+            value={valorCentavos}
+            onValueChange={setValorCentavos}
             onKeyDown={(e) => e.key === 'Enter' && adicionar()}
             aria-label="Valor da nova entrada"
           />

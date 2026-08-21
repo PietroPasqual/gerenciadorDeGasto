@@ -15,7 +15,7 @@ import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { Estrelas } from '@/components/common/estrelas'
 import { NumeroAnimado } from '@/components/common/numero-animado'
-import { formatCentavos, parseParaCentavos } from '@/lib/money'
+import { formatCentavos } from '@/lib/money'
 import { MESES_CURTOS, nomeDoMes } from '@/lib/dates'
 import { progressoDaMeta, progressoWishlist, totalDeItens } from '@/lib/calculations'
 import { usePeriodoStore } from '@/store/periodo'
@@ -83,7 +83,7 @@ function Wishlist({
   onRemover: (id: string) => void
 }) {
   const [nome, setNome] = useState('')
-  const [valor, setValor] = useState('')
+  const [valorCentavos, setValorCentavos] = useState(0)
   const [prioridade, setPrioridade] = useState(3)
 
   const progresso = progressoWishlist(itens)
@@ -91,9 +91,9 @@ function Wishlist({
 
   const adicionar = () => {
     if (!nome.trim()) return
-    onAdicionar(nome.trim(), parseParaCentavos(valor) ?? 0, prioridade)
+    onAdicionar(nome.trim(), valorCentavos, prioridade)
     setNome('')
-    setValor('')
+    setValorCentavos(0)
     setPrioridade(3)
   }
 
@@ -194,12 +194,9 @@ function Wishlist({
             onKeyDown={(e) => e.key === 'Enter' && adicionar()}
             aria-label="Nome do novo desejo"
           />
-          <Input
-            placeholder="0,00"
-            inputMode="decimal"
-            className="tabular text-right"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
+          <MoneyInput
+            value={valorCentavos}
+            onValueChange={setValorCentavos}
             onKeyDown={(e) => e.key === 'Enter' && adicionar()}
             aria-label="Valor do novo desejo"
           />

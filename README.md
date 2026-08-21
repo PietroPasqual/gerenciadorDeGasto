@@ -1,4 +1,4 @@
-# Gerenciador de Gastos
+# finZ
 
 Planner financeiro pessoal em React + TypeScript + Supabase — a lógica de uma planilha de
 controle financeiro (controle mensal, metas, wishlist, comparativo anual), só que multiusuário,

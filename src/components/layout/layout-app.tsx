@@ -10,9 +10,9 @@ import {
   Settings,
   Sun,
   Target,
-  Wallet,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Marca } from '@/components/common/marca'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useTemaStore } from '@/store/tema'
@@ -38,11 +38,8 @@ export function LayoutApp() {
       {/* Topo */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
         <div className="container flex h-16 items-center justify-between gap-4">
-          <NavLink to="/painel" className="flex items-center gap-2">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
-              <Wallet className="h-4 w-4" />
-            </span>
-            <span className="titulo-serif text-lg">Gerenciador de Gastos</span>
+          <NavLink to="/painel" aria-label="finZ — ir para o painel">
+            <Marca />
           </NavLink>
 
           <div className="flex items-center gap-1">

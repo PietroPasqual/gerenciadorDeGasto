@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Wallet } from 'lucide-react'
+import { Marca } from '@/components/common/marca'
 
 export function AuthLayout({
   titulo,
@@ -20,11 +20,8 @@ export function AuthLayout({
         <div className="absolute -left-16 -top-16 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
         <div className="relative flex h-full flex-col justify-between p-12">
-          <Link to="/" className="flex items-center gap-2 text-accent-foreground">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
-              <Wallet className="h-4 w-4" />
-            </span>
-            <span className="titulo-serif text-lg">Gerenciador de Gastos</span>
+          <Link to="/" aria-label="finZ — voltar para o início">
+            <Marca textoClassName="text-accent-foreground" />
           </Link>
           <blockquote className="max-w-sm space-y-3 text-accent-foreground">
             <p className="titulo-serif text-2xl leading-snug">
@@ -37,11 +34,8 @@ export function AuthLayout({
 
       <div className="flex flex-col p-6 sm:p-10">
         {/* Marca visível no mobile — na tela grande já aparece na coluna decorativa */}
-        <Link to="/" className="mb-8 flex items-center gap-2 lg:hidden">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
-            <Wallet className="h-4 w-4" />
-          </span>
-          <span className="titulo-serif text-lg">Gerenciador de Gastos</span>
+        <Link to="/" className="mb-8 lg:hidden" aria-label="finZ — voltar para o início">
+          <Marca />
         </Link>
 
         <div className="flex flex-1 items-center justify-center">

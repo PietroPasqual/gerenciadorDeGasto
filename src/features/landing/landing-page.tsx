@@ -8,9 +8,9 @@ import {
   PiggyBank,
   ShieldCheck,
   Target,
-  Wallet,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Marca } from '@/components/common/marca'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/store/auth'
 
@@ -49,12 +49,7 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="container flex h-20 items-center justify-between">
-        <span className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
-            <Wallet className="h-4 w-4" />
-          </span>
-          <span className="titulo-serif text-lg">Gerenciador de Gastos</span>
-        </span>
+        <Marca />
         <div className="flex items-center gap-2">
           {session ? (
             <Button asChild>

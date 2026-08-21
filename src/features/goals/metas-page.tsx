@@ -1,16 +1,15 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, Circle, Plus, Trash2 } from 'lucide-react'
+import { Check, CheckCircle2, ChevronRight, Circle, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
 import { SeletorPeriodo } from '@/components/common/seletor-periodo'
 import { EstadoErro, EstadoVazio } from '@/components/common/estados'
-import { Cabecalho, Campo, Linha, Total } from '@/components/common/linha-planilha'
+import { Cabecalho, Linha, Total } from '@/components/common/linha-planilha'
 import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { Estrelas } from '@/components/common/estrelas'
@@ -20,6 +19,8 @@ import { MESES_CURTOS, nomeDoMes } from '@/lib/dates'
 import { progressoDaMeta, progressoWishlist, totalDeItens } from '@/lib/calculations'
 import { usePeriodoStore } from '@/store/periodo'
 import { cn } from '@/lib/utils'
+import { SheetMeta } from './components/sheet-meta'
+import { useEhMobile } from '@/lib/hooks'
 import { useMetas } from './use-metas'
 
 export function MetasPage() {
@@ -104,10 +105,23 @@ function Wishlist({
         <CardDescription>Aquela lista de desejos — marque o que já conquistou.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Indicador Icone={CheckCircle2} rotulo="Cumpridas" valor={progresso.cumpridas} className="text-success" />
+        {/* Faixa que desliza no celular, três colunas de sm para cima — mesmo
+            tratamento dos indicadores do comparativo anual. Empilhados eram
+            200px antes do primeiro desejo aparecer. */}
+        <div
+          className={cn(
+            'sem-barra-rolagem -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1',
+            'sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:overflow-visible sm:px-0',
+          )}
+        >
+          <Indicador
+            Icone={CheckCircle2}
+            rotulo="Cumpridas"
+            valor={progresso.cumpridas}
+            className="text-success"
+          />
           <Indicador Icone={Circle} rotulo="Pendentes" valor={progresso.pendentes} />
-          <div className="rounded-xl border border-border p-3">
+          <div className="w-[62%] shrink-0 snap-start rounded-xl border border-border p-3 sm:w-auto sm:shrink">
             <p className="text-sm text-muted-foreground">Falta juntar</p>
             <p className="tabular text-lg font-semibold">{formatCentavos(totalPendente)}</p>
           </div>
@@ -135,43 +149,52 @@ function Wishlist({
               <span className="sr-only">Ações</span>
             </Cabecalho>
 
+            {/* CELULAR: card de três faixas — [✓ nome] / [valor 🗑] / [estrelas].
+                Antes eram quatro campos empilhados com rótulo cada (~260px por
+                desejo) e as estrelas tinham 20px de alvo. O nome fica sozinho
+                na 1ª faixa porque dividindo com a lixeira sobravam 158px e
+                "Notebook novo para trabalhar" virava "Notebook novo p". A ordem no DOM segue
+                as colunas do desktop (item, valor, prioridade, conquistado,
+                ações); no celular o `order` reposiciona sem duplicar markup, e
+                de md para cima o grid do `Linha` assume e os `order` somem. */}
             {itens.map((item) => (
-              <Linha key={item.id} template={TEMPLATE_WISHLIST} destacada={item.concluido}>
-                <Campo rotulo="Item">
-                  <Input
-                    data-celula
-                    aria-label="Nome do item"
-                    defaultValue={item.nome}
-                    onBlur={(e) => {
-                      if (e.target.value !== item.nome) onEditar(item.id, { nome: e.target.value })
-                    }}
-                    className={cn(
-                      'border-transparent bg-transparent hover:border-input focus:bg-card',
-                      item.concluido && 'line-through opacity-70',
-                    )}
-                  />
-                </Campo>
-                <Campo rotulo="Valor">
-                  <MoneyInput
-                    data-celula
-                    aria-label="Valor do item"
-                    value={item.valor_centavos}
-                    onValueChange={(v) => onEditar(item.id, { valor_centavos: v })}
-                    className="border-transparent bg-transparent hover:border-input focus:bg-card"
-                  />
-                </Campo>
-                <Campo rotulo="Prioridade">
-                  <Estrelas valor={item.prioridade} onChange={(p) => onEditar(item.id, { prioridade: p })} />
-                </Campo>
-                <Campo rotulo="Conquistado" className="md:flex md:justify-center">
-                  <Checkbox
-                    data-celula
-                    checked={item.concluido}
-                    onCheckedChange={(marcado) => onEditar(item.id, { concluido: marcado === true })}
-                    aria-label={`Marcar ${item.nome} como conquistado`}
-                  />
-                </Campo>
-                <div className="flex justify-end">
+              <Linha
+                key={item.id}
+                template={TEMPLATE_WISHLIST}
+                destacada={item.concluido}
+                className="flex flex-wrap items-center gap-x-2 gap-y-1.5 md:grid md:gap-2"
+              >
+                <Input
+                  data-celula
+                  aria-label="Nome do item"
+                  defaultValue={item.nome}
+                  onBlur={(e) => {
+                    if (e.target.value !== item.nome) onEditar(item.id, { nome: e.target.value })
+                  }}
+                  className={cn(
+                    'order-2 min-w-0 flex-1 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:order-none md:font-normal',
+                    item.concluido && 'line-through opacity-70',
+                  )}
+                />
+                <MoneyInput
+                  data-celula
+                  aria-label="Valor do item"
+                  value={item.valor_centavos}
+                  onValueChange={(v) => onEditar(item.id, { valor_centavos: v })}
+                  className="order-3 min-w-0 flex-1 basis-[calc(100%-3.25rem)] border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:order-none md:basis-auto md:font-normal"
+                />
+                <Estrelas
+                  valor={item.prioridade}
+                  onChange={(p) => onEditar(item.id, { prioridade: p })}
+                  className="order-5 basis-full md:order-none md:basis-auto"
+                  botaoClassName="h-11 w-11 md:h-auto md:w-auto"
+                />
+                <BotaoConcluido
+                  concluido={item.concluido}
+                  nome={item.nome}
+                  onAlternar={(concluido) => onEditar(item.id, { concluido })}
+                />
+                <div className="order-4 flex shrink-0 justify-end md:order-none">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -186,29 +209,81 @@ function Wishlist({
           </GradeEditavel>
         )}
 
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr,10rem,9rem,2.5rem]">
+        {/* Adição com a mesma forma do card: "+" e nome na 1ª faixa, valor na
+            2ª, estrelas na 3ª. */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 md:grid md:grid-cols-[1fr,10rem,9rem,2.5rem] md:gap-2">
           <Input
             placeholder="Novo desejo"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && adicionar()}
             aria-label="Nome do novo desejo"
+            className="min-w-0 flex-1"
           />
           <MoneyInput
             value={valorCentavos}
             onValueChange={setValorCentavos}
             onKeyDown={(e) => e.key === 'Enter' && adicionar()}
             aria-label="Valor do novo desejo"
+            className="basis-full md:basis-auto"
           />
-          <div className="flex items-center">
-            <Estrelas valor={prioridade} onChange={setPrioridade} />
+          <div className="flex basis-full items-center md:basis-auto">
+            <Estrelas
+              valor={prioridade}
+              onChange={setPrioridade}
+              botaoClassName="h-11 w-11 md:h-auto md:w-auto"
+            />
           </div>
-          <Button size="icon" onClick={adicionar} aria-label="Adicionar desejo">
+          <Button
+            size="icon"
+            className="order-first shrink-0 md:order-none"
+            onClick={adicionar}
+            aria-label="Adicionar desejo"
+          >
             <Plus className="h-4 w-4" />
           </Button>
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * "Conquistado" como botão único, do tamanho do dedo.
+ *
+ * Mesmo motivo do BotaoPago dos gastos fixos: o Checkbox do Radix tem 16px de
+ * alvo e o <label htmlFor> em volta não repassa o clique. Aqui o alvo inteiro
+ * É o controle, e role/aria-checked preservam a semântica.
+ */
+function BotaoConcluido({
+  concluido,
+  nome,
+  onAlternar,
+}: {
+  concluido: boolean
+  nome: string
+  onAlternar: (concluido: boolean) => void
+}) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={concluido}
+      aria-label={`Marcar ${nome} como conquistado`}
+      data-celula
+      onClick={() => onAlternar(!concluido)}
+      className="order-1 grid h-11 w-11 shrink-0 place-items-center rounded-lg md:order-none md:h-auto md:w-full"
+    >
+      <span
+        aria-hidden
+        className={cn(
+          'grid h-5 w-5 place-items-center rounded-md border transition-colors',
+          concluido ? 'border-primary bg-primary text-primary-foreground' : 'border-input',
+        )}
+      >
+        {concluido && <Check className="h-3.5 w-3.5" />}
+      </span>
+    </button>
   )
 }
 
@@ -224,7 +299,7 @@ function Indicador({
   className?: string
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border p-3">
+    <div className="flex w-[62%] shrink-0 snap-start items-center gap-3 rounded-xl border border-border p-3 sm:w-auto sm:shrink">
       <Icone className={cn('h-5 w-5', className ?? 'text-muted-foreground')} />
       <div>
         <p className="text-sm text-muted-foreground">{rotulo}</p>
@@ -259,6 +334,14 @@ function GradeMetas({
 
   const totalAno = aportes.reduce((s, a) => s + a.valor_centavos, 0)
 
+  /**
+   * A grade meta x mês precisa de ~900px para caber sem apertar as células.
+   * Abaixo disso ela vira lista: cada meta abre uma sheet com os doze meses
+   * dela em campos de tamanho de dedo (ver components/sheet-meta.tsx).
+   */
+  const ehEstreito = useEhMobile(1024)
+  const [metaAberta, setMetaAberta] = useState<{ id: string; nome: string } | null>(null)
+
   if (metas.length === 0) {
     return (
       <Card>
@@ -290,93 +373,174 @@ function GradeMetas({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Progresso geral de cada meta (valor acumulado de todos os anos) */}
+        {/* Progresso geral de cada meta (valor acumulado de todos os anos).
+            Quando a grade não cabe, este mesmo card é o caminho para editar:
+            vira botão e abre a sheet do ano daquela meta. Percorremos `metas`
+            e não `resumo` para que uma meta sem linha no agregado ainda
+            apareça — senão ela ficaria inalcançável no celular. */}
         <div className="grid gap-3 md:grid-cols-2">
-          {resumo.map((meta) => {
-            const { percentual, bruto } = progressoDaMeta(meta.guardado_total, meta.valor_meta_centavos)
-            return (
-              <div key={meta.goal_id} className="space-y-1.5 rounded-xl border border-border p-3">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="truncate font-medium">{meta.nome}</span>
-                  <span className="tabular text-sm text-muted-foreground">
-                    {formatCentavos(meta.guardado_total)} / {formatCentavos(meta.valor_meta_centavos)}
+          {metas.map((meta) => {
+            const linha = resumo.find((r) => r.goal_id === meta.id)
+            const guardadoTotal = linha?.guardado_total ?? totalDaMeta(meta.id)
+            const guardadoAno = linha?.guardado_ano ?? totalDaMeta(meta.id)
+            const alvo = linha?.valor_meta_centavos ?? meta.valor_meta_centavos
+            const { percentual, bruto } = progressoDaMeta(guardadoTotal, alvo)
+
+            const conteudo = (
+              <>
+                {/* flex-wrap: em 360px "Reserva de emergência" + os dois
+                    valores não cabem na mesma linha, e o nome era o que
+                    encolhia até virar "Reserva...". Aqui ele quebra para a
+                    linha de cima; no desktop tudo volta para uma linha só. */}
+                <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+                  <span className="min-w-0 flex-1 basis-full truncate font-medium sm:basis-auto">
+                    {meta.nome}
+                  </span>
+                  <span className="tabular whitespace-nowrap text-sm text-muted-foreground">
+                    {formatCentavos(guardadoTotal)} / {formatCentavos(alvo)}
                   </span>
                 </div>
                 <Progress value={percentual} />
-                <p className="text-xs text-muted-foreground">
-                  {bruto.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}% da meta · {formatCentavos(meta.guardado_ano)} em {ano}
+                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                  {bruto.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}% da meta ·{' '}
+                  {formatCentavos(guardadoAno)} em {ano}
+                  {ehEstreito && <ChevronRight className="ml-auto h-4 w-4 shrink-0" />}
                 </p>
+              </>
+            )
+
+            return ehEstreito ? (
+              <button
+                key={meta.id}
+                type="button"
+                onClick={() => setMetaAberta({ id: meta.id, nome: meta.nome })}
+                className="space-y-1.5 rounded-xl border border-border p-3 text-left transition-colors active:bg-accent/60"
+              >
+                {conteudo}
+              </button>
+            ) : (
+              <div key={meta.id} className="space-y-1.5 rounded-xl border border-border p-3">
+                {conteudo}
               </div>
             )
           })}
         </div>
 
         {/* Grade mês a mês — rola só dentro do container, nunca a página */}
-        <GradeEditavel>
-          <div className="tabela-scroll">
-            <table className="w-full min-w-[52rem] text-sm">
-              <caption className="sr-only">Valores guardados por meta em cada mês de {ano}</caption>
-              <thead className="bg-muted/60">
-                <tr>
-                  <th scope="col" className="sticky left-0 z-10 bg-muted/60 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Meta
-                  </th>
-                  {MESES_CURTOS.map((mes) => (
-                    <th key={mes} scope="col" className="px-2 py-2 text-right text-xs font-semibold uppercase text-muted-foreground">
-                      {mes}
+        {!ehEstreito && (
+          <GradeEditavel>
+            <div className="tabela-scroll">
+              <table className="w-full min-w-[52rem] text-sm">
+                <caption className="sr-only">Valores guardados por meta em cada mês de {ano}</caption>
+                <thead className="bg-muted/60">
+                  <tr>
+                    <th
+                      scope="col"
+                      className="sticky left-0 z-10 bg-muted/60 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                    >
+                      Meta
                     </th>
+                    {MESES_CURTOS.map((mes) => (
+                      <th
+                        key={mes}
+                        scope="col"
+                        className="px-2 py-2 text-right text-xs font-semibold uppercase text-muted-foreground"
+                      >
+                        {mes}
+                      </th>
+                    ))}
+                    <th
+                      scope="col"
+                      className="px-3 py-2 text-right text-xs font-semibold uppercase text-muted-foreground"
+                    >
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metas.map((meta) => (
+                    <tr key={meta.id} className="border-b border-border last:border-0">
+                      <th
+                        scope="row"
+                        className="sticky left-0 z-10 max-w-[10rem] truncate bg-card px-3 py-1.5 text-left font-medium"
+                      >
+                        {meta.nome}
+                      </th>
+                      {MESES_CURTOS.map((_, indice) => {
+                        const mes = indice + 1
+                        return (
+                          <td key={mes} className="px-1 py-1">
+                            <MoneyInput
+                              data-celula
+                              aria-label={`${meta.nome} em ${nomeDoMes(mes)}`}
+                              value={valorDe(meta.id, mes)}
+                              onValueChange={(valor) => onSalvarAporte(meta.id, mes, valor)}
+                              className="h-8 w-[6.5rem] border-transparent bg-transparent px-1 text-xs hover:border-input focus:bg-card"
+                            />
+                          </td>
+                        )
+                      })}
+                      <td className="tabular px-3 py-1.5 text-right font-semibold">
+                        {formatCentavos(totalDaMeta(meta.id))}
+                      </td>
+                    </tr>
                   ))}
-                  <th scope="col" className="px-3 py-2 text-right text-xs font-semibold uppercase text-muted-foreground">
-                    Total
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {metas.map((meta) => (
-                  <tr key={meta.id} className="border-b border-border last:border-0">
-                    <th scope="row" className="sticky left-0 z-10 max-w-[10rem] truncate bg-card px-3 py-1.5 text-left font-medium">
-                      {meta.nome}
+                </tbody>
+                <tfoot className="bg-muted/40">
+                  <tr>
+                    <th
+                      scope="row"
+                      className="sticky left-0 z-10 bg-muted/40 px-3 py-2 text-left text-xs font-semibold uppercase text-muted-foreground"
+                    >
+                      Total do mês
                     </th>
-                    {MESES_CURTOS.map((_, indice) => {
-                      const mes = indice + 1
-                      return (
-                        <td key={mes} className="px-1 py-1">
-                          <MoneyInput
-                            data-celula
-                            aria-label={`${meta.nome} em ${nomeDoMes(mes)}`}
-                            value={valorDe(meta.id, mes)}
-                            onValueChange={(valor) => onSalvarAporte(meta.id, mes, valor)}
-                            className="h-8 w-[6.5rem] border-transparent bg-transparent px-1 text-xs hover:border-input focus:bg-card"
-                          />
-                        </td>
-                      )
-                    })}
-                    <td className="tabular px-3 py-1.5 text-right font-semibold">
-                      {formatCentavos(totalDaMeta(meta.id))}
+                    {MESES_CURTOS.map((_, indice) => (
+                      <td key={indice} className="tabular px-2 py-2 text-right text-xs">
+                        {formatCentavos(totalDoMes(indice + 1))}
+                      </td>
+                    ))}
+                    <td className="tabular px-3 py-2 text-right text-sm font-semibold">
+                      {formatCentavos(totalAno)}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-              <tfoot className="bg-muted/40">
-                <tr>
-                  <th scope="row" className="sticky left-0 z-10 bg-muted/40 px-3 py-2 text-left text-xs font-semibold uppercase text-muted-foreground">
-                    Total do mês
-                  </th>
-                  {MESES_CURTOS.map((_, indice) => (
-                    <td key={indice} className="tabular px-2 py-2 text-right text-xs">
-                      {formatCentavos(totalDoMes(indice + 1))}
-                    </td>
-                  ))}
-                  <td className="tabular px-3 py-2 text-right text-sm font-semibold">{formatCentavos(totalAno)}</td>
-                </tr>
-              </tfoot>
-            </table>
+                </tfoot>
+              </table>
+            </div>
+          </GradeEditavel>
+        )}
+
+        {/* O rodapé "Total do mês" da grade não some junto com ela: vira uma
+            faixa que desliza, com os doze meses do ano. */}
+        {ehEstreito && (
+          <div>
+            <p className="mb-1.5 text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
+              Total guardado por mês
+            </p>
+            <div className="sem-barra-rolagem -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+              {MESES_CURTOS.map((nome, indice) => (
+                <div key={nome} className="shrink-0 rounded-xl border border-border px-3 py-2 text-center">
+                  <p className="text-[0.7rem] uppercase text-muted-foreground">{nome}</p>
+                  <p className="tabular whitespace-nowrap text-sm font-medium">
+                    {formatCentavos(totalDoMes(indice + 1))}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-        </GradeEditavel>
+        )}
 
         <Total
           rotulo={`Total investido em ${ano}`}
           valor={<NumeroAnimado valor={totalAno} className="tabular text-base font-semibold" />}
+        />
+
+        <SheetMeta
+          aberta={metaAberta !== null}
+          onOpenChange={(aberta) => !aberta && setMetaAberta(null)}
+          ano={ano}
+          meta={metaAberta}
+          valorDoMes={valorDe}
+          onSalvar={onSalvarAporte}
         />
       </CardContent>
     </Card>

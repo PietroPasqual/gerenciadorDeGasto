@@ -19,7 +19,7 @@ import { useRegistrarAcoes } from '@/store/acoes-pagina'
 import { SeletorPeriodo } from '@/components/common/seletor-periodo'
 import { EstadoErro, EstadoVazio } from '@/components/common/estados'
 import { Cabecalho, Total } from '@/components/common/linha-planilha'
-import { useRecurso } from '@/lib/hooks'
+import { useEhMobile, useRecurso } from '@/lib/hooks'
 import { obterComparativoAnual } from '@/services/reports'
 import { formatCentavos, formatCentavosCompacto } from '@/lib/money'
 import { ehFuturo, nomeCurtoDoMes, nomeDoMes } from '@/lib/dates'
@@ -68,6 +68,9 @@ export function ComparativoAnualPage() {
   }
 
   const semDados = meses.every((m) => m.entradas === 0 && m.saidas === 0)
+
+  /** Abaixo de md a linha do mês é um card, e o card todo é o alvo. */
+  const ehEstreito = useEhMobile(768)
 
   useRegistrarAcoes(
     () => [
@@ -118,7 +121,16 @@ export function ComparativoAnualPage() {
         />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
+          {/* No celular os três indicadores empilhados eram 260px de altura
+              antes do primeiro dado do ano aparecer. Viram uma faixa que
+              desliza, com snap para o card parar inteiro; de sm para cima
+              voltam a ser as três colunas. */}
+          <div
+            className={cn(
+              'sem-barra-rolagem -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1',
+              'sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0',
+            )}
+          >
             <CardIndicador rotulo="Total de entradas" valor={totais.entradas} className="text-success" />
             <CardIndicador rotulo="Total de gastos" valor={totais.saidas} className="text-destructive" />
             <CardIndicador
@@ -149,31 +161,42 @@ export function ComparativoAnualPage() {
                 {meses.map((linha) => {
                   const negativo = linha.diferenca < 0
                   const futuro = ehFuturo({ ano: anoComparativo, mes: linha.mes })
-                  return (
-                    <div
-                      key={linha.mes}
-                      role="row"
-                      className={cn(
-                        'grid grid-cols-1 gap-0.5 rounded-xl border border-border px-3 py-2 transition-colors',
-                        'md:grid-cols-[1fr,1fr,1fr,1fr] md:items-center md:gap-2 md:rounded-none md:border-0 md:border-b md:py-1.5',
-                        'hover:bg-accent/40',
-                        negativo && !futuro && 'bg-destructive/5',
-                        futuro && 'opacity-60',
-                      )}
-                    >
+                  const ir = () => definirPeriodo({ ano: anoComparativo, mes: linha.mes })
+
+                  const classe = cn(
+                    'grid grid-cols-1 gap-0.5 rounded-xl border border-border px-3 py-2 text-left transition-colors',
+                    'md:grid-cols-[1fr,1fr,1fr,1fr] md:items-center md:gap-2 md:rounded-none md:border-0 md:border-b md:py-1.5',
+                    'hover:bg-accent/40',
+                    negativo && !futuro && 'bg-destructive/5',
+                    futuro && 'opacity-60',
+                  )
+
+                  const corpo = (
+                    <>
                       <div className="flex items-baseline justify-between gap-2 md:block">
-                        <button
-                          type="button"
-                          onClick={() => definirPeriodo({ ano: anoComparativo, mes: linha.mes })}
-                          className="rounded-md text-left text-sm font-medium hover:underline"
-                        >
-                          {nomeDoMes(linha.mes)}
-                          {futuro && (
-                            <Badge variant="outline" className="ml-2">
-                              previsto
-                            </Badge>
-                          )}
-                        </button>
+                        {ehEstreito ? (
+                          <span className="text-sm font-medium">
+                            {nomeDoMes(linha.mes)}
+                            {futuro && (
+                              <Badge variant="outline" className="ml-2">
+                                previsto
+                              </Badge>
+                            )}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={ir}
+                            className="rounded-md text-left text-sm font-medium hover:underline"
+                          >
+                            {nomeDoMes(linha.mes)}
+                            {futuro && (
+                              <Badge variant="outline" className="ml-2">
+                                previsto
+                              </Badge>
+                            )}
+                          </button>
+                        )}
                         <span
                           className={cn(
                             'tabular text-sm font-semibold md:hidden',
@@ -204,6 +227,20 @@ export function ComparativoAnualPage() {
                       >
                         {formatCentavos(linha.diferenca)}
                       </span>
+                    </>
+                  )
+
+                  // No celular o card INTEIRO leva para o mês: o nome sozinho
+                  // era um alvo de 20px de altura. No desktop o card é uma
+                  // linha de tabela e quem leva é o nome, que aí tem hover e
+                  // não come a linha toda.
+                  return ehEstreito ? (
+                    <button key={linha.mes} type="button" onClick={ir} className={cn(classe, 'w-full')}>
+                      {corpo}
+                    </button>
+                  ) : (
+                    <div key={linha.mes} role="row" className={classe}>
+                      {corpo}
                     </div>
                   )
                 })}
@@ -275,7 +312,9 @@ export function ComparativoAnualPage() {
 function CardIndicador({ rotulo, valor, className }: { rotulo: string; valor: number; className?: string }) {
   const Icone = valor < 0 ? TrendingDown : TrendingUp
   return (
-    <Card>
+    // 72% da largura: o pedaço do próximo card à direita é o que conta que a
+    // faixa desliza. 100% esconderia os outros dois.
+    <Card className="w-[72%] shrink-0 snap-start sm:w-auto sm:shrink">
       <CardContent className="flex items-center justify-between gap-3 p-5">
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">{rotulo}</p>

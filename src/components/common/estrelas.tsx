@@ -7,11 +7,14 @@ export function Estrelas({
   onChange,
   somenteLeitura = false,
   className,
+  botaoClassName,
 }: {
   valor: number
   onChange?: (novo: number) => void
   somenteLeitura?: boolean
   className?: string
+  /** Alvo de cada estrela. No celular elas precisam de 44px (ver metas-page). */
+  botaoClassName?: string
 }) {
   if (somenteLeitura || !onChange) {
     return (
@@ -51,7 +54,10 @@ export function Estrelas({
           aria-label={`${n} ${n === 1 ? 'estrela' : 'estrelas'}`}
           tabIndex={n === valor ? 0 : -1}
           onClick={() => onChange(n)}
-          className="rounded-full p-0.5 transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring"
+          className={cn(
+            'grid place-items-center rounded-full p-0.5 transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring',
+            botaoClassName,
+          )}
         >
           <Star className={cn('h-4 w-4', n <= valor ? 'fill-primary text-primary' : 'text-muted-foreground/40')} />
         </button>

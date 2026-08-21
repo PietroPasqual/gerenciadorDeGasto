@@ -56,10 +56,12 @@ export function DashboardPage() {
     [hoje.ano, hoje.mes],
   )
 
-  const { dados: gastosCategoria } = useRecurso(
-    () => obterGastosPorCategoria(hoje.ano, hoje.mes),
-    [hoje.ano, hoje.mes],
-  )
+  const {
+    dados: gastosCategoria,
+    carregando: carregandoCategorias,
+    erro: erroCategorias,
+    recarregar: recarregarCategorias,
+  } = useRecurso(() => obterGastosPorCategoria(hoje.ano, hoje.mes), [hoje.ano, hoje.mes])
 
   const primeiroNome = (perfil?.nome ?? '').split(' ')[0]
 
@@ -72,7 +74,13 @@ export function DashboardPage() {
 
       {erro && <EstadoErro mensagem={erro} onTentarNovamente={() => void recarregar()} />}
 
-      {gastosCategoria && (
+      {erroCategorias && (
+        <EstadoErro mensagem={erroCategorias} onTentarNovamente={() => void recarregarCategorias()} />
+      )}
+
+      {carregandoCategorias && !gastosCategoria ? (
+        <Skeleton className="h-72 w-full" />
+      ) : gastosCategoria ? (
         <Card>
           <CardHeader>
             <CardTitle>Gastos por categoria</CardTitle>
@@ -85,7 +93,7 @@ export function DashboardPage() {
             />
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
       {carregando && !resumo ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

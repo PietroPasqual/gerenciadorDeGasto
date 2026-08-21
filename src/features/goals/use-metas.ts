@@ -44,6 +44,7 @@ export function useMetas(ano: number) {
         }
 
     return executarOtimista({
+      chave: `aporte:${goal_id}:${mes}`,
       snapshot: snapshot(),
       aplicar: () =>
         mutar((d) => ({
@@ -88,6 +89,7 @@ export function useMetas(ano: number) {
 
   const editarItem = (id: string, mudancas: Partial<WishlistItem>) =>
     executarOtimista({
+      chave: `wishlist:${id}`,
       snapshot: snapshot(),
       aplicar: () =>
         mutar((d) => ({

@@ -98,7 +98,6 @@ export function AjudaPage() {
               <Atalho tecla="Shift + Enter" texto="volta para a célula anterior" />
               <Atalho tecla="Tab" texto="anda pelos campos na ordem natural" />
               <Atalho tecla="↑ / ↓" texto="sobe ou desce mantendo a mesma coluna" />
-              <Atalho tecla="Esc" texto="cancela a edição do valor" />
             </dl>
           </CardContent>
         </Card>
@@ -122,7 +121,8 @@ export function AjudaPage() {
               </li>
               <li className="flex gap-2">
                 <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                Pode digitar “1.234,56”, “1234,56” ou “1234.56”: o app entende e guarda em centavos.
+                Os campos de valor funcionam como em caixa eletrônico: os dígitos entram da direita para a
+                esquerda (digitar “150” vira R$ 1,50).
               </li>
             </ul>
           </CardContent>

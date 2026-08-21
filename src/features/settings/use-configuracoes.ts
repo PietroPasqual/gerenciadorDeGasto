@@ -97,6 +97,7 @@ export function useConfiguracoes() {
 
   const editarCategoria = (id: string, mudancas: Partial<Category>) =>
     executarOtimista({
+      chave: `categoria:${id}`,
       snapshot: snapshot(),
       aplicar: () =>
         mutar((d) => ({ ...d, categorias: d.categorias.map((c) => (c.id === id ? { ...c, ...mudancas } : c)) })),
@@ -135,6 +136,7 @@ export function useConfiguracoes() {
 
   const editarMeta = (id: string, mudancas: Partial<Goal>) =>
     executarOtimista({
+      chave: `meta:${id}`,
       snapshot: snapshot(),
       aplicar: () => mutar((d) => ({ ...d, metas: d.metas.map((m) => (m.id === id ? { ...m, ...mudancas } : m)) })),
       restaurar: definirDados,

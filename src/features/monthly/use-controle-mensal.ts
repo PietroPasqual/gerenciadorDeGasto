@@ -109,6 +109,7 @@ export function useControleMensal(ano: number, mes: number) {
 
   const editarEntrada = async (id: string, mudancas: Partial<Pick<Income, 'descricao' | 'valor_centavos'>>) => {
     await executarOtimista({
+      chave: `entrada:${id}`,
       snapshot: snapshot(),
       aplicar: () =>
         mutar((d) => ({ ...d, entradas: d.entradas.map((e) => (e.id === id ? { ...e, ...mudancas } : e)) })),
@@ -159,6 +160,7 @@ export function useControleMensal(ano: number, mes: number) {
 
   const editarGastoFixo = async (id: string, mudancas: Partial<FixedExpense>) => {
     await executarOtimista({
+      chave: `gasto-fixo:${id}`,
       snapshot: snapshot(),
       aplicar: () =>
         mutar((d) => ({ ...d, gastosFixos: d.gastosFixos.map((g) => (g.id === id ? { ...g, ...mudancas } : g)) })),
@@ -247,6 +249,7 @@ export function useControleMensal(ano: number, mes: number) {
 
   const editarLancamento = async (id: string, mudancas: Partial<Transaction>) => {
     await executarOtimista({
+      chave: `lancamento:${id}`,
       snapshot: snapshot(),
       aplicar: () =>
         mutar((d) => ({ ...d, lancamentos: d.lancamentos.map((l) => (l.id === id ? { ...l, ...mudancas } : l)) })),
@@ -284,6 +287,7 @@ export function useControleMensal(ano: number, mes: number) {
         }
 
     await executarOtimista({
+      chave: `aporte:${goal_id}:${mes}`,
       snapshot: snapshot(),
       aplicar: () =>
         mutar((d) => ({
@@ -321,6 +325,7 @@ export function useControleMensal(ano: number, mes: number) {
 
   const editarInvestimentoAvulso = async (id: string, mudancas: Partial<Investment>) => {
     await executarOtimista({
+      chave: `investimento:${id}`,
       snapshot: snapshot(),
       aplicar: () =>
         mutar((d) => ({ ...d, investimentos: d.investimentos.map((i) => (i.id === id ? { ...i, ...mudancas } : i)) })),

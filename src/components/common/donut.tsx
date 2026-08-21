@@ -1,5 +1,9 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
+import * as React from 'react'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
+import { ChevronDown } from 'lucide-react'
 import { formatCentavos } from '@/lib/money'
+import { useEhMobile } from '@/lib/hooks'
+import { cn } from '@/lib/utils'
 import { EstadoVazio } from './estados'
 
 export interface FatiaDonut {
@@ -22,6 +26,10 @@ const PALETA = [
   '#d8a5f6',
 ]
 
+/** Acima disso as fatias viram fiapos e a legenda não cabe na tela. */
+const TOPO = 5
+const COR_OUTROS = 'hsl(var(--muted-foreground) / 0.55)'
+
 export function Donut({
   dados,
   titulo,
@@ -33,52 +41,104 @@ export function Donut({
   vazioTexto?: string
   altura?: number
 }) {
-  const comValor = dados.filter((d) => d.valor > 0)
-  const total = comValor.reduce((s, d) => s + d.valor, 0)
+  const ehCelular = useEhMobile(640)
+  const [expandido, setExpandido] = React.useState(false)
 
-  if (comValor.length === 0) {
+  const ordenado = React.useMemo(
+    () => dados.filter((d) => d.valor > 0).sort((a, b) => b.valor - a.valor),
+    [dados],
+  )
+  const total = ordenado.reduce((s, d) => s + d.valor, 0)
+
+  // Agrupar só compensa se sobrarem pelo menos duas fatias para juntar: um
+  // "Outros" com um item só é pior do que mostrar o item.
+  const agrupa = ordenado.length > TOPO + 1
+  const resto = agrupa && !expandido ? ordenado.slice(TOPO) : []
+  const fatias: FatiaDonut[] = resto.length
+    ? [
+        ...ordenado.slice(0, TOPO),
+        { nome: `Outros (${resto.length})`, valor: resto.reduce((s, d) => s + d.valor, 0), cor: COR_OUTROS },
+      ]
+    : ordenado
+
+  if (ordenado.length === 0) {
     return <EstadoVazio titulo={titulo ?? 'Sem dados'} descricao={vazioTexto} className="py-8" />
   }
 
   return (
-    <div style={{ height: altura }} className="w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={comValor}
-            dataKey="valor"
-            nameKey="nome"
-            innerRadius="58%"
-            outerRadius="82%"
-            paddingAngle={2}
-            stroke="hsl(var(--card))"
-            strokeWidth={2}
-            isAnimationActive
-          >
-            {comValor.map((fatia, i) => (
-              <Cell key={fatia.nome} fill={fatia.cor || PALETA[i % PALETA.length]} />
-            ))}
-          </Pie>
-          <Tooltip
-            formatter={(valor: number, nome: string) => [
-              `${formatCentavos(valor)} (${total ? Math.round((valor / total) * 100) : 0}%)`,
-              nome,
-            ]}
-            contentStyle={{
-              borderRadius: 12,
-              border: '1px solid hsl(var(--border))',
-              background: 'hsl(var(--popover))',
-              color: 'hsl(var(--popover-foreground))',
-              fontSize: 12,
-            }}
-          />
-          <Legend
-            verticalAlign="bottom"
-            height={36}
-            formatter={(valor) => <span className="text-xs text-muted-foreground">{valor}</span>}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+    <div className="min-w-0 space-y-3">
+      {/* No celular o donut encolhe e a legenda desce para uma lista: a
+          <Legend> do Recharts empilha os nomes em duas ou três linhas de 10px
+          e ainda esconde o valor atrás de um tooltip que dedo nenhum abre. */}
+      <div style={{ height: ehCelular ? 150 : altura }} className="w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={fatias}
+              dataKey="valor"
+              nameKey="nome"
+              innerRadius="58%"
+              outerRadius="82%"
+              paddingAngle={2}
+              stroke="hsl(var(--card))"
+              strokeWidth={2}
+              isAnimationActive
+            >
+              {fatias.map((fatia, i) => (
+                <Cell key={fatia.nome} fill={fatia.cor || PALETA[i % PALETA.length]} />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(valor: number, nome: string) => [
+                `${formatCentavos(valor)} (${total ? Math.round((valor / total) * 100) : 0}%)`,
+                nome,
+              ]}
+              contentStyle={{
+                borderRadius: 12,
+                border: '1px solid hsl(var(--border))',
+                background: 'hsl(var(--popover))',
+                color: 'hsl(var(--popover-foreground))',
+                fontSize: 12,
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      <Legenda fatias={fatias} total={total} />
+
+      {agrupa && (
+        <button
+          type="button"
+          onClick={() => setExpandido((v) => !v)}
+          className="flex min-h-[2.75rem] w-full items-center justify-center gap-1 rounded-lg text-sm text-primary-strong md:min-h-0 md:py-1"
+        >
+          {expandido ? 'Mostrar só as maiores' : `Mostrar as outras ${ordenado.length - TOPO}`}
+          <ChevronDown className={cn('h-4 w-4 transition-transform', expandido && 'rotate-180')} />
+        </button>
+      )}
     </div>
+  )
+}
+
+/** Nome, valor e fatia do total — uma linha por item, alinhados em coluna. */
+function Legenda({ fatias, total }: { fatias: FatiaDonut[]; total: number }) {
+  return (
+    <ul className="space-y-1.5">
+      {fatias.map((fatia, i) => (
+        <li key={fatia.nome} className="flex items-baseline gap-2 text-sm">
+          <span
+            aria-hidden
+            className="h-2.5 w-2.5 shrink-0 translate-y-[1px] rounded-full"
+            style={{ backgroundColor: fatia.cor || PALETA[i % PALETA.length] }}
+          />
+          <span className="min-w-0 flex-1 truncate text-muted-foreground">{fatia.nome}</span>
+          <span className="tabular shrink-0 font-medium">{formatCentavos(fatia.valor)}</span>
+          <span className="tabular w-9 shrink-0 text-right text-xs text-muted-foreground">
+            {total ? Math.round((fatia.valor / total) * 100) : 0}%
+          </span>
+        </li>
+      ))}
+    </ul>
   )
 }

@@ -22,7 +22,10 @@ export function GraficosMes({
 
 function CardGrafico({ titulo, dados, vazio }: { titulo: string; dados: FatiaDonut[]; vazio?: string }) {
   return (
-    <Card>
+    // min-w-0: a legenda tem nomes com `truncate` (nowrap), e sem isto o
+    // mínimo automático do item de grade cresce até caber "Cartão de crédito"
+    // inteiro — a coluna estica e o card fica mais largo que a tela.
+    <Card className="min-w-0">
       <CardHeader className="pb-0">
         <CardTitle className="text-base">{titulo}</CardTitle>
       </CardHeader>

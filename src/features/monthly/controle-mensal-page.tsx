@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import { Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -7,6 +8,7 @@ import { Skeleton, SkeletonTabela } from '@/components/ui/skeleton'
 import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
 import { useRegistrarAcoes } from '@/store/acoes-pagina'
 import { SeletorPeriodo } from '@/components/common/seletor-periodo'
+import { FaixaMeses } from '@/components/common/faixa-meses'
 import { EstadoErro } from '@/components/common/estados'
 import { Fab } from '@/components/common/fab'
 import { SheetGasto, type DadosGasto } from './components/sheet-gasto'
@@ -26,11 +28,37 @@ import { PainelFormasPagamento } from './components/painel-formas-pagamento'
 import { GraficosMes } from './components/graficos-mes'
 import { agruparPorChave } from '@/lib/calculations'
 import { nomeDoMes } from '@/lib/dates'
+import { useSwipeMes, mesVizinho, type Direcao } from '@/lib/swipe-mes'
+import { useEhMobile } from '@/lib/hooks'
 
 export function ControleMensalPage() {
   const { ano, mes, definirPeriodo } = usePeriodoStore()
   const { dados, gastos, resumo, carregando, erro, recarregar, acoes } = useControleMensal(ano, mes)
   const [aba, definirAba] = useAbaMes()
+
+  /**
+   * Swipe horizontal troca de mês (M7). A direção fica guardada para a
+   * transição entrar pelo lado certo; um toque numa pílula não tem lado, e
+   * então a troca só aparece.
+   */
+  const ehCelular = useEhMobile(640)
+  const direcao = useRef<Direcao>(0)
+
+  const irParaPeriodo = (proximo: { ano: number; mes: number }) => {
+    // Só passo de um mês tem lado. Pular de Março para Setembro pela lista
+    // não "veio" de lugar nenhum, então entra só com fade.
+    const distancia = (proximo.ano * 12 + proximo.mes) - (ano * 12 + mes)
+    direcao.current = distancia === 1 ? 1 : distancia === -1 ? -1 : 0
+    definirPeriodo(proximo)
+  }
+
+  const gestos = useSwipeMes((delta) => {
+    const proximo = mesVizinho(ano, mes, delta)
+    irParaPeriodo(proximo)
+    // Rolado até o meio da lista, a faixa de meses está fora da tela: sem
+    // este aviso a pessoa vê os números mudarem sem saber para onde foi.
+    toast.info(`${nomeDoMes(proximo.mes)} de ${proximo.ano}`)
+  }, ehCelular)
 
   /**
    * Totais por categoria e por forma de pagamento incluem os gastos fixos
@@ -131,7 +159,11 @@ export function ControleMensalPage() {
         descricao={`Tudo o que entrou e saiu em ${nomeDoMes(mes)} de ${ano}.`}
         acoes={
           <>
-            <SeletorPeriodo ano={ano} mes={mes} onChange={definirPeriodo} />
+            {/* No celular quem faz este trabalho é a FaixaMeses, logo abaixo:
+                mesma função, outra forma. */}
+            <div className="hidden sm:flex">
+              <SeletorPeriodo ano={ano} mes={mes} onChange={irParaPeriodo} />
+            </div>
             {/* Só decoração duplicada: no celular esta mesma ação aparece no
                 menu "⋯" do topo (ver useRegistrarAcoes acima). */}
             <Button
@@ -147,6 +179,8 @@ export function ControleMensalPage() {
         }
       />
 
+      <FaixaMeses ano={ano} mes={mes} onChange={irParaPeriodo} className="sm:hidden" />
+
       {erro && <EstadoErro mensagem={erro} onTentarNovamente={() => void recarregar()} />}
 
       {carregando && !dados ? (
@@ -154,6 +188,23 @@ export function ControleMensalPage() {
       ) : dados ? (
         <>
           <BarraMesCelular resumo={resumo} aba={aba} onAbaChange={definirAba} />
+
+          {/* `key` no mês: trocar de mês remonta o bloco, então o
+              initial->animate roda de novo e o conteúdo entra pelo lado de
+              onde veio. Sem AnimatePresence de propósito — animar a saída
+              exigiria manter os dois meses montados, e o mês antigo continuaria
+              buscando dados que ninguém vai ver. */}
+          <motion.div
+            key={`${ano}-${mes}`}
+            initial={{ opacity: 0, x: direcao.current * 28 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            onAnimationComplete={() => {
+              direcao.current = 0
+            }}
+            className="space-y-6"
+            {...gestos}
+          >
 
           {/* Abaixo de `lg` os dois invólucros de coluna viram `contents`: as
               seções passam a ser filhas diretas desta coluna flex, então a
@@ -237,8 +288,9 @@ export function ControleMensalPage() {
                   }))}
                 />
               </SecaoMes>
+              </div>
             </div>
-          </div>
+          </motion.div>
         </>
       ) : null}
 

@@ -99,7 +99,7 @@ export function AbasMes({
   return (
     <div
       ref={faixaRef}
-      className={cn('sem-barra-rolagem -mx-4 overflow-x-auto px-4', className)}
+      className={cn('sem-barra-rolagem relative -mx-4 overflow-x-auto px-4', className)}
       aria-label="Seções do mês"
       role="group"
     >

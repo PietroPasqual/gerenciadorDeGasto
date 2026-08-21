@@ -16,7 +16,9 @@ export function ResumoMes({ ano, mes, resumo }: { ano: number; mes: number; resu
   ]
 
   return (
-    <Card className="lg:sticky lg:top-32">
+    // top-8 e não top-32: o 32 descontava o header + as abas, que a partir de
+    // lg deram lugar à barra lateral (D1) e não ocupam mais altura nenhuma.
+    <Card className="xl:sticky xl:top-8">
       <CardHeader className="pb-2">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{ano}</p>
         <CardTitle className="text-2xl">{nomeDoMes(mes)}</CardTitle>
@@ -49,7 +51,9 @@ export function ResumoMes({ ano, mes, resumo }: { ano: number; mes: number; resu
         </div>
 
         <div className="rounded-xl bg-muted/50 p-4">
-          <div className="flex items-center gap-4">
+          {/* Empilhado e não lado a lado: na coluna de 3/12 (D2) sobravam 82px
+              para o texto e "do total que entrou" quebrava em quatro linhas. */}
+          <div className="flex flex-col items-center gap-2 text-center">
             <div className="relative h-24 w-24 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -71,9 +75,9 @@ export function ResumoMes({ ano, mes, resumo }: { ano: number; mes: number; resu
                 {resumo.percentualInvestido.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}%
               </span>
             </div>
-            <div className="min-w-0 space-y-1">
-              <p className="flex items-center gap-1.5 text-sm font-medium">
-                <PiggyBank className="h-4 w-4 text-primary" />
+            <div className="min-w-0 space-y-0.5">
+              <p className="flex items-center justify-center gap-1.5 text-sm font-medium">
+                <PiggyBank className="h-4 w-4 shrink-0 text-primary" />
                 Investido no mês
               </p>
               <p className="tabular text-lg font-semibold">{formatCentavos(resumo.totalInvestido)}</p>

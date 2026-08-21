@@ -209,13 +209,22 @@ export function ControleMensalPage() {
             {...gestos}
           >
 
-          {/* Abaixo de `lg` os dois invólucros de coluna viram `contents`: as
+          {/* Grade de 12 colunas (D2): 3 + 9. Era `[20rem,1fr]`, uma largura
+              fixa que não conversava com nenhuma outra tela.
+
+              A divisão em duas colunas só entra em `xl` e não em `lg`: a barra
+              lateral do D1 come 224px, e em 1024px o que sobrava para a tabela
+              de gastos ficava abaixo do mínimo dela — a página estourava 122px
+              de lado. Entre lg e xl a barra lateral já é o ganho; o conteúdo
+              usa a largura toda.
+
+              Abaixo de `lg` os dois invólucros de coluna viram `contents`: as
               seções passam a ser filhas diretas desta coluna flex, então a
               ordem no celular é a ordem de leitura e o `gap` não sobra quando
               o SecaoMes não renderiza nada. A partir de `lg` eles voltam a ser
               as duas colunas da grade. */}
-          <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[20rem,1fr] xl:grid-cols-[22rem,1fr]">
-            <div className="contents lg:flex lg:flex-col lg:gap-6">
+          <div className="flex flex-col gap-6 xl:grid xl:grid-cols-12 xl:gap-6">
+            <div className="contents xl:col-span-3 xl:flex xl:flex-col xl:gap-6 2xl:col-span-4">
               <SecaoMes id="resumo" aba={aba}>
                 <ResumoMes ano={ano} mes={mes} resumo={resumo} />
               </SecaoMes>
@@ -224,7 +233,7 @@ export function ControleMensalPage() {
               </SecaoMes>
             </div>
 
-            <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-6">
+            <div className="contents xl:col-span-9 xl:flex xl:min-w-0 xl:flex-col xl:gap-6 2xl:col-span-8">
               <SecaoMes id="entradas" aba={aba}>
                 <TabelaEntradas
                   entradas={dados.entradas}
@@ -341,10 +350,10 @@ function EsqueletoMes() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[20rem,1fr]">
+      <div className="flex flex-col gap-6 xl:grid xl:grid-cols-12 xl:gap-6">
         {/* O card de resumo só aparece de sm para cima: abaixo disso ele é
             a aba "Resumo", e o que carrega primeiro é a aba "Gastos". */}
-        <Card className="hidden sm:block">
+        <Card className="hidden sm:block xl:col-span-3 2xl:col-span-4">
           <CardHeader className="space-y-2">
             <Skeleton className="h-4 w-12" />
             <Skeleton className="h-7 w-32" />
@@ -357,7 +366,7 @@ function EsqueletoMes() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 xl:col-span-9 2xl:col-span-8">
           {[0, 1, 2].map((i) => (
             // Uma aba mostra um bloco só: no celular os outros dois seriam
             // rolagem que não vai existir.

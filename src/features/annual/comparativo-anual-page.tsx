@@ -109,9 +109,9 @@ export function ComparativoAnualPage() {
       {erro && <EstadoErro mensagem={erro} onTentarNovamente={() => void recarregar()} />}
 
       {carregando && !dados ? (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-96 w-full" />
-          <Skeleton className="h-96 w-full" />
+        <div className="grid gap-6 lg:grid-cols-12">
+          <Skeleton className="h-96 w-full lg:col-span-5" />
+          <Skeleton className="h-96 w-full lg:col-span-7" />
         </div>
       ) : semDados ? (
         <EstadoVazio
@@ -140,8 +140,11 @@ export function ComparativoAnualPage() {
             />
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
+          {/* 5+7 na grade de 12 (D2): a lista de doze meses é texto curto e
+              cabe em 5; o gráfico de linhas precisa de largura para os meses
+              não se atropelarem no eixo. Meio a meio dava os dois piores. */}
+          <div className="grid gap-6 lg:grid-cols-12">
+            <Card className="lg:col-span-5">
               <CardHeader className="pb-3">
                 <CardTitle>Mês a mês</CardTitle>
                 <CardDescription>Meses com diferença negativa aparecem destacados.</CardDescription>
@@ -252,7 +255,7 @@ export function ComparativoAnualPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="lg:col-span-7">
               <CardHeader className="pb-3">
                 <CardTitle>Entrada x gastos</CardTitle>
                 <CardDescription>Valores em reais ao longo de {anoComparativo}.</CardDescription>

@@ -7,7 +7,7 @@ import {
   LineChart,
   LogOut,
   Moon,
-  MoreVertical,
+  Menu,
   Settings,
   Sun,
   Target,
@@ -69,20 +69,37 @@ export function LayoutApp() {
             </Button>
           </div>
 
-          {/* No celular as mesmas ações vão para um menu, para o topo respirar. */}
+          {/* No celular tudo cabe num menu só: a barra de abas não cabia na
+              largura da tela e vinha cortada no meio de "Comparativo anual". */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild className="sm:hidden">
-              <Button variant="ghost" size="icon" aria-label="Abrir menu da conta">
-                <MoreVertical className="h-5 w-5" />
+              <Button variant="ghost" size="icon" aria-label="Abrir menu">
+                <Menu className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-[15rem]">
+              {NAVEGACAO.map(({ para, rotulo, Icone }) => {
+                const ativo = local.pathname === para
+                return (
+                  <DropdownMenuItem key={para} asChild>
+                    <NavLink
+                      to={para}
+                      className={cn(ativo && 'bg-primary-soft font-medium text-accent-foreground')}
+                    >
+                      <Icone className={cn(!ativo && 'text-muted-foreground')} />
+                      {rotulo}
+                    </NavLink>
+                  </DropdownMenuItem>
+                )
+              })}
+
+              <DropdownMenuSeparator />
+
               <DropdownMenuLabel className="normal-case tracking-normal">
                 <span className="block truncate text-sm font-medium text-foreground">
                   {perfil?.nome || 'Minha conta'}
                 </span>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={alternarEscuro}>
                 {escuro ? <Sun /> : <Moon />}
                 {escuro ? 'Tema claro' : 'Tema escuro'}
@@ -95,9 +112,10 @@ export function LayoutApp() {
           </DropdownMenu>
         </div>
 
-        {/* Navegação — vira barra rolável no mobile, sem quebrar o layout */}
+        {/* Navegação em abas só a partir de sm; no celular ela vive no menu ☰
+            acima, senão os últimos itens ficam fora da tela. */}
         <nav
-          className="container fade-scroll-x flex gap-1 overflow-x-auto pb-2"
+          className="container fade-scroll-x hidden gap-1 overflow-x-auto pb-2 sm:flex"
           aria-label="Navegação principal"
         >
           {NAVEGACAO.map(({ para, rotulo, Icone }) => (

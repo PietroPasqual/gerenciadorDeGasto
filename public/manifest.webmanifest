@@ -1,0 +1,33 @@
+{
+  "name": "Gerenciador de Gastos",
+  "short_name": "Gastos",
+  "description": "Planner financeiro pessoal: controle mensal, metas e comparativo anual.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/painel",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#DD5F89",
+  "background_color": "#FEFBFB",
+  "icons": [
+    {
+      "src": "/icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icone-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

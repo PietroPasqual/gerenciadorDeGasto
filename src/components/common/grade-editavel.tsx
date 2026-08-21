@@ -11,6 +11,11 @@ import * as React from 'react'
  *
  * As linhas são identificadas por <tr> ou por qualquer elemento com data-linha
  * (usado na versão mobile em cards).
+ *
+ * Também dá o "flash ao salvar" (D4): a grade guarda o valor da célula no foco
+ * e, se ele mudou quando o foco sai, pisca o campo. Fica aqui e não em cada
+ * onBlur porque são umas quinze chamadas espalhadas por seis tabelas — e
+ * porque a condição é exatamente a mesma que dispara o save.
  */
 export function GradeEditavel({
   children,
@@ -27,6 +32,32 @@ export function GradeEditavel({
     )
 
   const linhaDe = (el: HTMLElement) => el.closest('tr, [data-linha]') as HTMLElement | null
+
+  // Valor de cada célula no momento em que ela ganhou o foco.
+  const valorAoFocar = React.useRef(new WeakMap<HTMLElement, string>())
+
+  const valorDe = (el: HTMLElement) =>
+    el instanceof HTMLInputElement || el instanceof HTMLSelectElement
+      ? el.value
+      : (el.getAttribute('aria-checked') ?? el.textContent ?? '')
+
+  const aoFocar = (e: React.FocusEvent<HTMLDivElement>) => {
+    const alvo = e.target as HTMLElement
+    if (alvo?.hasAttribute?.('data-celula')) valorAoFocar.current.set(alvo, valorDe(alvo))
+  }
+
+  const aoDesfocar = (e: React.FocusEvent<HTMLDivElement>) => {
+    const alvo = e.target as HTMLElement
+    if (!alvo?.hasAttribute?.('data-celula')) return
+    const antes = valorAoFocar.current.get(alvo)
+    valorAoFocar.current.delete(alvo)
+    if (antes === undefined || antes === valorDe(alvo)) return
+    // reflow no meio: sem isto, reeditar a mesma célula não reinicia a animação
+    alvo.classList.remove('flash-salvo')
+    void alvo.offsetWidth
+    alvo.classList.add('flash-salvo')
+    window.setTimeout(() => alvo.classList.remove('flash-salvo'), 700)
+  }
 
   const handleKeyDown = (evento: React.KeyboardEvent<HTMLDivElement>) => {
     const alvo = evento.target as HTMLElement
@@ -71,7 +102,13 @@ export function GradeEditavel({
   }
 
   return (
-    <div ref={ref} className={className} onKeyDown={handleKeyDown}>
+    <div
+      ref={ref}
+      className={className}
+      onKeyDown={handleKeyDown}
+      onFocus={aoFocar}
+      onBlur={aoDesfocar}
+    >
       {children}
     </div>
   )

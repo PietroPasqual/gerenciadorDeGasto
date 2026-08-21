@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router-dom'
-import { LogOut, Moon, Sun } from 'lucide-react'
+import { LogOut, Moon, Search, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Marca } from '@/components/common/marca'
 import { NAVEGACAO } from './navegacao'
+import { DicaAtalho } from './paleta-comandos'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useTemaStore } from '@/store/tema'
@@ -37,6 +38,24 @@ export function BarraLateral({ className }: { className?: string }) {
         <NavLink to="/painel" aria-label="finZ — ir para o painel">
           <Marca />
         </NavLink>
+      </div>
+
+      {/* Só um lembrete de que o atalho existe: quem clica cai na mesma paleta
+          que o ⌘K abre (o evento é global, em paleta-comandos.tsx). */}
+      <div className="px-3 pb-3">
+        <button
+          type="button"
+          onClick={() =>
+            window.dispatchEvent(
+              new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }),
+            )
+          }
+          className="flex w-full items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/50"
+        >
+          <Search className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-left">Buscar…</span>
+          <DicaAtalho />
+        </button>
       </div>
 
       <nav aria-label="Navegação principal" className="min-h-0 flex-1 overflow-y-auto px-3">

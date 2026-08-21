@@ -57,6 +57,13 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* Flash de "salvo" (D4). O app salva sozinho ao sair do campo e nunca dizia
+     nada — este pulso de meio segundo é o aviso. Sem layout shift: só a cor
+     de fundo e a sombra mudam. */
+  .flash-salvo {
+    animation: flash-salvo 0.6s ease-out;
+  }
+
   /* Wrapper padrão de tabela: rolagem contida, nunca estoura o body */
   .tabela-scroll {
     @apply w-full overflow-x-auto rounded-lg border border-border;
@@ -76,6 +83,17 @@
   .fade-scroll-x {
     -webkit-mask-image: linear-gradient(to right, transparent, black 1.5rem, black calc(100% - 1.5rem), transparent);
     mask-image: linear-gradient(to right, transparent, black 1.5rem, black calc(100% - 1.5rem), transparent);
+  }
+}
+
+@keyframes flash-salvo {
+  0% {
+    background-color: hsl(var(--success) / 0.22);
+    box-shadow: 0 0 0 3px hsl(var(--success) / 0.18);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 3px transparent;
   }
 }
 

@@ -61,6 +61,15 @@ export default {
       },
       spacing: {
         linha: 'var(--altura-linha)',
+        // Densidade (D3) — ver src/styles/themes.css.
+        'linha-y': 'var(--linha-y)',
+        card: 'var(--card-padding)',
+      },
+      height: {
+        campo: 'var(--campo-altura)',
+      },
+      minHeight: {
+        campo: 'var(--campo-altura)',
       },
       fontSize: {
         // Escala fixa: display / titulo / secao / corpo / rotulo.

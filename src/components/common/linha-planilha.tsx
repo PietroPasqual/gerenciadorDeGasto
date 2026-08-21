@@ -48,7 +48,7 @@ export function Linha({
       data-linha
       className={cn(
         'grid grid-cols-1 gap-2 rounded-xl border border-border p-3 transition-colors',
-        'md:items-center md:rounded-none md:border-0 md:border-b md:px-3 md:py-1.5',
+        'md:items-center md:rounded-none md:border-0 md:border-b md:px-3 md:py-linha-y',
         destacada && 'bg-primary-soft/60',
         'hover:bg-accent/40',
         template,

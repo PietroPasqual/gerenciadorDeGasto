@@ -20,6 +20,7 @@ import { useEhMobile } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
 import type { TemaCor, TipoPagamento } from '@/lib/database.types'
 import { useTemaStore } from '@/store/tema'
+import { useDensidadeStore, type Densidade } from '@/store/densidade'
 import { useAuthStore } from '@/store/auth'
 import { atualizarPerfil } from '@/services/profiles'
 import { MAX_METAS } from '@/services/goals'
@@ -35,6 +36,11 @@ const TIPOS: Array<{ valor: TipoPagamento; rotulo: string }> = [
 
 /** Aba estreita no celular para os quatro rótulos caberem lado a lado. */
 const ABA = 'w-full px-1.5 text-xs sm:w-auto sm:px-4 sm:text-sm'
+
+const DENSIDADES: Array<{ valor: Densidade; rotulo: string; dica: string }> = [
+  { valor: 'confortavel', rotulo: 'Confortável', dica: 'Linhas mais altas, mais respiro.' },
+  { valor: 'compacto', rotulo: 'Compacto', dica: 'Cabem mais linhas na tela.' },
+]
 
 const TEMAS: Array<{ valor: TemaCor; rotulo: string; amostra: string }> = [
   { valor: 'rosa', rotulo: 'Rosa', amostra: 'hsl(340 65% 62%)' },
@@ -105,6 +111,8 @@ export function ConfiguracoesPage() {
 // ---------------------------------------------------------------- Aparência
 function AbaAparencia() {
   const { tema, definirTema, escuro, alternarEscuro } = useTemaStore()
+  const densidade = useDensidadeStore((e) => e.densidade)
+  const definirDensidade = useDensidadeStore((e) => e.definirDensidade)
   const perfil = useAuthStore((s) => s.profile)
   const definirProfile = useAuthStore((s) => s.definirProfile)
   const [nome, setNome] = useState(perfil?.nome ?? '')
@@ -173,6 +181,31 @@ function AbaAparencia() {
             </span>
             <SwitchTrack checked={escuro} />
           </button>
+
+          {/* Só em tela grande: a densidade mexe nas alturas de md para cima, e
+              um controle que não faz nada no celular é pior que não existir. */}
+          <div className="hidden md:block">
+            <p className="mb-1.5 text-sm font-medium">Densidade</p>
+            <div className="grid grid-cols-2 gap-2">
+              {DENSIDADES.map((opcao) => (
+                <button
+                  key={opcao.valor}
+                  type="button"
+                  onClick={() => definirDensidade(opcao.valor)}
+                  aria-pressed={densidade === opcao.valor}
+                  className={cn(
+                    'rounded-xl border p-3 text-left transition-colors',
+                    densidade === opcao.valor
+                      ? 'border-primary bg-primary-soft/60'
+                      : 'border-border hover:bg-accent/50',
+                  )}
+                >
+                  <span className="block text-sm font-medium">{opcao.rotulo}</span>
+                  <span className="block text-xs text-muted-foreground">{opcao.dica}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

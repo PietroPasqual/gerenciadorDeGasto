@@ -15,7 +15,7 @@ const SelectTrigger = React.forwardRef<
     className={cn(
       // Mesmo motivo do Input: 44px e 16px no celular (evita o zoom do iOS).
       'flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-input bg-card px-3 py-2 text-base',
-      'md:h-10 md:text-sm',
+      'md:h-campo md:text-sm',
       'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50',
       '[&>span]:line-clamp-1 [&>span]:text-left',
       className,

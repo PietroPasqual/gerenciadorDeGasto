@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { BarraInferior } from './barra-inferior'
 import { BarraLateral } from './barra-lateral'
+import { PaletaComandos } from './paleta-comandos'
 import { NAVEGACAO } from './navegacao'
 import { useAcoesPagina } from '@/store/acoes-pagina'
 import { cn } from '@/lib/utils'
@@ -130,6 +131,7 @@ export function LayoutApp() {
       </div>
 
       <BarraInferior />
+      <PaletaComandos />
     </div>
   )
 }

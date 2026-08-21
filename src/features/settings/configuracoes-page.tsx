@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowDown, ArrowUp, Check, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, CreditCard, Palette, Plus, Tags, Target, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +16,8 @@ import { MoneyInput } from '@/components/common/money-input'
 import { EstadoErro, EstadoVazio } from '@/components/common/estados'
 import { CampoSheet, CartaoConfig, SheetConfig } from './components/sheet-config'
 import { BotaoCor, COR_PADRAO, SeletorCor } from '@/components/common/seletor-cor'
+import { IndiceConfig, useSecaoVisivel, type SecaoConfig } from './components/indice-config'
+import { PreviaTema } from './components/previa-tema'
 import { formatCentavos } from '@/lib/money'
 import { useEhMobile } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
@@ -43,15 +45,41 @@ const DENSIDADES: Array<{ valor: Densidade; rotulo: string; dica: string }> = [
   { valor: 'compacto', rotulo: 'Compacto', dica: 'Cabem mais linhas na tela.' },
 ]
 
-const TEMAS: Array<{ valor: TemaCor; rotulo: string; amostra: string }> = [
-  { valor: 'rosa', rotulo: 'Rosa', amostra: 'hsl(340 65% 62%)' },
-  { valor: 'azul', rotulo: 'Azul', amostra: 'hsl(212 70% 55%)' },
-  { valor: 'verde', rotulo: 'Verde', amostra: 'hsl(158 55% 42%)' },
-  { valor: 'roxo', rotulo: 'Roxo', amostra: 'hsl(270 55% 60%)' },
+// A cor de cada tema não é repetida aqui: a miniatura (PreviaTema) lê as
+// variáveis do próprio themes.css, então mexer na paleta lá basta.
+const TEMAS: Array<{ valor: TemaCor; rotulo: string }> = [
+  { valor: 'rosa', rotulo: 'Rosa' },
+  { valor: 'azul', rotulo: 'Azul' },
+  { valor: 'verde', rotulo: 'Verde' },
+  { valor: 'roxo', rotulo: 'Roxo' },
+]
+
+const SECOES: SecaoConfig[] = [
+  { id: 'aparencia', rotulo: 'Aparência', Icone: Palette },
+  { id: 'categorias', rotulo: 'Categorias', Icone: Tags },
+  { id: 'pagamento', rotulo: 'Formas de pagamento', Icone: CreditCard },
+  { id: 'metas', rotulo: 'Metas', Icone: Target },
 ]
 
 export function ConfiguracoesPage() {
   const { dados, carregando, erro, recarregar, acoes } = useConfiguracoes()
+
+  /**
+   * Abaixo de lg as quatro seções são abas (M11). A partir de lg elas viram
+   * uma coluna só, com um índice fixo ao lado: sobra largura, e trocar de aba
+   * para conferir se a categoria que você acabou de criar aparece na lista de
+   * gastos fixos é um clique que não precisava existir.
+   */
+  const ehEstreito = useEhMobile(1024)
+  const secaoAtiva = useSecaoVisivel(SECOES, !ehEstreito && !!dados)
+
+  const conteudo = (id: string) => {
+    if (!dados) return null
+    if (id === 'aparencia') return <AbaAparencia />
+    if (id === 'categorias') return <AbaCategorias dados={dados} acoes={acoes} />
+    if (id === 'pagamento') return <AbaFormasPagamento dados={dados} acoes={acoes} />
+    return <AbaMetas dados={dados} acoes={acoes} />
+  }
 
   return (
     <div className="space-y-6">
@@ -67,44 +95,47 @@ export function ConfiguracoesPage() {
           <Skeleton className="h-10 w-96" />
           <Skeleton className="h-64 w-full" />
         </div>
-      ) : dados ? (
+      ) : !dados ? null : ehEstreito ? (
         <Tabs defaultValue="aparencia">
           {/* Quatro colunas iguais numa linha só. O que não deixava caber era
               "Formas de pagamento": no celular ele vira "Pagamento", e assim
               some a segunda fileira. */}
           <TabsList className="grid w-full grid-cols-4 sm:inline-flex sm:w-auto">
-            <TabsTrigger value="aparencia" className={ABA}>
-              Aparência
-            </TabsTrigger>
-            <TabsTrigger value="categorias" className={ABA}>
-              Categorias
-            </TabsTrigger>
-            <TabsTrigger value="pagamento" className={ABA}>
-              <span className="sm:hidden">Pagamento</span>
-              <span className="hidden sm:inline">Formas de pagamento</span>
-            </TabsTrigger>
-            <TabsTrigger value="metas" className={ABA}>
-              Metas
-            </TabsTrigger>
+            {SECOES.map(({ id, rotulo }) => (
+              <TabsTrigger key={id} value={id} className={ABA}>
+                {id === 'pagamento' ? (
+                  <>
+                    <span className="sm:hidden">Pagamento</span>
+                    <span className="hidden sm:inline">{rotulo}</span>
+                  </>
+                ) : (
+                  rotulo
+                )}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
-          <TabsContent value="aparencia">
-            <AbaAparencia />
-          </TabsContent>
-
-          <TabsContent value="categorias">
-            <AbaCategorias dados={dados} acoes={acoes} />
-          </TabsContent>
-
-          <TabsContent value="pagamento">
-            <AbaFormasPagamento dados={dados} acoes={acoes} />
-          </TabsContent>
-
-          <TabsContent value="metas">
-            <AbaMetas dados={dados} acoes={acoes} />
-          </TabsContent>
+          {SECOES.map(({ id }) => (
+            <TabsContent key={id} value={id}>
+              {conteudo(id)}
+            </TabsContent>
+          ))}
         </Tabs>
-      ) : null}
+      ) : (
+        <div className="grid grid-cols-12 gap-8">
+          <IndiceConfig secoes={SECOES} ativa={secaoAtiva} className="col-span-3" />
+
+          <div className="col-span-9 space-y-8">
+            {SECOES.map(({ id, rotulo }) => (
+              // scroll-mt: sem header fixo em lg, uma folga pequena basta para
+              // o título não encostar no topo da janela ao pular para cá.
+              <section key={id} id={id} aria-label={rotulo} className="scroll-mt-8">
+                {conteudo(id)}
+              </section>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -140,29 +171,31 @@ function AbaAparencia() {
           <CardDescription>A cor vale para o app inteiro, inclusive gráficos.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Quatro numa fileira só: as opções cabem sem rolar e a comparação
-              entre as cores fica imediata. */}
-          <div className="grid grid-cols-4 gap-2">
+          {/* Cada opção mostra uma miniatura NAQUELE tema (D7). Antes era só a
+              bolinha da cor primária — e primary é uma das dez variáveis que o
+              tema troca; dava para escolher "o azul" e só depois descobrir como
+              ficavam o fundo e o realce. Duas colunas no celular para a
+              miniatura ter tamanho, quatro a partir de sm. */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {TEMAS.map((opcao) => (
               <button
                 key={opcao.valor}
                 type="button"
                 onClick={() => definirTema(opcao.valor)}
                 aria-pressed={tema === opcao.valor}
+                aria-label={`Tema ${opcao.rotulo}`}
                 className={cn(
-                  'flex flex-col items-center gap-2 rounded-xl border p-2 text-xs transition-colors sm:text-sm',
+                  'flex flex-col gap-2 rounded-xl border p-2 text-xs transition-colors sm:text-sm',
                   tema === opcao.valor
                     ? 'border-primary bg-primary-soft/60 font-medium'
                     : 'border-border hover:bg-accent/50',
                 )}
               >
-                <span
-                  className="grid h-9 w-9 place-items-center rounded-full sm:h-10 sm:w-10"
-                  style={{ backgroundColor: opcao.amostra }}
-                >
-                  {tema === opcao.valor && <Check className="h-4 w-4 text-white" />}
+                <PreviaTema tema={opcao.valor} escuro={escuro} />
+                <span className="flex items-center justify-center gap-1.5">
+                  {tema === opcao.valor && <Check className="h-3.5 w-3.5 shrink-0 text-primary-strong" />}
+                  {opcao.rotulo}
                 </span>
-                {opcao.rotulo}
               </button>
             ))}
           </div>

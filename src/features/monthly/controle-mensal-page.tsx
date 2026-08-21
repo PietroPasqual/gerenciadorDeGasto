@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -7,6 +7,8 @@ import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
 import { useRegistrarAcoes } from '@/store/acoes-pagina'
 import { SeletorPeriodo } from '@/components/common/seletor-periodo'
 import { EstadoErro } from '@/components/common/estados'
+import { Fab } from '@/components/common/fab'
+import { SheetGasto, type DadosGasto } from './components/sheet-gasto'
 import { usePeriodoStore } from '@/store/periodo'
 import { useControleMensal } from './use-controle-mensal'
 import { exportarMesCSV } from './exportar'
@@ -56,6 +58,13 @@ export function ControleMensalPage() {
       })),
     }
   }, [dados])
+
+  // Lançamento rápido do celular (M2). No desktop a linha de adição da
+  // tabela continua sendo o caminho, então o FAB e a sheet só existem abaixo
+  // de sm.
+  const [sheetAberta, setSheetAberta] = useState(false)
+
+  const salvarGastoDaSheet = (d: DadosGasto) => acoes.adicionarLancamento({ ...d, tipo: 'gasto' })
 
   // Declarada para o menu "⋯" do celular; no desktop o botão fica inline.
   useRegistrarAcoes(
@@ -155,6 +164,21 @@ export function ControleMensalPage() {
           </div>
         </div>
       ) : null}
+
+      {dados && (
+        <>
+          <Fab rotulo="Novo gasto" onClick={() => setSheetAberta(true)} />
+          <SheetGasto
+            aberta={sheetAberta}
+            onOpenChange={setSheetAberta}
+            ano={ano}
+            mes={mes}
+            formasPagamento={dados.formasPagamento}
+            categorias={dados.categorias}
+            onSalvar={salvarGastoDaSheet}
+          />
+        </>
+      )}
     </div>
   )
 }

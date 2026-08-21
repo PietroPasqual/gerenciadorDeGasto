@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
+import { useRegistrarAcoes } from '@/store/acoes-pagina'
 import { SeletorPeriodo } from '@/components/common/seletor-periodo'
 import { EstadoErro, EstadoVazio } from '@/components/common/estados'
 import { Cabecalho, Total } from '@/components/common/linha-planilha'
@@ -68,6 +69,19 @@ export function ComparativoAnualPage() {
 
   const semDados = meses.every((m) => m.entradas === 0 && m.saidas === 0)
 
+  useRegistrarAcoes(
+    () => [
+      {
+        id: 'exportar-ano',
+        rotulo: 'Exportar CSV',
+        Icone: Download,
+        desabilitada: !dados,
+        executar: exportar,
+      },
+    ],
+    [dados, anoComparativo],
+  )
+
   return (
     <div className="space-y-6">
       <CabecalhoPagina
@@ -80,7 +94,8 @@ export function ComparativoAnualPage() {
               mostrarMes={false}
               onChange={({ ano }) => definirAnoComparativo(ano)}
             />
-            <Button variant="outline" onClick={exportar} disabled={!dados}>
+            {/* Duplicata visual: no celular a mesma ação está no menu "⋯". */}
+            <Button variant="outline" className="hidden sm:inline-flex" onClick={exportar} disabled={!dados}>
               <Download className="h-4 w-4" />
               Exportar CSV
             </Button>

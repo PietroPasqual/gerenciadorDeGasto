@@ -6,8 +6,8 @@ import {
   LayoutDashboard,
   LineChart,
   LogOut,
+  MoreVertical,
   Moon,
-  Menu,
   Settings,
   Sun,
   Target,
@@ -22,6 +22,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { BarraInferior } from './barra-inferior'
+import { useAcoesPagina } from '@/store/acoes-pagina'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useTemaStore } from '@/store/tema'
@@ -41,62 +43,15 @@ export function LayoutApp() {
   const escuro = useTemaStore((s) => s.escuro)
   const alternarEscuro = useTemaStore((s) => s.alternarEscuro)
   const local = useLocation()
+  const acoesPagina = useAcoesPagina()
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Topo */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-border bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="container flex h-16 items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-1.5">
-            {/* No celular tudo cabe num menu só: a barra de abas não cabia na
-                largura da tela e vinha cortada no meio de "Comparativo anual". */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild className="sm:hidden">
-                <Button variant="ghost" size="icon" className="-ml-2" aria-label="Abrir menu">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-[15rem]">
-                {NAVEGACAO.map(({ para, rotulo, Icone }) => {
-                  const ativo = local.pathname === para
-                  return (
-                    <DropdownMenuItem key={para} asChild>
-                      <NavLink
-                        to={para}
-                        className={cn(ativo && 'bg-primary-soft font-medium text-accent-foreground')}
-                      >
-                        <Icone className={cn(!ativo && 'text-muted-foreground')} />
-                        {rotulo}
-                      </NavLink>
-                    </DropdownMenuItem>
-                  )
-                })}
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuLabel className="normal-case tracking-normal">
-                  <span className="block truncate text-sm font-medium text-foreground">
-                    {perfil?.nome || 'Minha conta'}
-                  </span>
-                </DropdownMenuLabel>
-                <DropdownMenuItem onSelect={alternarEscuro}>
-                  {escuro ? <Sun /> : <Moon />}
-                  {escuro ? 'Tema claro' : 'Tema escuro'}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => void sair()}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <LogOut />
-                  Sair da conta
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <NavLink to="/painel" aria-label="finZ — ir para o painel">
-              <Marca />
-            </NavLink>
-          </div>
+          <NavLink to="/painel" aria-label="finZ — ir para o painel">
+            <Marca />
+          </NavLink>
 
           {/* Telas grandes: as ações ficam à mostra, há espaço de sobra. */}
           <div className="hidden items-center gap-1 sm:flex">
@@ -116,10 +71,37 @@ export function LayoutApp() {
             </Button>
           </div>
 
+          {/* No celular a navegação foi para a barra de baixo; o que sobra aqui
+              são as ações da PÁGINA atual (exportar CSV etc.), que no desktop
+              ficam no cabeçalho dela. Sem isso elas não teriam lugar no
+              celular — ver a regra de paridade. */}
+          {acoesPagina.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild className="sm:hidden">
+                <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="Ações desta tela">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[14rem]">
+                <DropdownMenuLabel>Nesta tela</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {acoesPagina.map((acao) => (
+                  <DropdownMenuItem
+                    key={acao.id}
+                    disabled={acao.desabilitada}
+                    onSelect={acao.executar}
+                    className="min-h-[2.75rem]"
+                  >
+                    {acao.Icone && <acao.Icone />}
+                    {acao.rotulo}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
-        {/* Navegação em abas só a partir de sm; no celular ela vive no menu ☰
-            acima, senão os últimos itens ficam fora da tela. */}
+        {/* Abas só a partir de sm; no celular a navegação é a barra inferior. */}
         <nav
           className="container fade-scroll-x hidden gap-1 overflow-x-auto pb-2 sm:flex"
           aria-label="Navegação principal"
@@ -144,16 +126,18 @@ export function LayoutApp() {
         </nav>
       </header>
 
-      {/* Conteúdo com transição de página */}
       <motion.main
         key={local.pathname}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, ease: 'easeOut' }}
-        className="container space-y-6 py-6 sm:py-8"
+        // pb generoso no celular: a barra inferior é fixa e cobriria o fim da página.
+        className="container space-y-6 py-6 pb-28 sm:py-8 sm:pb-8"
       >
         <Outlet />
       </motion.main>
+
+      <BarraInferior />
     </div>
   )
 }

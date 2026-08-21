@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton, SkeletonTabela } from '@/components/ui/skeleton'
 import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
+import { useRegistrarAcoes } from '@/store/acoes-pagina'
 import { SeletorPeriodo } from '@/components/common/seletor-periodo'
 import { EstadoErro } from '@/components/common/estados'
 import { usePeriodoStore } from '@/store/periodo'
@@ -56,6 +57,20 @@ export function ControleMensalPage() {
     }
   }, [dados])
 
+  // Declarada para o menu "⋯" do celular; no desktop o botão fica inline.
+  useRegistrarAcoes(
+    () => [
+      {
+        id: 'exportar-mes',
+        rotulo: 'Exportar CSV',
+        Icone: Download,
+        desabilitada: !dados,
+        executar: () => dados && exportarMesCSV(ano, mes, dados),
+      },
+    ],
+    [dados, ano, mes],
+  )
+
   return (
     <div className="space-y-6">
       <CabecalhoPagina
@@ -64,8 +79,11 @@ export function ControleMensalPage() {
         acoes={
           <>
             <SeletorPeriodo ano={ano} mes={mes} onChange={definirPeriodo} />
+            {/* Só decoração duplicada: no celular esta mesma ação aparece no
+                menu "⋯" do topo (ver useRegistrarAcoes acima). */}
             <Button
               variant="outline"
+              className="hidden sm:inline-flex"
               onClick={() => dados && exportarMesCSV(ano, mes, dados)}
               disabled={!dados}
             >

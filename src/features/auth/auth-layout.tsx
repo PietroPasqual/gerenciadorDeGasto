@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Marca } from '@/components/common/marca'
+import { PreviaApp } from '@/components/common/previa-app'
 
 export function AuthLayout({
   titulo,
@@ -13,18 +14,34 @@ export function AuthLayout({
   children: React.ReactNode
   rodape?: React.ReactNode
 }) {
+  // Ver a nota em landing-page.tsx: a regra CSS de prefers-reduced-motion não
+  // alcança o Framer Motion, que anima por JS.
+  const reduzir = useReducedMotion()
+
   return (
     <div className="grid min-h-dvh lg:grid-cols-2">
-      {/* Coluna decorativa (some no mobile) */}
+      {/* Coluna decorativa (some no mobile). Antes eram só dois borrões e uma
+          frase; agora mostra a mesma prévia da landing — quem chega aqui vindo
+          de fora vê no que está entrando antes de digitar a senha. */}
       <div className="relative hidden overflow-hidden bg-primary-soft lg:block">
         <div className="absolute -left-16 -top-16 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
-        <div className="relative flex h-full flex-col justify-between p-12">
+        <div className="relative flex h-full flex-col justify-between gap-8 p-12">
           <Link to="/" aria-label="finZ — voltar para o início">
             <Marca textoClassName="text-accent-foreground" />
           </Link>
+
+          <motion.div
+            initial={reduzir ? false : { opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mx-auto w-full max-w-[19rem]"
+          >
+            <PreviaApp />
+          </motion.div>
+
           <blockquote className="max-w-sm space-y-3 text-accent-foreground">
-            <p className="titulo-serif text-2xl leading-snug">
+            <p className="titulo-serif text-xl leading-snug">
               “Todo mês no lugar certo: entradas, gastos fixos, metas e o quanto sobrou.”
             </p>
             <footer className="text-sm opacity-70">Seu planner financeiro, sem planilha.</footer>
@@ -40,7 +57,7 @@ export function AuthLayout({
 
         <div className="flex flex-1 items-center justify-center">
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={reduzir ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             className="w-full max-w-sm space-y-6"

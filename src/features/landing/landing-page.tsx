@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
-import { motion, useScroll, useTransform } from 'framer-motion'
-import { useRef } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import {
   ArrowRight,
   CalendarDays,
@@ -11,6 +10,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Marca } from '@/components/common/marca'
+import { PreviaApp } from '@/components/common/previa-app'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/store/auth'
 
@@ -39,12 +39,14 @@ const RECURSOS = [
 
 export function LandingPage() {
   const session = useAuthStore((s) => s.session)
-  const refSecao = useRef<HTMLDivElement>(null)
 
-  // Animação de scroll discreta (parallax leve no bloco de destaque)
-  const { scrollYProgress } = useScroll({ target: refSecao, offset: ['start end', 'end start'] })
-  const y = useTransform(scrollYProgress, [0, 1], [30, -30])
-  const opacidade = useTransform(scrollYProgress, [0, 0.3, 1], [0.4, 1, 1])
+  /**
+   * A regra global de prefers-reduced-motion (src/index.css) zera
+   * animation-duration e transition-duration — e não alcança o Framer Motion,
+   * que anima por JS em transform inline. Quem pediu menos movimento no
+   * sistema recebia a página inteira deslizando assim mesmo; daí o hook.
+   */
+  const reduzir = useReducedMotion()
 
   return (
     <div className="min-h-dvh bg-background">
@@ -68,11 +70,14 @@ export function LandingPage() {
         </div>
       </header>
 
-      {/* Hero */}
+      {/* Hero em duas colunas (D8): o texto conta, a prévia mostra. Antes só
+          havia o texto, e um app de dinheiro que não se deixa ver antes do
+          cadastro pede fé demais de quem chega. */}
       <section className="container relative overflow-hidden py-16 sm:py-24">
         <div className="absolute -right-24 -top-16 -z-10 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
+        <div className="grid items-center gap-12 lg:grid-cols-2">
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={reduzir ? false : { opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="max-w-2xl space-y-6"
@@ -100,18 +105,36 @@ export function LandingPage() {
             </Button>
           </div>
         </motion.div>
+
+        <motion.div
+          initial={reduzir ? false : { opacity: 0, y: 24, rotate: -1.5 }}
+          animate={{ opacity: 1, y: 0, rotate: -1.5 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
+          // Largura de tela de app, e não a coluna inteira: solta, a prévia
+          // esticava para 668px e os valores iam parar na borda direita — lia
+          // como banner, não como o produto.
+          // Inclinação de 1,5°: o suficiente para parecer um objeto pousado na
+          // página, e não um bloco colado no grid.
+          className="mx-auto w-full max-w-[23rem]"
+        >
+          <PreviaApp />
+        </motion.div>
+        </div>
       </section>
 
-      {/* Recursos com scroll animation */}
-      <section ref={refSecao} className="container py-12 sm:py-20">
-        <motion.div style={{ y, opacity: opacidade }} className="grid gap-4 sm:grid-cols-2">
+      {/* Cada card entra sozinho ao chegar na tela. O parallax que existia no
+          contêiner saiu: ele movia o grupo enquanto cada card também se movia,
+          e o `opacity: 0.4` de partida deixava os cards lavados justamente
+          quando o olho parava neles. */}
+      <section className="container py-12 sm:py-20">
+        <div className="grid gap-4 sm:grid-cols-2">
           {RECURSOS.map((recurso, indice) => (
             <motion.div
               key={recurso.titulo}
-              initial={{ opacity: 0, y: 24 }}
+              initial={reduzir ? false : { opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-80px' }}
-              transition={{ duration: 0.4, delay: indice * 0.06 }}
+              transition={{ duration: 0.4, delay: reduzir ? 0 : indice * 0.06 }}
             >
               <Card className="h-full">
                 <CardHeader>
@@ -124,7 +147,7 @@ export function LandingPage() {
               </Card>
             </motion.div>
           ))}
-        </motion.div>
+        </div>
       </section>
 
       {/* Chamada final */}

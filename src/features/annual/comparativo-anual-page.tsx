@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
 import { SeletorPeriodo } from '@/components/common/seletor-periodo'
 import { EstadoErro, EstadoVazio } from '@/components/common/estados'
-import { Cabecalho, Campo, Linha, Total } from '@/components/common/linha-planilha'
+import { Cabecalho, Total } from '@/components/common/linha-planilha'
 import { useRecurso } from '@/lib/hooks'
 import { obterComparativoAnual } from '@/services/reports'
 import { formatCentavos, formatCentavosCompacto } from '@/lib/money'
@@ -126,20 +126,26 @@ export function ComparativoAnualPage() {
                   <span className="text-right">Diferença</span>
                 </Cabecalho>
 
+                {/* Aqui a linha NÃO usa o card empilhado padrão: comparar 12 meses
+                    exige linhas curtas. No celular vira duas linhas de texto
+                    (mês + diferença em cima, entrou/saiu embaixo); no desktop
+                    volta a ser a tabela de 4 colunas. */}
                 {meses.map((linha) => {
                   const negativo = linha.diferenca < 0
                   const futuro = ehFuturo({ ano: anoComparativo, mes: linha.mes })
                   return (
-                    <Linha
+                    <div
                       key={linha.mes}
-                      template={TEMPLATE}
+                      role="row"
                       className={cn(
-                        'cursor-pointer',
-                        negativo && !futuro && 'bg-destructive/5 md:bg-destructive/5',
+                        'grid grid-cols-1 gap-0.5 rounded-xl border border-border px-3 py-2 transition-colors',
+                        'md:grid-cols-[1fr,1fr,1fr,1fr] md:items-center md:gap-2 md:rounded-none md:border-0 md:border-b md:py-1.5',
+                        'hover:bg-accent/40',
+                        negativo && !futuro && 'bg-destructive/5',
                         futuro && 'opacity-60',
                       )}
                     >
-                      <Campo rotulo="Mês">
+                      <div className="flex items-baseline justify-between gap-2 md:block">
                         <button
                           type="button"
                           onClick={() => definirPeriodo({ ano: anoComparativo, mes: linha.mes })}
@@ -152,24 +158,37 @@ export function ComparativoAnualPage() {
                             </Badge>
                           )}
                         </button>
-                      </Campo>
-                      <Campo rotulo="Entrada" className="md:text-right">
-                        <span className="tabular text-sm">{formatCentavos(linha.entradas)}</span>
-                      </Campo>
-                      <Campo rotulo="Gastos" className="md:text-right">
-                        <span className="tabular text-sm">{formatCentavos(linha.saidas)}</span>
-                      </Campo>
-                      <Campo rotulo="Diferença" className="md:text-right">
                         <span
                           className={cn(
-                            'tabular text-sm font-medium',
+                            'tabular text-sm font-semibold md:hidden',
                             negativo ? 'text-destructive' : 'text-success',
                           )}
                         >
                           {formatCentavos(linha.diferenca)}
                         </span>
-                      </Campo>
-                    </Linha>
+                      </div>
+
+                      {/* md:contents devolve estes dois valores às colunas da tabela */}
+                      <div className="flex items-baseline gap-3 text-xs text-muted-foreground md:contents">
+                        <span className="md:text-right md:text-sm md:text-foreground">
+                          <span className="md:hidden">entrou </span>
+                          <span className="tabular">{formatCentavos(linha.entradas)}</span>
+                        </span>
+                        <span className="md:text-right md:text-sm md:text-foreground">
+                          <span className="md:hidden">saiu </span>
+                          <span className="tabular">{formatCentavos(linha.saidas)}</span>
+                        </span>
+                      </div>
+
+                      <span
+                        className={cn(
+                          'hidden tabular text-sm font-medium md:block md:text-right',
+                          negativo ? 'text-destructive' : 'text-success',
+                        )}
+                      >
+                        {formatCentavos(linha.diferenca)}
+                      </span>
+                    </div>
                   )
                 })}
 

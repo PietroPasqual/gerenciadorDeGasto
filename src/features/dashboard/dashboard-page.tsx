@@ -96,39 +96,47 @@ export function DashboardPage() {
       ) : null}
 
       {carregando && !resumo ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-28 w-full" />
+            <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>
       ) : resumo ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           <CardResumo rotulo="Entradas" valor={resumo.total_entradas} Icone={TrendingUp} className="text-success" />
           <CardResumo rotulo="Saídas" valor={resumo.total_saidas} Icone={TrendingDown} className="text-destructive" />
+          {/* Saldo é a resposta que a pessoa abre o app para ver — ganha destaque */}
           <CardResumo
             rotulo="Saldo"
             valor={resumo.saldo}
             Icone={Wallet}
+            destaque
             className={resumo.saldo < 0 ? 'text-destructive' : 'text-foreground'}
           />
           <Card>
-            <CardContent className="space-y-2 p-5">
-              <div className="flex items-center justify-between">
+            <CardContent className="flex h-full flex-col justify-between gap-2 p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">Investido</p>
-                <PiggyBank className="h-4 w-4 text-primary" />
+                <PiggyBank className="h-4 w-4 shrink-0 text-primary" />
               </div>
-              <p className="tabular text-xl font-semibold">{formatCentavos(resumo.total_investido)}</p>
-              <Progress value={Math.min(resumo.percentual_investido, 100)} />
-              <p className="text-xs text-muted-foreground">
-                {Number(resumo.percentual_investido).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}% do que
-                entrou no mês
-              </p>
+              <div className="space-y-2">
+                <p className="tabular text-lg font-semibold sm:text-xl">
+                  {formatCentavos(resumo.total_investido)}
+                </p>
+                <Progress value={Math.min(resumo.percentual_investido, 100)} />
+                <p className="text-xs text-muted-foreground">
+                  {Number(resumo.percentual_investido).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}% do que
+                  entrou
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Atalhos: no celular viram blocos compactos de 2 colunas; a descrição
+          só aparece quando há largura para ela. */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {ATALHOS.map((atalho, indice) => (
           <motion.div
             key={atalho.para}
@@ -142,15 +150,15 @@ export function DashboardPage() {
               className="group block h-full"
             >
               <Card className="h-full transition-all group-hover:-translate-y-1 group-hover:shadow-md">
-                <CardHeader>
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary-soft text-primary">
-                    <atalho.Icone className="h-5 w-5" />
+                <CardHeader className="gap-2 p-4 sm:p-6">
+                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary-soft text-primary sm:h-10 sm:w-10">
+                    <atalho.Icone className="h-4 w-4 sm:h-5 sm:w-5" />
                   </span>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                     {atalho.titulo}
-                    <ArrowRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+                    <ArrowRight className="hidden h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
                   </CardTitle>
-                  <CardDescription>{atalho.descricao}</CardDescription>
+                  <CardDescription className="hidden sm:block">{atalho.descricao}</CardDescription>
                 </CardHeader>
               </Card>
             </Link>
@@ -166,20 +174,32 @@ function CardResumo({
   valor,
   Icone,
   className,
+  destaque,
 }: {
   rotulo: string
   valor: number
   Icone: React.ComponentType<{ className?: string }>
   className?: string
+  destaque?: boolean
 }) {
   return (
-    <Card>
-      <CardContent className="space-y-2 p-5">
-        <div className="flex items-center justify-between">
+    <Card className={cn(destaque && 'border-primary/30 bg-primary-soft/50')}>
+      <CardContent className="flex h-full flex-col justify-between gap-2 p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground">{rotulo}</p>
-          <Icone className={cn('h-4 w-4', className)} />
+          <Icone className={cn('h-4 w-4 shrink-0', className)} />
         </div>
-        <NumeroAnimado valor={valor} className={cn('tabular block text-xl font-semibold', className)} />
+        {/* No celular o card tem meia largura (~140px úteis): um degrau a menos
+            deixa folga para valores como R$ 123.456,78 sem quebrar linha.
+            O destaque do Saldo vem sobretudo do fundo tingido. */}
+        <NumeroAnimado
+          valor={valor}
+          className={cn(
+            'tabular block font-semibold',
+            destaque ? 'text-xl sm:text-2xl' : 'text-lg sm:text-xl',
+            className,
+          )}
+        />
       </CardContent>
     </Card>
   )

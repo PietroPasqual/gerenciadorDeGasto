@@ -222,7 +222,7 @@ export function TabelaGastos({
                   />
                 </div>
 
-                <div className="absolute right-1.5 top-1.5 md:static md:flex md:justify-end">
+                <div className="acoes-hover absolute right-1.5 top-1.5 md:static md:flex md:justify-end">
                   <Button
                     variant="ghost"
                     size="icon"

@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
 import { Download, TrendingDown, TrendingUp } from 'lucide-react'
 import {
+  Area,
   CartesianGrid,
+  ComposedChart,
   Legend,
   Line,
-  LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -68,6 +70,7 @@ export function ComparativoAnualPage() {
   }
 
   const semDados = meses.every((m) => m.entradas === 0 && m.saidas === 0)
+  const mesesLancados = meses.filter((m) => m.entradas > 0 || m.saidas > 0).length
 
   /** Abaixo de md a linha do mês é um card, e o card todo é o alvo. */
   const ehEstreito = useEhMobile(768)
@@ -263,7 +266,21 @@ export function ComparativoAnualPage() {
               <CardContent>
                 <div className="h-[22rem] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={dadosGrafico} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
+                    <ComposedChart data={dadosGrafico} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
+                      {/* Área com degradê sob cada linha: dá volume ao mês e
+                          deixa claro qual das duas está por cima sem precisar
+                          seguir a linha com o olho. */}
+                      <defs>
+                        <linearGradient id="areaEntradas" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.22} />
+                          <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="areaGastos" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.22} />
+                          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                       <XAxis dataKey="mes" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
                       <YAxis
@@ -274,16 +291,50 @@ export function ComparativoAnualPage() {
                         width={70}
                       />
                       <Tooltip
-                        formatter={(valor: number) => formatCentavos(valor * 100)}
-                        contentStyle={{
-                          borderRadius: 12,
-                          border: '1px solid hsl(var(--border))',
-                          background: 'hsl(var(--popover))',
-                          color: 'hsl(var(--popover-foreground))',
-                          fontSize: 12,
-                        }}
+                        cursor={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
+                        content={<DicaGrafico />}
                       />
                       <Legend formatter={(v) => <span className="text-xs text-muted-foreground">{v}</span>} />
+
+                      {/* Média do ano — a régua que responde "este mês foi
+                          acima ou abaixo do meu normal?", que era a pergunta
+                          que o gráfico não respondia. Só conta mês lançado:
+                          incluir os meses zerados do futuro puxaria a média
+                          para baixo e mentiria. */}
+                      {mesesLancados > 0 && (
+                        <ReferenceLine
+                          y={totais.mediaSaidas / 100}
+                          stroke="hsl(var(--primary))"
+                          strokeDasharray="5 5"
+                          strokeOpacity={0.65}
+                          label={{
+                            value: `média de gastos ${formatCentavosCompacto(totais.mediaSaidas)}`,
+                            position: 'insideTopRight',
+                            fill: 'hsl(var(--muted-foreground))',
+                            fontSize: 11,
+                          }}
+                        />
+                      )}
+
+                      {/* legendType="none": a área e a linha usam a mesma
+                          dataKey, e sem isto a legenda lista "Entradas" e
+                          "Gastos" duas vezes cada. */}
+                      <Area
+                        type="monotone"
+                        dataKey="Entradas"
+                        stroke="none"
+                        fill="url(#areaEntradas)"
+                        legendType="none"
+                        tooltipType="none"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="Gastos"
+                        stroke="none"
+                        fill="url(#areaGastos)"
+                        legendType="none"
+                        tooltipType="none"
+                      />
                       <Line
                         type="monotone"
                         dataKey="Entradas"
@@ -300,7 +351,7 @@ export function ComparativoAnualPage() {
                         dot={{ r: 3 }}
                         activeDot={{ r: 5 }}
                       />
-                    </LineChart>
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -308,6 +359,71 @@ export function ComparativoAnualPage() {
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+/**
+ * Tooltip do gráfico anual.
+ *
+ * O padrão do Recharts lista "Entradas" e "Gastos" e para por aí. A conta que
+ * interessa é a terceira — sobrou ou faltou —, e fazê-la de cabeça olhando
+ * dois números formatados em reais é justamente o que o gráfico deveria
+ * poupar. Aqui ela vem pronta, com o sinal colorido.
+ */
+function DicaGrafico({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean
+  payload?: Array<{ dataKey?: string | number; value?: number }>
+  label?: string
+}) {
+  if (!active || !payload?.length) return null
+
+  const valor = (chave: string) =>
+    (payload.find((p) => p.dataKey === chave)?.value ?? 0) * 100
+  const entradas = valor('Entradas')
+  const gastos = valor('Gastos')
+  const diferenca = entradas - gastos
+
+  return (
+    <div className="rounded-xl border border-border bg-popover px-3 py-2 text-popover-foreground shadow-2">
+      <p className="mb-1 text-sm font-medium">{label}</p>
+      <dl className="space-y-0.5 text-xs">
+        <Linhinha rotulo="Entrou" valor={entradas} className="text-success" />
+        <Linhinha rotulo="Saiu" valor={gastos} className="text-destructive" />
+        <div className="mt-1 border-t border-border pt-1">
+          <Linhinha
+            rotulo={diferenca < 0 ? 'Faltou' : 'Sobrou'}
+            valor={Math.abs(diferenca)}
+            className={diferenca < 0 ? 'text-destructive' : 'text-success'}
+            forte
+          />
+        </div>
+      </dl>
+    </div>
+  )
+}
+
+function Linhinha({
+  rotulo,
+  valor,
+  className,
+  forte,
+}: {
+  rotulo: string
+  valor: number
+  className?: string
+  forte?: boolean
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-6">
+      <dt className="text-muted-foreground">{rotulo}</dt>
+      <dd className={cn('tabular', forte ? 'text-sm font-semibold' : 'font-medium', className)}>
+        {formatCentavos(valor)}
+      </dd>
     </div>
   )
 }

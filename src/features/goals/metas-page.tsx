@@ -194,7 +194,7 @@ function Wishlist({
                   nome={item.nome}
                   onAlternar={(concluido) => onEditar(item.id, { concluido })}
                 />
-                <div className="order-4 flex shrink-0 justify-end md:order-none">
+                <div className="acoes-hover order-4 flex shrink-0 justify-end md:order-none">
                   <Button
                     variant="ghost"
                     size="icon"

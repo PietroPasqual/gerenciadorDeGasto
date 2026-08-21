@@ -98,5 +98,14 @@ export default {
       animation: { 'fade-up': 'fade-up 0.35s ease-out both' },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [
+    require('tailwindcss-animate'),
+    // `mouse:` = só onde existe ponteiro de verdade. Usamos isto para as ações
+    // que aparecem no hover (D5): `md:` não serviria, porque um tablet em
+    // 1024px atende ao `md:` e não tem hover nenhum — as ações ficariam
+    // invisíveis e inalcançáveis.
+    require('tailwindcss/plugin')(({ addVariant }) => {
+      addVariant('mouse', '@media (hover: hover) and (pointer: fine)')
+    }),
+  ],
 }

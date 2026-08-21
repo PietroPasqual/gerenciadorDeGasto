@@ -57,6 +57,15 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* Ações da linha que só aparecem no hover (D5).
+     Onde não há ponteiro fino (celular, tablet) elas ficam sempre visíveis —
+     é o `mouse:` do tailwind.config.js que garante isso. Nunca escondemos com
+     `hidden`: o botão continua no fluxo, então a linha não muda de largura
+     quando o mouse chega, e o teclado revela pelo focus-within. */
+  .acoes-hover {
+    @apply mouse:opacity-0 mouse:transition-opacity mouse:group-hover:opacity-100 mouse:group-focus-within:opacity-100;
+  }
+
   /* Flash de "salvo" (D4). O app salva sozinho ao sair do campo e nunca dizia
      nada — este pulso de meio segundo é o aviso. Sem layout shift: só a cor
      de fundo e a sombra mudam. */

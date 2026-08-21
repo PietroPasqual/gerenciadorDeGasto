@@ -76,7 +76,7 @@ export function TabelaEntradas({
                     onValueChange={(valor) => onEditar(entrada.id, { valor_centavos: valor })}
                     className="ml-auto w-32 shrink-0 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:ml-0 md:w-full md:font-normal"
                   />
-                  <div className="flex shrink-0 justify-end">
+                  <div className="acoes-hover flex shrink-0 justify-end">
                     <Button
                       variant="ghost"
                       size="icon"

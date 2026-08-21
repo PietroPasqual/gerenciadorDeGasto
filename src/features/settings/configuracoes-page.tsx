@@ -460,7 +460,7 @@ function AcoesLinha({
   nome: string
 }) {
   return (
-    <div className="flex justify-end">
+    <div className="acoes-hover flex justify-end">
       <Button
         variant="ghost"
         size="icon"

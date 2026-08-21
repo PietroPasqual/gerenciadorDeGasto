@@ -2,7 +2,9 @@
 <html lang="pt-BR" class="light">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover: sem isso o env(safe-area-inset-*) vale 0 no iOS e
+         todo o cuidado com o notch e a barra de gestos vira enfeite. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>finZ — planner financeiro</title>
     <meta name="description" content="Planner financeiro pessoal: controle mensal, metas e comparativo anual." />
 
@@ -19,9 +21,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
 
-    <!-- Cor da barra do navegador acompanhando o tema do app -->
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FEFBFB" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#18151E" />
+    <!-- Cor da barra do navegador. O valor aqui é só o do primeiro quadro: o
+         tema é escolhido DENTRO do app (4 cores x claro/escuro), coisa que o
+         prefers-color-scheme não sabe. Quem manda de verdade é o store de
+         tema, que reescreve este content ao aplicar (src/store/tema.ts). -->
+    <meta id="theme-color" name="theme-color" content="#FEFBFB" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

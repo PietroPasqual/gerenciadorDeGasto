@@ -46,7 +46,7 @@ export function LayoutApp() {
   const acoesPagina = useAcoesPagina()
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="container flex h-16 items-center justify-between gap-4">
           <NavLink to="/painel" aria-label="finZ — ir para o painel">

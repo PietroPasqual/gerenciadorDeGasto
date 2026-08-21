@@ -59,6 +59,7 @@ export function TabelaInvestimentos({
       <CardContent className="space-y-4">
         {metas.length === 0 ? (
           <EstadoVazio
+            ilustracao="meta"
             titulo="Você ainda não tem metas"
             descricao="Crie até 10 metas para acompanhar o quanto guarda por mês."
             acao={

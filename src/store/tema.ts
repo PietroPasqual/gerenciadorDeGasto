@@ -13,6 +13,24 @@ interface EstadoTema {
 }
 
 /**
+ * Cor da barra do sistema (a do topo no Android/Chrome, a de trás no iOS
+ * instalado) igual ao fundo do app.
+ *
+ * O <meta> do index.html só consegue reagir ao prefers-color-scheme, e aqui o
+ * tema é escolhido dentro do app: quem estava no escuro com o sistema no claro
+ * via uma faixa branca em cima de uma tela preta. Lemos o --background já
+ * aplicado em vez de manter uma tabela de cores em duplicata — assim mexer no
+ * themes.css basta.
+ */
+function pintarBarraDoNavegador(raiz: HTMLElement) {
+  const meta = document.querySelector<HTMLMetaElement>('meta#theme-color')
+  if (!meta) return
+  const fundo = getComputedStyle(raiz).getPropertyValue('--background').trim()
+  // "40 40% 99%" -> "hsl(40 40% 99%)". Vazio (teste em jsdom) fica como está.
+  if (fundo) meta.content = `hsl(${fundo})`
+}
+
+/**
  * Tema de cor + dark mode.
  * A cor vive em CSS variables (data-tema no <html>); dark mode é a classe `.dark`.
  * O valor persiste em localStorage e também no perfil do usuário no Supabase.
@@ -46,6 +64,7 @@ export const useTemaStore = create<EstadoTema>()(
         raiz.setAttribute('data-tema', tema)
         raiz.classList.toggle('dark', escuro)
         raiz.classList.toggle('light', !escuro)
+        pintarBarraDoNavegador(raiz)
       },
     }),
     { name: 'gdg-tema' },

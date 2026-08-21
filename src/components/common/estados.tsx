@@ -1,6 +1,7 @@
-import { AlertCircle, RefreshCw, Inbox } from 'lucide-react'
+import { AlertCircle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { ILUSTRACOES, type NomeIlustracao } from './ilustracoes'
 import { cn } from '@/lib/utils'
 
 /** Estado vazio com CTA — usado em toda listagem sem dados. */
@@ -8,18 +9,27 @@ export function EstadoVazio({
   titulo,
   descricao,
   acao,
+  ilustracao = 'lista',
   className,
 }: {
   titulo: string
-  descricao?: string
+  /** ReactNode e não string: às vezes o caminho é outro no celular e no
+      desktop, e a frase precisa mudar junto (ver tabela-gastos.tsx). */
+  descricao?: React.ReactNode
   acao?: React.ReactNode
+  /** Qual desenho combina com o que falta ali (ver ilustracoes.tsx). */
+  ilustracao?: NomeIlustracao
   className?: string
 }) {
+  const Desenho = ILUSTRACOES[ilustracao]
   return (
-    <div className={cn('flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border px-6 py-10 text-center', className)}>
-      <div className="rounded-full bg-primary-soft p-3 text-primary">
-        <Inbox className="h-5 w-5" />
-      </div>
+    <div
+      className={cn(
+        'flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border px-6 py-8 text-center',
+        className,
+      )}
+    >
+      <Desenho />
       <div className="space-y-1">
         <p className="font-medium">{titulo}</p>
         {descricao && <p className="mx-auto max-w-sm text-sm text-muted-foreground">{descricao}</p>}

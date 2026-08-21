@@ -59,7 +59,9 @@ export function BarraInferior() {
           'pb-[env(safe-area-inset-bottom)]',
         )}
       >
-        <div className="flex items-stretch gap-1 px-2 pt-1">
+        {/* Em paisagem o notch come a lateral: os insets entram junto com o
+            px-2 de sempre. Em retrato eles valem 0 e nada muda. */}
+        <div className="flex items-stretch gap-1 pt-1 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))]">
           {DIRETOS.map(({ para, rotulo, Icone }) => (
             <NavLink key={para} to={para} className={({ isActive }) => classeItem(isActive)}>
               <Icone className="h-5 w-5" />

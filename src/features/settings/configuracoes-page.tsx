@@ -445,7 +445,11 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
       </CardHeader>
       <CardContent className="space-y-2">
         {dados.metas.length === 0 ? (
-          <EstadoVazio titulo="Nenhuma meta" descricao="Ex.: Reserva de emergência, Viagem, Carro." />
+          <EstadoVazio
+            ilustracao="meta"
+            titulo="Nenhuma meta"
+            descricao="Ex.: Reserva de emergência, Viagem, Carro."
+          />
         ) : (
           <GradeEditavel className="space-y-2 md:space-y-0">
             <Cabecalho template={TEMPLATE_META}>

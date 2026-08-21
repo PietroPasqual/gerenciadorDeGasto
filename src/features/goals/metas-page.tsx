@@ -267,6 +267,7 @@ function GradeMetas({
         </CardHeader>
         <CardContent>
           <EstadoVazio
+            ilustracao="meta"
             titulo="Nenhuma meta ainda"
             descricao="Crie até 10 metas em Configurações e acompanhe aqui quanto guardou por mês."
             acao={

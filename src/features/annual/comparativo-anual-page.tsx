@@ -112,6 +112,7 @@ export function ComparativoAnualPage() {
         </div>
       ) : semDados ? (
         <EstadoVazio
+          ilustracao="grafico"
           titulo={`Nada lançado em ${anoComparativo}`}
           descricao="Lance entradas e gastos no controle mensal para ver o comparativo."
         />

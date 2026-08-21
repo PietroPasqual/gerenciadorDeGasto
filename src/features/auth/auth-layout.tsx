@@ -14,7 +14,7 @@ export function AuthLayout({
   rodape?: React.ReactNode
 }) {
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid min-h-dvh lg:grid-cols-2">
       {/* Coluna decorativa (some no mobile) */}
       <div className="relative hidden overflow-hidden bg-primary-soft lg:block">
         <div className="absolute -left-16 -top-16 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />

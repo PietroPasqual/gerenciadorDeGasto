@@ -62,7 +62,9 @@ export function Donut({
     : ordenado
 
   if (ordenado.length === 0) {
-    return <EstadoVazio titulo={titulo ?? 'Sem dados'} descricao={vazioTexto} className="py-8" />
+    return (
+      <EstadoVazio ilustracao="grafico" titulo={titulo ?? 'Sem dados'} descricao={vazioTexto} className="py-6" />
+    )
   }
 
   return (

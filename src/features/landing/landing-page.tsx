@@ -47,7 +47,7 @@ export function LandingPage() {
   const opacidade = useTransform(scrollYProgress, [0, 0.3, 1], [0.4, 1, 1])
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <header className="container flex h-20 items-center justify-between">
         <Marca />
         <div className="flex items-center gap-2">

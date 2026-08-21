@@ -323,30 +323,52 @@ export function ControleMensalPage() {
 
 function EsqueletoMes() {
   return (
-    <div className="grid gap-6 lg:grid-cols-[20rem,1fr]">
-      <Card>
-        <CardHeader className="space-y-2">
-          <Skeleton className="h-4 w-12" />
-          <Skeleton className="h-7 w-32" />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-6 w-full" />
-          <Skeleton className="h-6 w-full" />
-          <Skeleton className="h-6 w-full" />
-          <Skeleton className="h-28 w-full" />
-        </CardContent>
-      </Card>
-      <div className="space-y-6">
-        {[0, 1, 2].map((i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-5 w-40" />
-            </CardHeader>
-            <CardContent>
-              <SkeletonTabela />
-            </CardContent>
-          </Card>
-        ))}
+    <div className="space-y-6">
+      {/* No celular a barra fixa (abas + resumo) some junto com os dados;
+          sem um lugar guardado para ela a página inteira pula ~90px quando
+          o mês carrega. */}
+      <div className="space-y-2 sm:hidden">
+        <Skeleton className="h-11 w-full" />
+        <div className="grid grid-cols-3 gap-1.5">
+          <Skeleton className="h-9" />
+          <Skeleton className="h-9" />
+          <Skeleton className="h-9" />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[20rem,1fr]">
+        {/* O card de resumo só aparece de sm para cima: abaixo disso ele é
+            a aba "Resumo", e o que carrega primeiro é a aba "Gastos". */}
+        <Card className="hidden sm:block">
+          <CardHeader className="space-y-2">
+            <Skeleton className="h-4 w-12" />
+            <Skeleton className="h-7 w-32" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-28 w-full" />
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-col gap-6">
+          {[0, 1, 2].map((i) => (
+            // Uma aba mostra um bloco só: no celular os outros dois seriam
+            // rolagem que não vai existir.
+            <Card key={i} className={i > 0 ? 'hidden sm:block' : undefined}>
+              <CardHeader>
+                <Skeleton className="h-5 w-40" />
+              </CardHeader>
+              <CardContent>
+                {/* 8 e não 5: o placeholder é a altura que a página vai ter, e
+                    um mês com menos de oito gastos é raro. Errar para menos faz
+                    a página crescer embaixo do dedo quando os dados chegam. */}
+                <SkeletonTabela linhas={8} />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   )

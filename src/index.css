@@ -12,11 +12,16 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    /* Instalado na tela inicial, o app não deve "puxar para atualizar" nem
+       repassar a rolagem para a página de trás: um puxão a mais no fim da
+       lista de gastos recarregava tudo e voltava para o topo. */
+    overscroll-behavior-y: contain;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04';
+    overscroll-behavior-y: contain;
   }
 
   /* Foco sempre visível — requisito de acessibilidade */
@@ -31,6 +36,15 @@
 }
 
 @layer components {
+  /* Em paisagem, num aparelho com notch, 1rem não tira o conteúdo de baixo do
+     recorte — daí o max(). Em retrato os insets laterais são 0 e isto não muda
+     nada. Precisa estar neste layer: o `.container` do Tailwind também está, e
+     uma regra no @layer base perderia para ele. */
+  .container {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
   .titulo-serif {
     @apply font-display font-semibold tracking-tight;
   }

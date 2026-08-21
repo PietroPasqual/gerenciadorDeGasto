@@ -88,7 +88,16 @@ export function TabelaGastos({
         {gastos.length === 0 ? (
           <EstadoVazio
             titulo="Nenhum gasto lançado"
-            descricao="Comece pelo primeiro gasto do mês na linha abaixo."
+            descricao={
+              // No celular a linha de adição não existe (é o FAB), então a
+              // frase antiga mandava a pessoa procurar algo que não está lá.
+              <>
+                <span className="md:hidden">Toque no + para lançar o primeiro gasto.</span>
+                <span className="hidden md:inline">
+                  Comece pelo primeiro gasto do mês na linha abaixo.
+                </span>
+              </>
+            }
           />
         ) : (
           <>

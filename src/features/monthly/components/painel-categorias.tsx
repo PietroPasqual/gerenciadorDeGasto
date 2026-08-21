@@ -31,7 +31,11 @@ export function PainelCategorias({ categorias }: { categorias: LinhaCategoria[] 
       </CardHeader>
       <CardContent>
         {comMovimento.length === 0 ? (
-          <EstadoVazio titulo="Nada gasto ainda" descricao="Assim que você lançar um gasto, ele aparece aqui." />
+          <EstadoVazio
+            ilustracao="grafico"
+            titulo="Nada gasto ainda"
+            descricao="Assim que você lançar um gasto, ele aparece aqui."
+          />
         ) : (
           <ul className="space-y-4">
             {comMovimento.map((categoria) => {

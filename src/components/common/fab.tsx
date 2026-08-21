@@ -21,9 +21,11 @@ export function Fab({
       onClick={onClick}
       aria-label={rotulo}
       className={cn(
-        'fixed bottom-24 right-4 z-30 grid h-14 w-14 place-items-center rounded-full',
+        'fixed bottom-24 z-30 grid h-14 w-14 place-items-center rounded-full',
         'bg-primary text-primary-foreground shadow-2 transition-transform active:scale-95 sm:hidden',
-        'mb-[env(safe-area-inset-bottom)]',
+        // right/mb com env(): em paisagem o botão ficava por baixo do notch e
+        // da barra de gestos.
+        'right-[max(1rem,env(safe-area-inset-right))] mb-[env(safe-area-inset-bottom)]',
         className,
       )}
     >

@@ -1,6 +1,7 @@
+import { Suspense } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { LogOut, MoreVertical, Moon, Sun } from 'lucide-react'
+import { Loader2, LogOut, MoreVertical, Moon, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Marca } from '@/components/common/marca'
 import {
@@ -126,12 +127,28 @@ export function LayoutApp() {
           // pb generoso no celular: a barra inferior é fixa e cobriria o fim da página.
           className="container space-y-6 py-6 pb-28 sm:py-8 sm:pb-8"
         >
-          <Outlet />
+          {/* O limite de espera fica AQUI dentro, e não em volta das rotas: a
+              barra lateral, o cabeçalho e a barra inferior continuam na tela
+              enquanto o pedaço da página desce. Trocar a moldura inteira por um
+              spinner faria a navegação parecer um recarregamento. */}
+          <Suspense fallback={<EsperandoPagina />}>
+            <Outlet />
+          </Suspense>
         </motion.main>
       </div>
 
       <BarraInferior />
       <PaletaComandos />
+    </div>
+  )
+}
+
+/** Mesma linguagem do carregamento da sessão, no tamanho da área de conteúdo. */
+function EsperandoPagina() {
+  return (
+    <div className="grid min-h-[50vh] place-items-center" role="status" aria-live="polite">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <span className="sr-only">Carregando a página…</span>
     </div>
   )
 }

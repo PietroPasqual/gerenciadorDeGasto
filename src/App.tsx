@@ -8,12 +8,16 @@ import { RotaProtegida } from '@/features/auth/rota-protegida'
 import { LandingPage } from '@/features/landing/landing-page'
 import { LoginPage } from '@/features/auth/login-page'
 import { CadastroPage } from '@/features/auth/cadastro-page'
-import { DashboardPage } from '@/features/dashboard/dashboard-page'
-import { ControleMensalPage } from '@/features/monthly/controle-mensal-page'
-import { ComparativoAnualPage } from '@/features/annual/comparativo-anual-page'
-import { MetasPage } from '@/features/goals/metas-page'
-import { ConfiguracoesPage } from '@/features/settings/configuracoes-page'
-import { AjudaPage } from '@/features/help/ajuda-page'
+import {
+  AjudaPage,
+  aquecerPaginas,
+  ComparativoAnualPage,
+  ConfiguracoesPage,
+  ControleMensalPage,
+  DashboardPage,
+  MetasPage,
+  ROTAS_PREGUICOSAS,
+} from '@/lib/paginas'
 import { ProvedorAcoesPagina } from '@/store/acoes-pagina'
 import { useEhMobile } from '@/lib/hooks'
 import { useAuthStore } from '@/store/auth'
@@ -22,11 +26,20 @@ import { useTemaStore } from '@/store/tema'
 export default function App() {
   const ehMobile = useEhMobile(640)
   const inicializar = useAuthStore((s) => s.inicializar)
+  const session = useAuthStore((s) => s.session)
   const profile = useAuthStore((s) => s.profile)
   const definirTema = useTemaStore((s) => s.definirTema)
   const local = useLocation()
 
   useEffect(() => inicializar(), [inicializar])
+
+  // Aquece os pedaços das páginas de dentro do app: ou porque o usuário já caiu
+  // direto numa delas (link, atalho da tela inicial), ou porque acabou de
+  // entrar e a próxima navegação será para uma. Quem está só na landing não
+  // baixa nada disso.
+  useEffect(() => {
+    if (session || ROTAS_PREGUICOSAS.includes(local.pathname)) aquecerPaginas()
+  }, [session, local.pathname])
 
   // Ao entrar, o tema salvo no perfil manda (sem regravar no banco)
   useEffect(() => {

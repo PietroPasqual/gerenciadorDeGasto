@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Download } from 'lucide-react'
+import { Download, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -18,6 +18,7 @@ import type { Transaction } from '@/lib/database.types'
 import { usePeriodoStore } from '@/store/periodo'
 import { useControleMensal } from './use-controle-mensal'
 import { exportarMesCSV } from './exportar'
+import { ImportarCSV } from './components/importar-csv'
 import { ResumoMes } from './components/resumo-mes'
 import { TabelaEntradas } from './components/tabela-entradas'
 import { TabelaGastosFixos } from './components/tabela-gastos-fixos'
@@ -35,6 +36,7 @@ export function ControleMensalPage() {
   const { ano, mes, definirPeriodo } = usePeriodoStore()
   const { dados, gastos, fixosDoMes, resumo, carregando, erro, recarregar, acoes } = useControleMensal(ano, mes)
   const [aba, definirAba] = useAbaMes()
+  const [importando, setImportando] = useState(false)
 
   /**
    * Swipe horizontal troca de mês (M7). A direção fica guardada para a
@@ -145,6 +147,13 @@ export function ControleMensalPage() {
   useRegistrarAcoes(
     () => [
       {
+        id: 'importar-mes',
+        rotulo: 'Importar CSV',
+        Icone: Upload,
+        desabilitada: !dados,
+        executar: () => setImportando(true),
+      },
+      {
         id: 'exportar-mes',
         rotulo: 'Exportar CSV',
         Icone: Download,
@@ -169,6 +178,15 @@ export function ControleMensalPage() {
             </div>
             {/* Só decoração duplicada: no celular esta mesma ação aparece no
                 menu "⋯" do topo (ver useRegistrarAcoes acima). */}
+            <Button
+              variant="outline"
+              className="hidden sm:inline-flex"
+              onClick={() => setImportando(true)}
+              disabled={!dados}
+            >
+              <Upload className="h-4 w-4" />
+              Importar CSV
+            </Button>
             <Button
               variant="outline"
               className="hidden sm:inline-flex"
@@ -328,6 +346,21 @@ export function ControleMensalPage() {
             gasto={gastoEditando}
             onSalvar={salvarGastoDaSheet}
             onExcluir={gastoEditando ? () => excluirComDesfazer(gastoEditando) : undefined}
+          />
+
+          <ImportarCSV
+            aberto={importando}
+            onOpenChange={setImportando}
+            ano={ano}
+            mes={mes}
+            categorias={dados.categorias}
+            formas={dados.formasPagamento}
+            aoImportar={(quantidade) => {
+              toast.success(
+                `${quantidade} ${quantidade === 1 ? 'lançamento importado' : 'lançamentos importados'}`,
+              )
+              void recarregar()
+            }}
           />
         </>
       )}

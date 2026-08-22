@@ -16,14 +16,20 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4',
+        'fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col',
+        // Diálogo mais alto que a tela precisa rolar POR DENTRO. Sem isto o
+        // conteúdo passa da viewport e o botão de confirmar fica inalcançável
+        // — não dá nem para rolar até ele, porque o fundo está travado.
+        'max-h-[calc(100dvh-2rem)]',
         'rounded-2xl border border-border bg-card p-6 shadow-xl duration-200',
         'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
         className,
       )}
       {...props}
     >
-      {children}
+      {/* A rolagem fica neste wrapper, e não no Content, para o X do canto
+          continuar ancorado no topo em vez de subir junto com o conteúdo. */}
+      <div className="grid min-h-0 gap-4 overflow-y-auto">{children}</div>
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-full p-1 opacity-60 transition hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring">
         <X className="h-4 w-4" />
         <span className="sr-only">Fechar</span>

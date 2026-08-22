@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { Transaction, TipoLancamento } from '@/lib/database.types'
 import { primeiroDiaISO, ultimoDiaISO } from '@/lib/dates'
-import { unwrap, userIdAtual } from './base'
+import { ErroServico, unwrap, userIdAtual } from './base'
 
 export async function listarLancamentos(ano: number, mes: number, tipo?: TipoLancamento): Promise<Transaction[]> {
   let query = supabase
@@ -56,4 +56,57 @@ export async function atualizarLancamento(
 export async function excluirLancamento(id: string): Promise<void> {
   const { error } = await supabase.from('transactions').delete().eq('id', id)
   if (error) throw error
+}
+
+/** Lançamentos de um intervalo qualquer — usado para achar duplicata na importação. */
+export async function listarLancamentosPorIntervalo(inicioISO: string, fimISO: string): Promise<Transaction[]> {
+  return (
+    unwrap(
+      await supabase.from('transactions').select('*').gte('data', inicioISO).lte('data', fimISO).order('data'),
+    ) ?? []
+  )
+}
+
+/**
+ * Grava vários lançamentos de uma vez (importação de CSV).
+ *
+ * Vai em blocos porque um extrato de cartão passa fácil de mil linhas, e um
+ * insert único desse tamanho estoura o limite de corpo da requisição. Cada
+ * bloco é uma transação do lado do Postgres: se um bloco falhar, os anteriores
+ * já entraram — por isso a função devolve quantos entraram, para a tela poder
+ * dizer a verdade em vez de "não importou nada".
+ */
+export async function criarLancamentosEmLote(
+  lista: Array<{
+    data: string
+    descricao: string
+    payment_method_id?: string | null
+    category_id?: string | null
+    valor_centavos: number
+    tipo: TipoLancamento
+  }>,
+  aoProgredir?: (gravados: number, total: number) => void,
+): Promise<number> {
+  if (lista.length === 0) return 0
+  const user_id = await userIdAtual()
+  const TAMANHO_BLOCO = 200
+
+  let gravados = 0
+  for (let i = 0; i < lista.length; i += TAMANHO_BLOCO) {
+    const bloco = lista.slice(i, i + TAMANHO_BLOCO).map((l) => ({ ...l, user_id }))
+    try {
+      unwrap(await supabase.from('transactions').insert(bloco), 'Não foi possível importar os lançamentos.')
+    } catch (erro) {
+      if (gravados === 0) throw erro
+      throw new ErroServico(
+        `Importação interrompida: ${gravados} lançamentos entraram antes do erro. ${
+          erro instanceof Error ? erro.message : ''
+        }`.trim(),
+        erro,
+      )
+    }
+    gravados += bloco.length
+    aoProgredir?.(gravados, lista.length)
+  }
+  return gravados
 }

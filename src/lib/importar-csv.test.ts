@@ -202,7 +202,7 @@ describe('prepararImportacao', () => {
     ])
   })
 
-  it('marca como duplicado o que já está no banco', () => {
+  it('marca como já-no-banco o que já foi lançado no app', () => {
     const a = arquivo('Data;Descrição;Valor\n15/08/2026;Mercado;-120,50\n16/08/2026;Padaria;-8,00\n')
     const r = prepararImportacao({
       ...base,
@@ -210,20 +210,24 @@ describe('prepararImportacao', () => {
       mapa: adivinharColunas(a.cabecalho),
       existentes: [{ data: '2026-08-15', descricao: 'mercado', valor_centavos: 12050, tipo: 'gasto' }],
     })
-    expect(r.prontos[0].duplicado).toBe(true)
-    expect(r.prontos[1].duplicado).toBe(false)
+    expect(r.prontos[0]).toMatchObject({ jaNoBanco: true, repetidoNoArquivo: false })
+    expect(r.prontos[1]).toMatchObject({ jaNoBanco: false, repetidoNoArquivo: false })
   })
 
-  it('marca também a linha repetida dentro do próprio arquivo', () => {
+  it('separa "repetida no arquivo" de "já no banco" — são casos diferentes', () => {
+    // Extrato repete de verdade: duas assinaturas iguais no mesmo dia, dois
+    // débitos de cartão do mesmo valor. O saldo do banco conta as duas, então
+    // a segunda NÃO pode ser descartada como se fosse reimportação.
     const a = arquivo('Data;Descrição;Valor\n15/08/2026;Mercado;-120,50\n15/08/2026;Mercado;-120,50\n')
     const r = prepararImportacao({ ...base, arquivo: a, mapa: adivinharColunas(a.cabecalho) })
-    expect(r.prontos.map((p) => p.duplicado)).toEqual([false, true])
+    expect(r.prontos.map((p) => p.repetidoNoArquivo)).toEqual([false, true])
+    expect(r.prontos.map((p) => p.jaNoBanco)).toEqual([false, false])
   })
 
-  it('não confunde mesmo valor em dia diferente com duplicata', () => {
+  it('não confunde mesmo valor em dia diferente com repetição', () => {
     const a = arquivo('Data;Descrição;Valor\n15/08/2026;Mercado;-120,50\n16/08/2026;Mercado;-120,50\n')
     const r = prepararImportacao({ ...base, arquivo: a, mapa: adivinharColunas(a.cabecalho) })
-    expect(r.prontos.map((p) => p.duplicado)).toEqual([false, false])
+    expect(r.prontos.map((p) => p.repetidoNoArquivo)).toEqual([false, false])
   })
 
   it('põe um texto no lugar da descrição vazia, para não gravar nada em branco', () => {
@@ -320,5 +324,60 @@ describe('formatos que os bancos brasileiros usam de verdade', () => {
     const r = rodar('Data;Descrição;Valor\n01/08/2026;Qualquer coisa;-10,00\n')
     expect(r.prontos[0]).toMatchObject({ category_id: null, payment_method_id: null })
     expect(r.problemas).toEqual([])
+  })
+})
+
+describe('preâmbulo antes do cabeçalho', () => {
+  // Formato do C6 Bank: oito linhas de nome do banco, agência, conta e período
+  // antes da tabela. Assumir que a linha 1 é o cabeçalho fazia o arquivo
+  // INTEIRO virar problema — 673 linhas descartadas, nenhuma importada.
+  const C6 =
+    'EXTRATO DE CONTA CORRENTE C6 BANK\n' +
+    '\n' +
+    'Agência: 1 / Conta: 123456\n' +
+    'Extrato gerado em 22/08/2026 - as 21:27:22\n' +
+    '\n' +
+    'Extrato de 22/08/2025 a 22/08/2026\n' +
+    '\n' +
+    '\n' +
+    'Data Lançamento,Data Contábil,Título,Descrição,Entrada(R$),Saída(R$),Saldo do Dia(R$)\n' +
+    '22/08/2025,22/08/2025,Pix enviado para Fulano,TRANSF ENVIADA PIX,0.00,44.90,1216.52\n' +
+    '25/08/2025,25/08/2025,Pix recebido de Beltrano,TRANSF RECEBIDA PIX,100.00,0.00,1316.52\n'
+
+  it('acha o cabeçalho de verdade e diz quantas linhas pulou', () => {
+    const a = lerCSV(C6)
+    expect(a.separador).toBe(',')
+    expect(a.cabecalho[0]).toBe('Data Lançamento')
+    expect(a.linhas).toHaveLength(2)
+    expect(a.puloPreambulo).toBeGreaterThan(0)
+  })
+
+  it('o separador sai do CABEÇALHO, não da primeira linha do arquivo', () => {
+    // A linha 1 não tem vírgula nenhuma. Contando só nela, o palpite caía em
+    // ';' e cada linha virava um campo só.
+    expect(lerCSV(C6).separador).toBe(',')
+  })
+
+  it('mapeia Entrada/Saída como as duas colunas de valor, e não Data Contábil como forma', () => {
+    const a = lerCSV(C6)
+    const m = adivinharColunas(a.cabecalho)
+    expect(m).toMatchObject({ data: 0, descricao: 2, valor: -1, valorEntrada: 4, valorSaida: 5 })
+    // 'conta' casava por dentro de "Data Contábil" e apontava a forma de
+    // pagamento para uma coluna de data.
+    expect(m.forma).toBe(-1)
+  })
+
+  it('importa o extrato inteiro, com a direção certa', () => {
+    const a = lerCSV(C6)
+    const r = prepararImportacao({ ...base, arquivo: a, mapa: adivinharColunas(a.cabecalho) })
+    expect(r.problemas).toEqual([])
+    expect(r.prontos[0]).toMatchObject({ data: '2025-08-22', tipo: 'gasto', valor_centavos: 4490 })
+    expect(r.prontos[1]).toMatchObject({ data: '2025-08-25', tipo: 'entrada', valor_centavos: 10000 })
+  })
+
+  it('arquivo que já começa no cabeçalho não pula nada', () => {
+    const a = lerCSV('Data;Descrição;Valor\n15/08/2026;X;-10,00\n')
+    expect(a.puloPreambulo).toBe(0)
+    expect(a.cabecalho).toEqual(['Data', 'Descrição', 'Valor'])
   })
 })

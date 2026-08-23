@@ -41,36 +41,27 @@ export function decodificarTexto(dados: ArrayBuffer): string {
 
 const SEPARADORES = [';', ',', '\t'] as const
 
-/**
- * Descobre o separador contando ocorrências FORA de aspas na primeira linha.
- * Contar sem olhar as aspas erraria em "Mercado, feira";12,50 — ali a vírgula
- * do meio da descrição venceria o ponto e vírgula de verdade.
- */
-function acharSeparador(texto: string): string {
-  const contagem = new Map<string, number>(SEPARADORES.map((s) => [s, 0]))
-  let dentroDeAspas = false
-  for (let i = 0; i < texto.length; i++) {
-    const c = texto[i]
-    if (c === '"') dentroDeAspas = !dentroDeAspas
-    else if (!dentroDeAspas && (c === '\n' || c === '\r')) break
-    else if (!dentroDeAspas && contagem.has(c)) contagem.set(c, contagem.get(c)! + 1)
-  }
-  let melhor = ';'
-  for (const [sep, n] of contagem) if (n > contagem.get(melhor)!) melhor = sep
-  return melhor
-}
+/** Palavras que só aparecem numa linha de cabeçalho, nunca num preâmbulo. */
+const PALAVRAS_DE_CABECALHO = [
+  'data',
+  'date',
+  'dia',
+  'valor',
+  'amount',
+  'descricao',
+  'description',
+  'historico',
+  'lancamento',
+  'titulo',
+  'entrada',
+  'saida',
+  'credito',
+  'debito',
+  'saldo',
+]
 
-export type ArquivoCSV = { cabecalho: string[]; linhas: string[][]; separador: string }
-
-/**
- * Divide o CSV respeitando aspas: campo entre aspas pode conter o separador,
- * quebra de linha e aspas dobradas ("" vira ").
- */
-export function lerCSV(bruto: string): ArquivoCSV {
-  // \ufeff = BOM, que o Excel escreve no começo do arquivo.
-  const texto = bruto.replace(/^\ufeff/, '').replace(/\r\n?/g, '\n')
-  const separador = acharSeparador(texto)
-
+/** Divide o texto inteiro por um separador, respeitando aspas. */
+function dividir(texto: string, separador: string): string[][] {
   const tabela: string[][] = []
   let linha: string[] = []
   let campo = ''
@@ -99,10 +90,78 @@ export function lerCSV(bruto: string): ArquivoCSV {
   linha.push(campo)
   tabela.push(linha)
 
-  // Linhas totalmente vazias não são dado: extrato costuma terminar com \n.
-  const util = tabela.filter((l) => l.some((c) => c.trim() !== '')).map((l) => l.map((c) => c.trim()))
-  if (util.length === 0) return { cabecalho: [], linhas: [], separador }
-  return { cabecalho: util[0], linhas: util.slice(1), separador }
+  // Linhas totalmente vazias não são dado: extrato costuma terminar com \n, e
+  // o preâmbulo do banco vem cheio de linhas em branco.
+  return tabela.filter((l) => l.some((c) => c.trim() !== '')).map((l) => l.map((c) => c.trim()))
+}
+
+/**
+ * Acha o separador E a linha do cabeçalho de uma vez só.
+ *
+ * Extrato de banco de verdade quase nunca começa na tabela. O do C6, por
+ * exemplo, gasta oito linhas com nome do banco, agência, conta e período antes
+ * de chegar ao cabeçalho. Assumir que a linha 1 é o cabeçalho — e contar o
+ * separador nela — fazia o arquivo inteiro virar 677 linhas com problema.
+ *
+ * O critério não é "parece um cabeçalho" isolado, é CONSISTÊNCIA: a linha do
+ * cabeçalho tem o mesmo número de campos das linhas logo abaixo dela, e o
+ * preâmbulo não tem. A palavra conhecida no meio ("Data", "Valor", "Saída")
+ * entra como desempate forte, porque uma linha de preâmbulo com uma vírgula
+ * solta também é "consistente" com nada.
+ */
+function acharInicio(texto: string): { separador: string; pulo: number; tabela: string[][] } {
+  const LIMITE_PREAMBULO = 25
+  let melhor = { separador: SEPARADORES[0] as string, pulo: 0, tabela: [] as string[][], nota: -1 }
+
+  for (const separador of SEPARADORES) {
+    const tabela = dividir(texto, separador)
+    for (let i = 0; i < Math.min(LIMITE_PREAMBULO, tabela.length); i++) {
+      const campos = tabela[i].length
+      if (campos < 2) continue
+
+      let iguais = 0
+      for (let j = i + 1; j < Math.min(i + 6, tabela.length); j++) {
+        if (tabela[j].length === campos) iguais++
+      }
+      const temPalavra = tabela[i].some((c) => PALAVRAS_DE_CABECALHO.includes(normalizar(c)))
+      const nota = campos * (1 + iguais) + (temPalavra ? 100 : 0)
+
+      if (nota > melhor.nota) melhor = { separador, pulo: i, tabela, nota }
+    }
+  }
+
+  // Nenhum candidato (arquivo de uma coluna só, ou vazio): trata como estava.
+  if (melhor.nota < 0) {
+    const separador = SEPARADORES[0]
+    return { separador, pulo: 0, tabela: dividir(texto, separador) }
+  }
+  return { separador: melhor.separador, pulo: melhor.pulo, tabela: melhor.tabela }
+}
+
+export type ArquivoCSV = {
+  cabecalho: string[]
+  linhas: string[][]
+  separador: string
+  /** Quantas linhas de preâmbulo ficaram antes do cabeçalho. */
+  puloPreambulo: number
+}
+
+/**
+ * Divide o CSV respeitando aspas: campo entre aspas pode conter o separador,
+ * quebra de linha e aspas dobradas ("" vira ").
+ */
+export function lerCSV(bruto: string): ArquivoCSV {
+  // \ufeff = BOM, que o Excel escreve no começo do arquivo.
+  const texto = bruto.replace(/^\ufeff/, '').replace(/\r\n?/g, '\n')
+  const { separador, pulo, tabela } = acharInicio(texto)
+
+  if (tabela.length === 0) return { cabecalho: [], linhas: [], separador, puloPreambulo: 0 }
+  return {
+    cabecalho: tabela[pulo],
+    linhas: tabela.slice(pulo + 1),
+    separador,
+    puloPreambulo: pulo,
+  }
 }
 
 // ------------------------------------------------------------------ datas
@@ -181,7 +240,10 @@ const PISTAS: Record<Campo, string[]> = {
   valorSaida: ['debito', 'saida', 'saidas', 'debit', 'valor debito', 'pagamento/debito'],
   valorEntrada: ['credito', 'entrada', 'entradas', 'credit', 'valor credito', 'deposito/credito'],
   categoria: ['categoria', 'category', 'tipo de gasto', 'classificacao'],
-  forma: ['forma de pagamento', 'forma', 'pagamento', 'payment', 'meio de pagamento', 'cartao', 'conta'],
+  // 'conta' saiu da lista: casa por dentro de "Data Contábil" e fazia a forma
+  // de pagamento apontar para uma coluna de data. Mapear errado é pior do que
+  // não mapear — a coluna fica sem uso e a tela deixa escolher à mão.
+  forma: ['forma de pagamento', 'forma', 'pagamento', 'payment', 'meio de pagamento', 'cartao'],
 }
 
 /** Chuta a coluna de cada campo pelo nome do cabeçalho. Exato ganha de parcial. */
@@ -233,8 +295,18 @@ export type LancamentoImportado = {
   tipo: TipoLancamento
   category_id: string | null
   payment_method_id: string | null
-  /** Já existe um lançamento igual no banco: fica de fora por padrão. */
-  duplicado: boolean
+  /**
+   * Já existe um lançamento igual no app. Fica de fora por padrão: reimportar
+   * o mesmo arquivo é o erro fácil de cometer aqui.
+   */
+  jaNoBanco: boolean
+  /**
+   * A MESMA linha aparece mais de uma vez no próprio arquivo. Entra por
+   * padrão, ao contrário do caso acima: extrato repete de verdade — duas
+   * assinaturas iguais no mesmo dia, dois débitos de cartão do mesmo valor — e
+   * o saldo do banco conta as duas. Descartar seria apagar gasto que existiu.
+   */
+  repetidoNoArquivo: boolean
 }
 
 export type Problema = { linha: number; motivo: string; conteudo: string }
@@ -283,7 +355,6 @@ export function prepararImportacao({
   const jaExiste = new Set(
     existentes.map((e) => chaveDuplicata(e.data, e.descricao, Math.abs(e.valor_centavos), e.tipo)),
   )
-  // Duplicata dentro do próprio arquivo conta igual: extrato repete parcela.
   const vistasNoArquivo = new Set<string>()
 
   // Duas colunas de valor mapeadas? Então a direção vem delas e a regra de
@@ -344,7 +415,8 @@ export function prepararImportacao({
     }
 
     const chave = chaveDuplicata(data, descricao, valor_centavos, tipo)
-    const duplicado = jaExiste.has(chave) || vistasNoArquivo.has(chave)
+    const jaNoBanco = jaExiste.has(chave)
+    const repetidoNoArquivo = vistasNoArquivo.has(chave)
     vistasNoArquivo.add(chave)
 
     prontos.push({
@@ -355,7 +427,8 @@ export function prepararImportacao({
       tipo,
       category_id: mapaCategorias.get(normalizar(pegar(mapa.categoria))) ?? null,
       payment_method_id: mapaFormas.get(normalizar(pegar(mapa.forma))) ?? null,
-      duplicado,
+      jaNoBanco,
+      repetidoNoArquivo,
     })
   })
 

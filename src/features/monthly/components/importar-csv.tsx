@@ -88,7 +88,7 @@ export function ImportarCSV({
   const [nomeArquivo, setNomeArquivo] = React.useState('')
   const [mapa, setMapa] = React.useState<Mapa | null>(null)
   const [regraSinal, setRegraSinal] = React.useState<RegraSinal>('pelo-sinal')
-  const [trazerDuplicados, setTrazerDuplicados] = React.useState(false)
+  const [trazerJaExistentes, setTrazerJaExistentes] = React.useState(false)
   const [erroLeitura, setErroLeitura] = React.useState('')
   const [existentes, setExistentes] = React.useState<Existente[] | null>(null)
   const [gravando, setGravando] = React.useState(false)
@@ -102,7 +102,7 @@ export function ImportarCSV({
     setNomeArquivo('')
     setMapa(null)
     setRegraSinal('pelo-sinal')
-    setTrazerDuplicados(false)
+    setTrazerJaExistentes(false)
     setErroLeitura('')
     setExistentes(null)
     setGravando(false)
@@ -169,8 +169,12 @@ export function ImportarCSV({
   const faltando = faltaColuna(mapa)
   // Duas colunas separadas? Então a regra de sinal não tem o que fazer.
   const duasColunas = !!mapa && (mapa.valorSaida >= 0 || mapa.valorEntrada >= 0)
-  const selecionados = previa ? previa.prontos.filter((p) => trazerDuplicados || !p.duplicado) : []
-  const duplicados = previa ? previa.prontos.filter((p) => p.duplicado).length : 0
+  // Só o que JÁ ESTÁ NO APP fica de fora por padrão. Linha repetida dentro do
+  // próprio arquivo entra: extrato repete de verdade, e o saldo do banco conta
+  // as duas — descartar seria apagar gasto que existiu.
+  const selecionados = previa ? previa.prontos.filter((p) => trazerJaExistentes || !p.jaNoBanco) : []
+  const jaExistentes = previa ? previa.prontos.filter((p) => p.jaNoBanco).length : 0
+  const repetidosNoArquivo = previa ? previa.prontos.filter((p) => p.repetidoNoArquivo).length : 0
   const foraDoMes = selecionados.filter((p) => {
     const [a, m] = p.data.split('-').map(Number)
     return a !== ano || m !== mes
@@ -310,22 +314,34 @@ export function ImportarCSV({
             previa && <Conferencia previa={previa} selecionados={selecionados} foraDoMes={foraDoMes} />
           )}
 
-          {duplicados > 0 && (
+          {jaExistentes > 0 && (
             <label className="flex items-start gap-3 rounded-lg border border-border p-3">
               <Checkbox
-                checked={trazerDuplicados}
-                onCheckedChange={(v) => setTrazerDuplicados(v === true)}
-                aria-label="Importar também os repetidos"
+                checked={trazerJaExistentes}
+                onCheckedChange={(v) => setTrazerJaExistentes(v === true)}
+                aria-label="Importar também os que já estão no app"
                 className="mt-0.5"
               />
               <span className="text-sm">
                 <strong>
-                  {duplicados} {duplicados === 1 ? 'linha parece repetida' : 'linhas parecem repetidas'}
+                  {jaExistentes} {jaExistentes === 1 ? 'linha já está no app' : 'linhas já estão no app'}
                 </strong>{' '}
-                — mesma data, descrição e valor de algo que já existe. Ficam de fora, a não ser que você
+                — mesma data, descrição e valor de algo que já foi lançado. Ficam de fora, a não ser que você
                 marque aqui.
               </span>
             </label>
+          )}
+
+          {/* Repetida DENTRO do arquivo é caso diferente, e entra: extrato
+              repete de verdade (duas assinaturas iguais no mesmo dia, dois
+              débitos de cartão do mesmo valor) e o saldo do banco conta as
+              duas. Só avisamos, para a contagem não parecer erro. */}
+          {repetidosNoArquivo > 0 && (
+            <p className="rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+              {repetidosNoArquivo === 1
+                ? '1 linha aparece duas vezes no arquivo e será importada, porque o extrato a contou duas vezes.'
+                : `${repetidosNoArquivo} linhas aparecem repetidas dentro do arquivo e serão importadas, porque o extrato as contou todas.`}
+            </p>
           )}
         </>
       )}

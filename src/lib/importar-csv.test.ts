@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   adivinharColunas,
+  type RegraSinal,
+  interpretarValor,
+  sugerirRegraSinal,
   decodificarTexto,
   detectarOrdemData,
   interpretarData,
@@ -379,5 +382,125 @@ describe('preâmbulo antes do cabeçalho', () => {
     const a = lerCSV('Data;Descrição;Valor\n15/08/2026;X;-10,00\n')
     expect(a.puloPreambulo).toBe(0)
     expect(a.cabecalho).toEqual(['Data', 'Descrição', 'Valor'])
+  })
+})
+
+describe('interpretarValor', () => {
+  it('lê o D/C que Caixa, BB e Sicredi usam no lugar do sinal', () => {
+    expect(interpretarValor('1.234,56 D')).toEqual({ centavos: 123456, marcador: 'D' })
+    expect(interpretarValor('1.234,56 C')).toEqual({ centavos: 123456, marcador: 'C' })
+    expect(interpretarValor('44,90D')).toEqual({ centavos: 4490, marcador: 'D' })
+    expect(interpretarValor('D 44,90')).toEqual({ centavos: 4490, marcador: 'D' })
+  })
+
+  it('lê o sinal escrito no fim, como sistema antigo faz', () => {
+    expect(interpretarValor('1.234,56-').centavos).toBe(-123456)
+  })
+
+  it('não inventa marcador onde não tem', () => {
+    expect(interpretarValor('-44,90')).toEqual({ centavos: -4490, marcador: null })
+    expect(interpretarValor('44.90')).toEqual({ centavos: 4490, marcador: null })
+    expect(interpretarValor('')).toEqual({ centavos: null, marcador: null })
+  })
+})
+
+describe('sugerirRegraSinal', () => {
+  function palpite(csv: string) {
+    const a = lerCSV(csv)
+    return sugerirRegraSinal(a, adivinharColunas(a.cabecalho))
+  }
+
+  it('fatura de cartão (tudo positivo) vira regra de fatura', () => {
+    // Sem isto a fatura inteira entraria como RECEITA: numa fatura tudo é
+    // gasto por definição, então não há negativo nenhum para o sinal ler.
+    expect(palpite('date,title,amount\n2026-08-15,Padaria,25.90\n2026-08-16,Uber,18.40\n')).toBe(
+      'fatura-cartao',
+    )
+  })
+
+  it('fatura com poucos estornos continua sendo fatura', () => {
+    const linhas = Array.from(
+      { length: 20 },
+      (_, i) => `2026-08-${String(i + 1).padStart(2, '0')},Compra,10.00`,
+    )
+    linhas.push('2026-08-25,Estorno,-30.00')
+    expect(palpite('date,title,amount\n' + linhas.join('\n') + '\n')).toBe('fatura-cartao')
+  })
+
+  it('extrato com os dois lados em quantidade parecida não vira fatura', () => {
+    expect(
+      palpite('Data;Descrição;Valor\n15/08/2026;A;-25,90\n16/08/2026;B;30,00\n17/08/2026;C;-10,00\n'),
+    ).toBe('pelo-sinal')
+  })
+
+  it('extrato com negativos continua no sinal', () => {
+    expect(palpite('Data;Descrição;Valor\n15/08/2026;X;-25,90\n16/08/2026;Y;3.500,00\n')).toBe('pelo-sinal')
+  })
+
+  it('arquivo com D/C continua no sinal, porque a letra é que manda', () => {
+    expect(palpite('Data;Histórico;Valor\n15/08/2026;X;25,90 D\n16/08/2026;Y;3.500,00 C\n')).toBe(
+      'pelo-sinal',
+    )
+  })
+})
+
+describe('mais formatos de banco e de cartão', () => {
+  function rodar(csv: string, regra?: RegraSinal) {
+    const a = lerCSV(csv)
+    const mapa = adivinharColunas(a.cabecalho)
+    return {
+      mapa,
+      ...prepararImportacao({
+        ...base,
+        arquivo: a,
+        mapa,
+        regraSinal: regra ?? sugerirRegraSinal(a, mapa),
+      }),
+    }
+  }
+
+  it('fatura do Nubank: date,title,amount, tudo positivo', () => {
+    const r = rodar('date,title,amount\n2026-08-15,Padaria do Bairro,25.90\n2026-08-16,Uber,18.40\n')
+    expect(r.mapa).toMatchObject({ data: 0, descricao: 1, valor: 2 })
+    expect(r.problemas).toEqual([])
+    // O ponto do teste: os dois são GASTO, não receita.
+    expect(r.prontos.map((p) => p.tipo)).toEqual(['gasto', 'gasto'])
+    expect(r.prontos[0]).toMatchObject({ descricao: 'Padaria do Bairro', valor_centavos: 2590 })
+  })
+
+  it('na regra de fatura, positivo é compra e negativo é estorno', () => {
+    // O contrário do extrato, de propósito: numa fatura o sinal quer dizer a
+    // coisa oposta, e um único estorno não pode inverter o documento todo.
+    const r = rodar(
+      'date,title,amount\n2026-08-15,Compra,100.00\n2026-08-20,Estorno,-30.00\n',
+      'fatura-cartao',
+    )
+    expect(r.prontos.map((p) => p.tipo)).toEqual(['gasto', 'entrada'])
+  })
+
+  it('Caixa/BB: valor com letra D ou C em vez de sinal', () => {
+    const r = rodar(
+      'Data Mov.;Nr. Doc;Histórico;Valor;Saldo\n' +
+        '15/08/2026;001;COMPRA CARTAO;44,90 D;1.200,00 C\n' +
+        '16/08/2026;002;DEPOSITO;3.500,00 C;4.700,00 C\n',
+    )
+    expect(r.problemas).toEqual([])
+    expect(r.prontos[0]).toMatchObject({ tipo: 'gasto', valor_centavos: 4490 })
+    expect(r.prontos[1]).toMatchObject({ tipo: 'entrada', valor_centavos: 350000 })
+  })
+
+  it('Inter: ponto e vírgula, negativo para saída, com coluna de saldo', () => {
+    const r = rodar(
+      'Data Lançamento;Histórico;Descrição;Valor;Saldo\n' +
+        '15/08/2026;Pix enviado;MERCADO;-120,50;1.200,00\n' +
+        '16/08/2026;Pix recebido;SALARIO;3.500,00;4.700,50\n',
+    )
+    expect(r.prontos[0]).toMatchObject({ tipo: 'gasto', valor_centavos: 12050 })
+    expect(r.prontos[1]).toMatchObject({ tipo: 'entrada', valor_centavos: 350000 })
+  })
+
+  it('"tratar tudo como gasto" vence o D/C — o controle não pode ser decoração', () => {
+    const r = rodar('Data;Histórico;Valor\n15/08/2026;X;3.500,00 C\n', 'tudo-gasto')
+    expect(r.prontos[0].tipo).toBe('gasto')
   })
 })

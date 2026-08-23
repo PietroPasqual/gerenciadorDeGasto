@@ -216,6 +216,50 @@ export function interpretarData(valor: string, ordem: OrdemData = 'dia-mes'): st
   return null
 }
 
+// ------------------------------------------------------------------ valores
+
+export type ValorLido = {
+  centavos: number | null
+  /** 'D' ou 'C' quando o arquivo marca a direção por letra em vez de sinal. */
+  marcador: 'D' | 'C' | null
+}
+
+/**
+ * Lê uma célula de valor, tratando duas escritas que `parseParaCentavos`
+ * sozinho interpretaria ao contrário:
+ *
+ * - "1.234,56 D" / "1.234,56 C" — Caixa, Banco do Brasil e Sicredi não usam
+ *   sinal, usam uma letra. Sem ler a letra, o débito chega POSITIVO e vira
+ *   entrada: a fatura inteira entra invertida.
+ * - "1.234,56-" — sinal no fim, herança de sistema antigo. Sem isto o menos é
+ *   descartado junto com o resto da pontuação e a saída vira entrada.
+ */
+export function interpretarValor(bruto: string): ValorLido {
+  let texto = bruto.trim()
+  if (texto === '') return { centavos: null, marcador: null }
+
+  let marcador: 'D' | 'C' | null = null
+  const noInicio = /^([DC])\s+(.*)$/i.exec(texto)
+  const noFim = /^(.*?)\s*([DC])$/i.exec(texto)
+  if (noInicio) {
+    marcador = noInicio[1].toUpperCase() as 'D' | 'C'
+    texto = noInicio[2]
+  } else if (noFim) {
+    marcador = noFim[2].toUpperCase() as 'D' | 'C'
+    texto = noFim[1]
+  }
+
+  let negativoNoFim = false
+  if (texto.endsWith('-')) {
+    negativoNoFim = true
+    texto = texto.slice(0, -1)
+  }
+
+  const centavos = parseParaCentavos(texto)
+  if (centavos === null) return { centavos: null, marcador }
+  return { centavos: negativoNoFim ? -Math.abs(centavos) : centavos, marcador }
+}
+
 // -------------------------------------------------------------- mapeamento
 
 export type Campo = 'data' | 'descricao' | 'valor' | 'valorSaida' | 'valorEntrada' | 'categoria' | 'forma'
@@ -224,18 +268,34 @@ export type Campo = 'data' | 'descricao' | 'valor' | 'valorSaida' | 'valorEntrad
 export type Mapa = Record<Campo, number>
 
 const PISTAS: Record<Campo, string[]> = {
-  data: ['data', 'date', 'dia', 'data da compra', 'data lancamento', 'data do lancamento'],
+  data: [
+    'data',
+    'date',
+    'dia',
+    'data da compra',
+    'data lancamento',
+    'data do lancamento',
+    'data mov',
+    'data mov.',
+    'data movimento',
+    'data da transacao',
+    'data de compra',
+  ],
   descricao: [
     'descricao',
     'description',
     'historico',
     'lancamento',
     'titulo',
+    'title',
     'estabelecimento',
     'memo',
     'detalhe',
+    'movimentacao',
+    'operacao',
+    'transacao',
   ],
-  valor: ['valor', 'amount', 'value', 'quantia', 'valor (r$)', 'preco', 'montante'],
+  valor: ['valor', 'amount', 'value', 'quantia', 'valor (r$)', 'preco', 'montante', 'vlr', 'valor da compra'],
   // Extrato de Bradesco, Santander e Caixa não usa sinal: usa DUAS colunas.
   valorSaida: ['debito', 'saida', 'saidas', 'debit', 'valor debito', 'pagamento/debito'],
   valorEntrada: ['credito', 'entrada', 'entradas', 'credit', 'valor credito', 'deposito/credito'],
@@ -284,8 +344,56 @@ export function adivinharColunas(cabecalho: string[]): Mapa {
 
 // -------------------------------------------------------------- preparação
 
-/** Como transformar o sinal do valor em tipo de lançamento. */
-export type RegraSinal = 'pelo-sinal' | 'tudo-gasto' | 'tudo-entrada'
+/**
+ * Como transformar o sinal do valor em tipo de lançamento.
+ *
+ * 'pelo-sinal' e 'fatura-cartao' são OPOSTOS de propósito, porque o mesmo sinal
+ * quer dizer coisas contrárias nos dois documentos:
+ *
+ *   extrato de conta   -120,50 = saiu dinheiro (gasto)   +3.500 = entrou
+ *   fatura de cartão   +120,50 = você comprou (gasto)    -30,00 = estorno
+ *
+ * Não dá para descobrir isso do sinal sozinho — um único estorno numa fatura
+ * inverteria o documento inteiro. Por isso é uma escolha, com um palpite que a
+ * tela mostra em vez de aplicar calada.
+ */
+export type RegraSinal = 'pelo-sinal' | 'fatura-cartao' | 'tudo-gasto' | 'tudo-entrada'
+
+/**
+ * Escolhe a regra de sinal olhando os valores do arquivo.
+ *
+ * Fatura de cartão é o caso perigoso: vem com TODOS os valores positivos,
+ * porque numa fatura tudo é gasto por definição. Com "negativo é gasto,
+ * positivo é entrada" — que é o certo para extrato de conta — a fatura inteira
+ * entraria como RECEITA. Milhares de reais de gasto virando entrada, calados.
+ *
+ * Então: se a coluna não tem um único negativo nem marcador D/C, não há como
+ * o sinal dizer direção nenhuma, e o palpite passa a ser "tudo é gasto". A
+ * tela mostra a escolha e o porquê — o usuário troca em um toque se errarmos.
+ */
+export function sugerirRegraSinal(arquivo: ArquivoCSV, mapa: Mapa): RegraSinal {
+  // Com duas colunas a direção vem delas; a regra de sinal nem é usada.
+  if (mapa.valorSaida >= 0 || mapa.valorEntrada >= 0) return 'pelo-sinal'
+  if (mapa.valor < 0) return 'pelo-sinal'
+
+  let positivos = 0
+  let negativos = 0
+  for (const linha of arquivo.linhas) {
+    const { centavos, marcador } = interpretarValor(linha[mapa.valor] ?? '')
+    // Letra D/C é a própria direção escrita: nada a adivinhar.
+    if (marcador) return 'pelo-sinal'
+    if (centavos === null || centavos === 0) continue
+    if (centavos < 0) negativos++
+    else positivos++
+  }
+
+  // Fatura é dominada por compras, todas positivas; extrato tem os dois lados
+  // em quantidade parecida. O limite é generoso (10%) porque uma fatura com
+  // dois ou três estornos continua sendo uma fatura.
+  const total = positivos + negativos
+  if (total > 0 && negativos <= Math.floor(total * 0.1)) return 'fatura-cartao'
+  return 'pelo-sinal'
+}
 
 export type LancamentoImportado = {
   linha: number
@@ -384,8 +492,8 @@ export function prepararImportacao({
       // Extrato de duas colunas: quem diz a direção é a coluna preenchida, não
       // o sinal. A coluna não usada costuma vir vazia OU como 0,00 — por isso
       // "preenchida" aqui quer dizer diferente de zero, e não "não vazia".
-      const saida = parseParaCentavos(pegar(mapa.valorSaida)) ?? 0
-      const entrada = parseParaCentavos(pegar(mapa.valorEntrada)) ?? 0
+      const saida = interpretarValor(pegar(mapa.valorSaida)).centavos ?? 0
+      const entrada = interpretarValor(pegar(mapa.valorEntrada)).centavos ?? 0
       if (saida === 0 && entrada === 0) {
         problemas.push({ linha: numero, motivo: 'sem valor em débito nem em crédito', conteudo: bruta })
         return
@@ -393,7 +501,7 @@ export function prepararImportacao({
       tipo = saida !== 0 ? 'gasto' : 'entrada'
       valor_centavos = Math.abs(saida !== 0 ? saida : entrada)
     } else {
-      const centavos = parseParaCentavos(pegar(mapa.valor))
+      const { centavos, marcador } = interpretarValor(pegar(mapa.valor))
       if (centavos === null) {
         problemas.push({ linha: numero, motivo: 'valor não reconhecido', conteudo: bruta })
         return
@@ -402,14 +510,26 @@ export function prepararImportacao({
         problemas.push({ linha: numero, motivo: 'valor zerado', conteudo: bruta })
         return
       }
+      // O D/C do arquivo é dado, não palpite, então manda no modo automático.
+      // Nos modos forçados quem manda é o usuário: "tratar tudo como gasto"
+      // precisa fazer exatamente isso, senão o controle vira decoração.
       tipo =
         regraSinal === 'tudo-gasto'
           ? 'gasto'
           : regraSinal === 'tudo-entrada'
             ? 'entrada'
-            : centavos < 0
-              ? 'gasto'
-              : 'entrada'
+            : regraSinal === 'fatura-cartao'
+              ? // Numa fatura o positivo é compra e o negativo é estorno.
+                centavos > 0
+                ? 'gasto'
+                : 'entrada'
+              : marcador === 'D'
+                ? 'gasto'
+                : marcador === 'C'
+                  ? 'entrada'
+                  : centavos < 0
+                    ? 'gasto'
+                    : 'entrada'
       // O banco guarda o valor sempre positivo; quem diz a direção é o tipo.
       valor_centavos = Math.abs(centavos)
     }

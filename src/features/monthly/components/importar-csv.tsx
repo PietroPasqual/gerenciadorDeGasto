@@ -18,6 +18,7 @@ import {
   type Existente,
   type Mapa,
   type RegraSinal,
+  sugerirRegraSinal,
   type Resultado,
 } from '@/lib/importar-csv'
 import { criarLancamentosEmLote, listarLancamentosPorIntervalo } from '@/services/transactions'
@@ -88,6 +89,7 @@ export function ImportarCSV({
   const [nomeArquivo, setNomeArquivo] = React.useState('')
   const [mapa, setMapa] = React.useState<Mapa | null>(null)
   const [regraSinal, setRegraSinal] = React.useState<RegraSinal>('pelo-sinal')
+  const [regraSugerida, setRegraSugerida] = React.useState<RegraSinal>('pelo-sinal')
   const [trazerJaExistentes, setTrazerJaExistentes] = React.useState(false)
   const [erroLeitura, setErroLeitura] = React.useState('')
   const [existentes, setExistentes] = React.useState<Existente[] | null>(null)
@@ -102,6 +104,7 @@ export function ImportarCSV({
     setNomeArquivo('')
     setMapa(null)
     setRegraSinal('pelo-sinal')
+    setRegraSugerida('pelo-sinal')
     setTrazerJaExistentes(false)
     setErroLeitura('')
     setExistentes(null)
@@ -121,9 +124,15 @@ export function ImportarCSV({
         setErroLeitura('O arquivo não tem nenhuma linha além do cabeçalho.')
         return
       }
+      const palpite = adivinharColunas(lido.cabecalho)
       setArquivo(lido)
       setNomeArquivo(file.name)
-      setMapa(adivinharColunas(lido.cabecalho))
+      setMapa(palpite)
+      // Fatura de cartão vem com tudo positivo: "negativo é gasto" faria a
+      // fatura inteira entrar como receita. A sugestão olha os valores.
+      const sugerida = sugerirRegraSinal(lido, palpite)
+      setRegraSinal(sugerida)
+      setRegraSugerida(sugerida)
     } catch {
       setErroLeitura('Não foi possível ler este arquivo. Ele é mesmo um CSV?')
     }
@@ -294,11 +303,29 @@ export function ImportarCSV({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pelo-sinal">Negativo é gasto, positivo é entrada</SelectItem>
+                  <SelectItem value="pelo-sinal">
+                    Extrato de conta — negativo é gasto, positivo é entrada
+                  </SelectItem>
+                  <SelectItem value="fatura-cartao">
+                    Fatura de cartão — positivo é gasto, negativo é estorno
+                  </SelectItem>
                   <SelectItem value="tudo-gasto">Tratar tudo como gasto</SelectItem>
                   <SelectItem value="tudo-entrada">Tratar tudo como entrada</SelectItem>
                 </SelectContent>
               </Select>
+              {/* O resultado da regra fica SEMPRE à vista, com número, e não
+                  só quando mexemos nela. Nenhum limite estatístico separa
+                  fatura de extrato com segurança — mas "0 como gasto e 3 como
+                  entrada" numa fatura salta aos olhos, e trocar é um toque. */}
+              {previa && previa.prontos.length > 0 && (
+                <span className="block text-sm text-muted-foreground">
+                  Com esta regra: <strong>{previa.prontos.filter((p) => p.tipo === 'gasto').length}</strong>{' '}
+                  como gasto e <strong>{previa.prontos.filter((p) => p.tipo === 'entrada').length}</strong>{' '}
+                  como entrada.
+                  {regraSugerida === 'fatura-cartao' &&
+                    ' Quase tudo neste arquivo é positivo, então ele parece uma fatura.'}
+                </span>
+              )}
             </label>
           )}
 

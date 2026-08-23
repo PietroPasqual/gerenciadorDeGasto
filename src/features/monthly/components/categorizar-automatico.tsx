@@ -3,24 +3,29 @@ import { AlertTriangle, Loader2, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
+import { SelectSimples } from '@/components/common/select-simples'
 import { formatCentavos } from '@/lib/money'
 import { useEhMobile } from '@/lib/hooks'
 import { sugerirCategoria } from '@/lib/categorizar'
+import { agruparPorDestinatario, type GrupoDescricao } from '@/lib/agrupar-descricoes'
 import { atualizarCategoriaDeVarios, listarLancamentosDoAno } from '@/services/transactions'
 import type { Category, Transaction } from '@/lib/database.types'
 
-type Grupo = { categoria: Category; ids: string[]; total: number; exemplos: string[] }
-
 /**
- * Preenche a categoria de lançamentos que estão sem, adivinhando pela
- * descrição.
+ * Preenche a categoria dos gastos que estão sem, no ano inteiro.
  *
- * Trabalha no ANO inteiro, e não no mês aberto, de propósito: quem importa um
- * extrato importa um ano de uma vez, e repetir a operação doze vezes não é
- * conserto, é castigo.
+ * A primeira versão disto só tentava adivinhar por palavra-chave, e num extrato
+ * real acertou ZERO de 311. O motivo não era a lista estar pequena: extrato de
+ * conta no Brasil é Pix para nome de gente e de empresa ("Pix enviado para
+ * Verli Friedrich"), e nenhuma lista de palavras sabe quem é essa pessoa.
+ * Palavra-chave funciona em fatura de cartão, onde vem o nome do comércio.
  *
- * Só mexe em quem está SEM categoria. Nunca sobrescreve uma escolha sua — se
- * você classificou algo à mão, fica como está, mesmo que a regra discorde.
+ * Então a tela mudou de "eu adivinho" para "você decide uma vez por
+ * destinatário". As doze linhas do mesmo nome viram uma escolha só. O palpite
+ * continua, mas agora é o que ele sempre deveria ter sido: um atalho que
+ * preenche alguns campos, não a funcionalidade inteira.
+ *
+ * Só mexe em quem está sem categoria. O que você classificou à mão fica.
  */
 export function CategorizarAutomatico({
   aberto,
@@ -40,21 +45,25 @@ export function CategorizarAutomatico({
   const [aplicando, setAplicando] = React.useState(false)
   const [erro, setErro] = React.useState('')
   const [semCategoria, setSemCategoria] = React.useState<Transaction[] | null>(null)
+  /** chave do grupo -> id da categoria escolhida */
+  const [escolhas, setEscolhas] = React.useState<Record<string, string | null>>({})
+  const [mostrarTodos, setMostrarTodos] = React.useState(false)
 
   React.useEffect(() => {
     if (!aberto) {
       setSemCategoria(null)
+      setEscolhas({})
       setErro('')
       setAplicando(false)
+      setMostrarTodos(false)
       return
     }
     let cancelado = false
     setCarregando(true)
     void listarLancamentosDoAno(ano)
-      .then((linhas) => {
-        if (cancelado) return
-        setSemCategoria(linhas.filter((l) => l.tipo === 'gasto' && !l.category_id))
-      })
+      .then(
+        (linhas) => !cancelado && setSemCategoria(linhas.filter((l) => l.tipo === 'gasto' && !l.category_id)),
+      )
       .catch(
         (e) => !cancelado && setErro(e instanceof Error ? e.message : 'Não foi possível ler os lançamentos.'),
       )
@@ -64,35 +73,42 @@ export function CategorizarAutomatico({
     }
   }, [aberto, ano])
 
-  const grupos = React.useMemo<Grupo[]>(() => {
-    if (!semCategoria) return []
-    const mapa = new Map<string, Grupo>()
-    for (const lancamento of semCategoria) {
-      const id = sugerirCategoria(lancamento.descricao, categorias)
-      if (!id) continue
-      const categoria = categorias.find((c) => c.id === id)
-      if (!categoria) continue
-      const grupo = mapa.get(id) ?? { categoria, ids: [], total: 0, exemplos: [] }
-      grupo.ids.push(lancamento.id)
-      grupo.total += lancamento.valor_centavos
-      if (grupo.exemplos.length < 2 && !grupo.exemplos.includes(lancamento.descricao)) {
-        grupo.exemplos.push(lancamento.descricao)
-      }
-      mapa.set(id, grupo)
-    }
-    return [...mapa.values()].sort((a, b) => b.ids.length - a.ids.length)
-  }, [semCategoria, categorias])
+  const grupos = React.useMemo<GrupoDescricao[]>(
+    () => (semCategoria ? agruparPorDestinatario(semCategoria) : []),
+    [semCategoria],
+  )
 
-  const reconhecidos = grupos.reduce((s, g) => s + g.ids.length, 0)
+  // O palpite entra como valor inicial de cada grupo — quando acerta, poupa um
+  // toque; quando não acerta, o campo fica vazio esperando você.
+  React.useEffect(() => {
+    if (grupos.length === 0) return
+    setEscolhas((atual) => {
+      if (Object.keys(atual).length > 0) return atual
+      const inicial: Record<string, string | null> = {}
+      for (const g of grupos) inicial[g.chave] = sugerirCategoria(g.rotulo, categorias)
+      return inicial
+    })
+  }, [grupos, categorias])
+
+  const LIMITE = 12
+  const visiveis = mostrarTodos ? grupos : grupos.slice(0, LIMITE)
   const totalSemCategoria = semCategoria?.length ?? 0
-  const restantes = totalSemCategoria - reconhecidos
+  const marcados = grupos.filter((g) => escolhas[g.chave])
+  const lancamentosMarcados = marcados.reduce((s, g) => s + g.ids.length, 0)
 
   async function aplicar() {
     setAplicando(true)
     try {
+      // Uma requisição por categoria, e não por lançamento: agrupa os ids de
+      // todos os destinatários que caíram na mesma categoria.
+      const porCategoria = new Map<string, string[]>()
+      for (const g of marcados) {
+        const id = escolhas[g.chave]!
+        porCategoria.set(id, [...(porCategoria.get(id) ?? []), ...g.ids])
+      }
       let feitos = 0
-      for (const grupo of grupos) {
-        feitos += await atualizarCategoriaDeVarios(grupo.ids, grupo.categoria.id)
+      for (const [categoria, ids] of porCategoria) {
+        feitos += await atualizarCategoriaDeVarios(ids, categoria)
       }
       aoAplicar(feitos)
       onOpenChange(false)
@@ -113,45 +129,48 @@ export function CategorizarAutomatico({
         <p className="text-sm text-muted-foreground">
           Todos os gastos de {ano} já têm categoria. Não há o que preencher.
         </p>
+      ) : grupos.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Os {totalSemCategoria} gastos sem categoria não têm nome de destinatário na descrição (são coisas
+          como “TRANSF ENVIADA PIX”), então não dá para agrupar. Dá para classificar um a um na aba Gastos.
+        </p>
       ) : (
         <>
           <p className="text-sm">
-            <strong>{reconhecidos}</strong> de <strong>{totalSemCategoria}</strong>{' '}
-            {totalSemCategoria === 1 ? 'gasto sem categoria' : 'gastos sem categoria'} em {ano}{' '}
-            {reconhecidos === 1 ? 'foi reconhecido' : 'foram reconhecidos'} pela descrição.
-            {restantes > 0 && (
-              <>
-                {' '}
-                {restantes === 1
-                  ? 'O outro fica como está — em geral é Pix para pessoa, que o extrato não explica.'
-                  : `Os outros ${restantes} ficam como estão — em geral são Pix para pessoas, que o extrato não explica.`}
-              </>
-            )}
+            Os <strong>{totalSemCategoria}</strong> gastos sem categoria de {ano} vêm de{' '}
+            <strong>{grupos.length}</strong> {grupos.length === 1 ? 'destinatário' : 'destinatários'}. Escolha
+            a categoria de cada um e todas as linhas dele vão junto.
           </p>
 
-          {grupos.length > 0 && (
-            <ul className="divide-y divide-border rounded-lg border border-border">
-              {grupos.map((g) => (
-                <li key={g.categoria.id} className="flex items-start gap-3 p-3">
-                  <span
-                    aria-hidden
-                    className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: g.categoria.cor }}
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-baseline justify-between gap-x-3">
-                      <strong className="text-sm">{g.categoria.nome}</strong>
-                      <span className="text-sm tabular-nums text-muted-foreground">
-                        {g.ids.length} {g.ids.length === 1 ? 'gasto' : 'gastos'} · {formatCentavos(g.total)}
-                      </span>
-                    </span>
-                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                      {g.exemplos.join(' · ')}
-                    </span>
+          <ul className="divide-y divide-border rounded-lg border border-border">
+            {visiveis.map((g) => (
+              <li key={g.chave} className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{g.rotulo}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {g.ids.length} {g.ids.length === 1 ? 'lançamento' : 'lançamentos'} ·{' '}
+                    {formatCentavos(g.total)}
                   </span>
-                </li>
-              ))}
-            </ul>
+                </span>
+                <SelectSimples
+                  valor={escolhas[g.chave] ?? null}
+                  onChange={(v) => setEscolhas((a) => ({ ...a, [g.chave]: v }))}
+                  opcoes={categorias.map((c) => ({ id: c.id, nome: c.nome }))}
+                  placeholder="Categoria"
+                  rotuloVazio="Deixar sem categoria"
+                  ariaLabel={`Categoria de ${g.rotulo}`}
+                  className="w-40 shrink-0 border-input"
+                />
+              </li>
+            ))}
+          </ul>
+
+          {grupos.length > LIMITE && (
+            <Button variant="outline" className="w-full" onClick={() => setMostrarTodos((v) => !v)}>
+              {mostrarTodos
+                ? `Mostrar só os ${LIMITE} maiores`
+                : `Ver os outros ${grupos.length - LIMITE} destinatários`}
+            </Button>
           )}
 
           <p className="text-sm text-muted-foreground">
@@ -171,16 +190,19 @@ export function CategorizarAutomatico({
         <Button variant="outline" onClick={() => onOpenChange(false)} disabled={aplicando}>
           Cancelar
         </Button>
-        <Button onClick={() => void aplicar()} disabled={reconhecidos === 0 || aplicando || carregando}>
+        <Button
+          onClick={() => void aplicar()}
+          disabled={lancamentosMarcados === 0 || aplicando || carregando}
+        >
           {aplicando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-          {aplicando ? 'Aplicando…' : `Categorizar ${reconhecidos}`}
+          {aplicando ? 'Aplicando…' : `Categorizar ${lancamentosMarcados}`}
         </Button>
       </div>
     </div>
   )
 
-  const titulo = 'Categorizar automaticamente'
-  const descricao = `Preencher a categoria dos gastos de ${ano} que estão sem, pela descrição.`
+  const titulo = 'Categorizar em bloco'
+  const descricao = `Escolha a categoria por destinatário e ela vale para todos os lançamentos dele em ${ano}.`
 
   if (ehCelular) {
     return (
@@ -196,7 +218,7 @@ export function CategorizarAutomatico({
 
   return (
     <Dialog open={aberto} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl">
         <DialogTitle>{titulo}</DialogTitle>
         <DialogDescription>{descricao}</DialogDescription>
         <div className="mt-4">{corpo}</div>

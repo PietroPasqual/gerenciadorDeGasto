@@ -189,7 +189,7 @@ export function ControleMensalPage() {
       },
       {
         id: 'categorizar-auto',
-        rotulo: 'Categorizar automaticamente',
+        rotulo: 'Categorizar em bloco',
         Icone: Wand2,
         desabilitada: !dados,
         executar: () => setCategorizando(true),

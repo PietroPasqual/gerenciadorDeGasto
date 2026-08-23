@@ -36,7 +36,7 @@ lembrar para quem for refazê-la:
 | Ver os sete blocos do mês | Seis abas roláveis (Resumo · Entradas · Fixos · Gastos · Investir · Análise), com a aba na URL |
 | Ver entradas/saídas/saldo — card lateral | Faixa fixa abaixo das abas, sempre à vista |
 | Importar CSV — botão no cabeçalho | Menu **⋯** do topo |
-| Categorizar automaticamente — botão no cabeçalho | Menu **⋯** do topo |
+| Categorizar em bloco — botão no cabeçalho | Menu **⋯** do topo |
 | Exportar CSV — botão no cabeçalho | Menu **⋯** do topo |
 | Lançar gasto — linha de adição da tabela | Botão flutuante **+** → sheet, com o valor já em foco |
 | Conferir o CSV antes de gravar — diálogo central | A mesma conferência em sheet de baixo para cima |

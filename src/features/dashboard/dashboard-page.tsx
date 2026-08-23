@@ -29,6 +29,7 @@ import { usePeriodoStore } from '@/store/periodo'
 import { cn } from '@/lib/utils'
 import { observacoesDoMes } from '@/lib/observacoes'
 import { ObservacoesMes } from './components/observacoes-mes'
+import { PerguntarIA } from './components/perguntar-ia'
 
 const ATALHOS = [
   {
@@ -111,10 +112,6 @@ export function DashboardPage() {
         <EstadoErro mensagem={erroCategorias} onTentarNovamente={() => void recarregarCategorias()} />
       )}
 
-      {/* Antes do gráfico de propósito: as frases dizem o que olhar, o gráfico
-          mostra. Depois dele, virariam legenda de algo já visto. */}
-      <ObservacoesMes observacoes={observacoes} />
-
       {carregandoCategorias && !gastosCategoria ? (
         <Skeleton className="h-72 w-full" />
       ) : gastosCategoria ? (
@@ -131,6 +128,13 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       ) : null}
+
+      {/* Depois do gráfico: o desenho responde "para onde foi" num relance, e
+          as frases entram para dizer o que ele não mostra — comparação com os
+          seus outros meses, limite estourado, quanto ficou sem categoria. */}
+      <ObservacoesMes observacoes={observacoes} />
+
+      <PerguntarIA ano={hoje.ano} mes={hoje.mes} />
 
       {carregando && !resumo ? (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">

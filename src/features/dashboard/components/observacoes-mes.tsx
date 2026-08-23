@@ -13,7 +13,21 @@ const ICONE: Record<Tom, typeof Info> = {
 const COR: Record<Tom, string> = {
   atencao: 'text-destructive',
   bom: 'text-success',
-  neutro: 'text-muted-foreground',
+  neutro: 'text-foreground',
+}
+
+/** Fundo da bolinha do ícone. */
+const FUNDO: Record<Tom, string> = {
+  atencao: 'bg-destructive/10',
+  bom: 'bg-success/10',
+  neutro: 'bg-muted',
+}
+
+/** Cada observação vira um cartão com borda no tom — dá para varrer com o olho. */
+const BORDA: Record<Tom, string> = {
+  atencao: 'border-destructive/25 bg-destructive/[0.04]',
+  bom: 'border-success/25 bg-success/[0.04]',
+  neutro: 'border-border bg-muted/30',
 }
 
 /**
@@ -36,16 +50,24 @@ export function ObservacoesMes({ observacoes }: { observacoes: Observacao[] }) {
         <CardDescription>Tirado dos seus próprios números, comparando com você mesmo.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ul className="space-y-1">
+        <ul className="space-y-2">
           {observacoes.map((o) => {
             const Icone = ICONE[o.tom]
             const conteudo = (
               <>
-                <Icone className={cn('mt-0.5 h-4 w-4 shrink-0', COR[o.tom])} aria-hidden />
-                <span className="flex-1 text-sm">{o.texto}</span>
-                {o.para && (
-                  <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                )}
+                <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', FUNDO[o.tom])}>
+                  <Icone className={cn('h-4 w-4', COR[o.tom])} aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  {/* O número em corpo maior e na cor do tom: é o que a pessoa
+                      veio ver, e no meio da frase ele tinha o mesmo peso das
+                      preposições ao redor. */}
+                  <span className={cn('block text-lg font-semibold leading-tight', COR[o.tom])}>
+                    {o.destaque}
+                  </span>
+                  <span className="block text-sm leading-snug text-muted-foreground">{o.texto}</span>
+                </span>
+                {o.para && <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />}
               </>
             )
             return (
@@ -53,12 +75,23 @@ export function ObservacoesMes({ observacoes }: { observacoes: Observacao[] }) {
                 {o.para ? (
                   <Link
                     to={o.para}
-                    className="flex min-h-[2.75rem] items-start gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-accent/50"
+                    className={cn(
+                      'flex min-h-[3.5rem] items-center gap-3 rounded-xl border p-3 transition-colors',
+                      BORDA[o.tom],
+                      'hover:brightness-[0.98] dark:hover:brightness-125',
+                    )}
                   >
                     {conteudo}
                   </Link>
                 ) : (
-                  <span className="flex min-h-[2.75rem] items-start gap-3 px-2 py-2">{conteudo}</span>
+                  <span
+                    className={cn(
+                      'flex min-h-[3.5rem] items-center gap-3 rounded-xl border p-3',
+                      BORDA[o.tom],
+                    )}
+                  >
+                    {conteudo}
+                  </span>
                 )}
               </li>
             )

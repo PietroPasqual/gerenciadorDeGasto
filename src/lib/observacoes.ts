@@ -21,6 +21,14 @@ export type Tom = 'neutro' | 'atencao' | 'bom'
 
 export type Observacao = {
   id: string
+  /**
+   * O número, separado da frase.
+   *
+   * Fica à parte para a tela poder mostrá-lo grande. Enfiado no meio do texto
+   * ("Saiu R$ 18,94 a mais do que entrou"), o dado que importa tem o mesmo
+   * peso visual das preposições ao redor e o olho não para nele.
+   */
+  destaque: string
   texto: string
   tom: Tom
   /** Para onde ir se a pessoa quiser agir sobre isto. */
@@ -87,7 +95,8 @@ export function observacoesDoMes({
       peso: 0,
       id: 'saldo-negativo',
       tom: 'atencao',
-      texto: `Saiu ${reais(saldo)} a mais do que entrou neste mês.`,
+      destaque: reais(saldo),
+      texto: 'saiu a mais do que entrou neste mês.',
       para: '/mes',
     })
   } else if (saldo > 0 && total_entradas > 0) {
@@ -95,7 +104,8 @@ export function observacoesDoMes({
       peso: 40,
       id: 'saldo-positivo',
       tom: 'bom',
-      texto: `Sobrou ${reais(saldo)} — ${porcento(saldo, total_entradas)}% do que entrou.`,
+      destaque: reais(saldo),
+      texto: `sobraram este mês — ${porcento(saldo, total_entradas)}% do que entrou.`,
     })
   }
 
@@ -110,7 +120,8 @@ export function observacoesDoMes({
         peso: 10,
         id: 'sem-categoria',
         tom: 'atencao',
-        texto: `${pct}% das suas saídas (${reais(semCategoria.gasto_centavos)}) estão sem categoria, então não dá para ver onde foram.`,
+        destaque: `${pct}%`,
+        texto: `das suas saídas (${reais(semCategoria.gasto_centavos)}) estão sem categoria, então não dá para ver onde foram.`,
         para: '/mes',
       })
     }
@@ -125,7 +136,8 @@ export function observacoesDoMes({
       peso: 5,
       id: 'limite-estourado',
       tom: 'atencao',
-      texto: `${estourada.nome} passou do limite que você definiu: ${reais(estourada.gasto_centavos)} de ${reais(estourada.limite_centavos!)}.`,
+      destaque: estourada.nome,
+      texto: `passou do limite que você definiu: ${reais(estourada.gasto_centavos)} de ${reais(estourada.limite_centavos!)}.`,
       para: '/mes',
     })
   }
@@ -139,7 +151,8 @@ export function observacoesDoMes({
       peso: 30,
       id: 'maior-categoria',
       tom: 'neutro',
-      texto: `${maior.nome} foi seu maior gasto: ${reais(maior.gasto_centavos)}, ${porcento(maior.gasto_centavos, total_saidas)}% das saídas.`,
+      destaque: maior.nome,
+      texto: `foi seu maior gasto: ${reais(maior.gasto_centavos)}, ${porcento(maior.gasto_centavos, total_saidas)}% das saídas.`,
     })
   }
 
@@ -159,7 +172,8 @@ export function observacoesDoMes({
           peso: 20,
           id: 'contra-media',
           tom: acima ? 'atencao' : 'bom',
-          texto: `Você gastou ${diferenca}% ${acima ? 'a mais' : 'a menos'} que a sua média dos outros ${lancados.length} meses de ${ano} (${reais(media)}).`,
+          destaque: `${diferenca}% ${acima ? 'a mais' : 'a menos'}`,
+          texto: `que a sua média dos outros ${lancados.length} meses de ${ano} (${reais(media)}).`,
           para: '/comparativo',
         })
       }
@@ -174,7 +188,8 @@ export function observacoesDoMes({
       peso: 25,
       id: 'meses-negativos',
       tom: 'atencao',
-      texto: `${negativos} dos ${comMovimento.length} meses lançados de ${ano} fecharam no negativo.`,
+      destaque: `${negativos} de ${comMovimento.length}`,
+      texto: `meses lançados de ${ano} fecharam no negativo.`,
       para: '/comparativo',
     })
   }
@@ -185,7 +200,8 @@ export function observacoesDoMes({
       peso: 50,
       id: 'investido',
       tom: 'bom',
-      texto: `Você guardou ${reais(total_investido)} — ${porcento(total_investido, total_entradas)}% do que entrou.`,
+      destaque: reais(total_investido),
+      texto: `guardados — ${porcento(total_investido, total_entradas)}% do que entrou.`,
       para: '/metas',
     })
   }

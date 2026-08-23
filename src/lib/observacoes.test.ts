@@ -22,7 +22,14 @@ function rodar(p: Partial<Parameters<typeof observacoesDoMes>[0]>): Observacao[]
   })
 }
 const ids = (o: Observacao[]) => o.map((x) => x.id)
-const texto = (o: Observacao[], id: string) => o.find((x) => x.id === id)?.texto ?? ''
+/**
+ * O que a pessoa lê de fato: destaque e frase são partes do mesmo enunciado,
+ * separadas só para a tela poder dar peso ao número.
+ */
+const texto = (o: Observacao[], id: string) => {
+  const x = o.find((y) => y.id === id)
+  return x ? `${x.destaque} ${x.texto}` : ''
+}
 
 describe('quando NÃO falar', () => {
   it('mês sem nada lançado não gera observação', () => {
@@ -163,7 +170,7 @@ describe('os fatos', () => {
         { mes: 7, entradas: 400000, saidas: 100000 },
       ],
     })
-    expect(texto(o, 'meses-negativos')).toContain('2 dos 3')
+    expect(texto(o, 'meses-negativos')).toContain('2 de 3')
   })
 
   it('o que foi guardado aparece como fração do que entrou', () => {

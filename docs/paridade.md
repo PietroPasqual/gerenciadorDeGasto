@@ -54,6 +54,7 @@ lembrar para quem for refazê-la:
 | Ver os 12 meses — tabela de 4 colunas | Cards de duas linhas (mês + diferença / entrou + saiu) |
 | Totais e médias do ano — três cards lado a lado | Faixa que desliza, com snap |
 | Abrir um mês no controle mensal — clicar no nome | Tocar no card inteiro |
+| Abrir um mês — clique na linha da tabela **ou** no ponto do gráfico | Toque no card do mês **ou** tocando no ponto do gráfico |
 | Exportar CSV — botão no cabeçalho | Menu **⋯** |
 | Gráfico entrada × gastos, com média e tooltip | O mesmo gráfico |
 

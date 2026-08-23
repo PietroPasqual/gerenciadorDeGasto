@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useMemo } from 'react'
 import { Download, TrendingDown, TrendingUp } from 'lucide-react'
 import {
@@ -34,6 +35,19 @@ const TEMPLATE = 'md:grid-cols-[1fr,1fr,1fr,1fr]'
 
 export function ComparativoAnualPage() {
   const { anoComparativo, definirAnoComparativo, definirPeriodo } = usePeriodoStore()
+  const navegar = useNavigate()
+
+  /**
+   * Abrir um mês do comparativo.
+   *
+   * Antes isto só mexia no período guardado e ficava na mesma tela: você
+   * clicava no mês e, da sua parte, nada acontecia. Definir o período sem ir
+   * para lá é meio caminho — quem toca num mês quer VER o mês.
+   */
+  const abrirMes = (mes: number) => {
+    definirPeriodo({ ano: anoComparativo, mes })
+    navegar('/mes')
+  }
 
   // Agregado calculado no banco (função SQL comparativo_anual)
   const { dados, carregando, erro, recarregar } = useRecurso(
@@ -56,10 +70,26 @@ export function ComparativoAnualPage() {
   }, [meses])
 
   const dadosGrafico = meses.map((m) => ({
+    // `numeroMes` viaja junto com o ponto só para o clique no gráfico saber
+    // para qual mês ir. O eixo continua mostrando `mes`, o nome curto.
+    numeroMes: m.mes,
     mes: nomeCurtoDoMes(m.mes),
     Entradas: m.entradas / 100,
     Gastos: m.saidas / 100,
   }))
+
+  /**
+   * Tocar num mês do gráfico abre aquele mês.
+   *
+   * A lista "Mês a mês" já fazia isso, mas o gráfico é onde o olho para
+   * primeiro — ver um pico e não conseguir tocar nele para saber o que houve
+   * era o caminho faltando. O Recharts entrega o ponto ativo no clique; daí
+   * sai o número do mês.
+   */
+  const irParaMesDoGrafico = (estado: { activePayload?: Array<{ payload?: { numeroMes?: number } }> }) => {
+    const numero = estado?.activePayload?.[0]?.payload?.numeroMes
+    if (numero) abrirMes(numero)
+  }
 
   const exportar = () => {
     const conteudo = gerarCSV(
@@ -167,7 +197,7 @@ export function ComparativoAnualPage() {
                 {meses.map((linha) => {
                   const negativo = linha.diferenca < 0
                   const futuro = ehFuturo({ ano: anoComparativo, mes: linha.mes })
-                  const ir = () => definirPeriodo({ ano: anoComparativo, mes: linha.mes })
+                  const ir = () => abrirMes(linha.mes)
 
                   const classe = cn(
                     'grid grid-cols-1 gap-0.5 rounded-xl border border-border px-3 py-2 text-left transition-colors',
@@ -266,7 +296,12 @@ export function ComparativoAnualPage() {
               <CardContent>
                 <div className="h-[22rem] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={dadosGrafico} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
+                    <ComposedChart
+                      data={dadosGrafico}
+                      margin={{ top: 8, right: 8, bottom: 0, left: -8 }}
+                      onClick={irParaMesDoGrafico}
+                      style={{ cursor: 'pointer' }}
+                    >
                       {/* Área com degradê sob cada linha: dá volume ao mês e
                           deixa claro qual das duas está por cima sem precisar
                           seguir a linha com o olho. */}
@@ -275,14 +310,25 @@ export function ComparativoAnualPage() {
                           <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.22} />
                           <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0} />
                         </linearGradient>
+                        {/* Gastos em `destructive`, e não em `primary`. Com
+                            primary a linha herdava a cor da MARCA — e no tema
+                            verde ela ficava igualzinha à de entradas, que usa
+                            `success`. Duas linhas verdes, legenda inútil. As
+                            cores de dinheiro (verde entra, vermelho sai) são as
+                            mesmas do resto do app e não dependem do tema. */}
                         <linearGradient id="areaGastos" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.22} />
-                          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                          <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.22} />
+                          <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0} />
                         </linearGradient>
                       </defs>
 
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                      <XAxis dataKey="mes" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                      <XAxis
+                        dataKey="mes"
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
                       <YAxis
                         tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                         axisLine={false}
@@ -304,9 +350,12 @@ export function ComparativoAnualPage() {
                       {mesesLancados > 0 && (
                         <ReferenceLine
                           y={totais.mediaSaidas / 100}
-                          stroke="hsl(var(--primary))"
+                          // Neutra: é uma régua, não uma terceira série. Em
+                          // primary ela competia com as linhas — e no tema
+                          // verde virava uma terceira linha verde.
+                          stroke="hsl(var(--muted-foreground))"
                           strokeDasharray="5 5"
-                          strokeOpacity={0.65}
+                          strokeOpacity={0.6}
                           label={{
                             value: `média de gastos ${formatCentavosCompacto(totais.mediaSaidas)}`,
                             position: 'insideTopRight',
@@ -346,7 +395,7 @@ export function ComparativoAnualPage() {
                       <Line
                         type="monotone"
                         dataKey="Gastos"
-                        stroke="hsl(var(--primary))"
+                        stroke="hsl(var(--destructive))"
                         strokeWidth={2.5}
                         dot={{ r: 3 }}
                         activeDot={{ r: 5 }}
@@ -382,8 +431,7 @@ function DicaGrafico({
 }) {
   if (!active || !payload?.length) return null
 
-  const valor = (chave: string) =>
-    (payload.find((p) => p.dataKey === chave)?.value ?? 0) * 100
+  const valor = (chave: string) => (payload.find((p) => p.dataKey === chave)?.value ?? 0) * 100
   const entradas = valor('Entradas')
   const gastos = valor('Gastos')
   const diferenca = entradas - gastos

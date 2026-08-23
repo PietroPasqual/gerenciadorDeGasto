@@ -319,7 +319,8 @@ export interface Database {
       gastos_por_categoria: {
         Args: { p_ano: number; p_mes: number }
         Returns: {
-          category_id: string
+          /** NULL na linha "Sem categoria" (ver migration 0006). */
+          category_id: string | null
           nome: string
           cor: string
           limite_centavos: number | null
@@ -330,7 +331,8 @@ export interface Database {
       saidas_por_forma_pagamento: {
         Args: { p_ano: number; p_mes: number }
         Returns: {
-          payment_method_id: string
+          /** NULL na linha "Sem forma de pagamento" (ver migration 0006). */
+          payment_method_id: string | null
           nome: string
           tipo: TipoPagamento
           gasto_centavos: number

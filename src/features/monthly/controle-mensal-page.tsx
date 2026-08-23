@@ -34,7 +34,8 @@ import { useEhMobile } from '@/lib/hooks'
 
 export function ControleMensalPage() {
   const { ano, mes, definirPeriodo } = usePeriodoStore()
-  const { dados, gastos, fixosDoMes, resumo, carregando, erro, recarregar, acoes } = useControleMensal(ano, mes)
+  const { dados, gastos, entradasAvulsas, fixosDoMes, resumo, carregando, erro, recarregar, acoes } =
+    useControleMensal(ano, mes)
   const [aba, definirAba] = useAbaMes()
   const [importando, setImportando] = useState(false)
 
@@ -77,19 +78,49 @@ export function ControleMensalPage() {
     const porCategoriaMapa = agruparPorChave([...gastosDoMes, ...fixosDoMes], (i) => i.category_id)
     const porFormaMapa = agruparPorChave([...gastosDoMes, ...fixosDoMes], (i) => i.payment_method_id)
 
+    /**
+     * O que não tem categoria vira uma linha própria, no fim.
+     *
+     * Mapear só `dados.categorias` fazia o gasto sem categoria sumir do
+     * painel — e o painel então dividia o mês entre as categorias que
+     * sobraram e mostrava 100%. Depois de importar um extrato (que não traz
+     * categoria) isso deixa de ser detalhe: a maior parte do mês fica de fora
+     * e o número que aparece afirma ser o todo. Mesma correção que a migration
+     * 0006 fez do lado do banco, para as duas telas não divergirem.
+     */
+    const sobra = (mapa: Record<string, number>) => mapa['sem-classificacao'] ?? 0
+
     return {
-      porCategoria: dados.categorias.map((c) => ({
-        id: c.id,
-        nome: c.nome,
-        cor: c.cor,
-        limite_centavos: c.limite_centavos,
-        gasto_centavos: porCategoriaMapa[c.id] ?? 0,
-      })),
-      porFormaPagamento: dados.formasPagamento.map((f) => ({
-        id: f.id,
-        nome: f.nome,
-        gasto_centavos: porFormaMapa[f.id] ?? 0,
-      })),
+      porCategoria: [
+        ...dados.categorias.map((c) => ({
+          id: c.id as string | null,
+          nome: c.nome,
+          cor: c.cor,
+          limite_centavos: c.limite_centavos,
+          gasto_centavos: porCategoriaMapa[c.id] ?? 0,
+        })),
+        ...(sobra(porCategoriaMapa) > 0
+          ? [
+              {
+                id: null,
+                nome: 'Sem categoria',
+                cor: '#94a3b8',
+                limite_centavos: null,
+                gasto_centavos: sobra(porCategoriaMapa),
+              },
+            ]
+          : []),
+      ],
+      porFormaPagamento: [
+        ...dados.formasPagamento.map((f) => ({
+          id: f.id as string | null,
+          nome: f.nome,
+          gasto_centavos: porFormaMapa[f.id] ?? 0,
+        })),
+        ...(sobra(porFormaMapa) > 0
+          ? [{ id: null, nome: 'Sem forma de pagamento', gasto_centavos: sobra(porFormaMapa) }]
+          : []),
+      ],
       porMeta: dados.metas.map((m) => ({
         nome: m.nome,
         valor: dados.aportes.find((a) => a.goal_id === m.id)?.valor_centavos ?? 0,
@@ -255,9 +286,12 @@ export function ControleMensalPage() {
               <SecaoMes id="entradas" aba={aba}>
                 <TabelaEntradas
                   entradas={dados.entradas}
+                  entradasComData={entradasAvulsas}
                   onAdicionar={acoes.adicionarEntrada}
                   onEditar={acoes.editarEntrada}
                   onRemover={acoes.removerEntrada}
+                  onEditarComData={acoes.editarLancamento}
+                  onRemoverComData={acoes.removerLancamento}
                 />
               </SecaoMes>
 

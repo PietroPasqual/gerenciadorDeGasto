@@ -4,7 +4,8 @@ import { formatCentavos } from '@/lib/money'
 import { Total } from '@/components/common/linha-planilha'
 
 export interface LinhaFormaPagamento {
-  id: string
+  /** NULL na linha sintética "Sem forma de pagamento". */
+  id: string | null
   nome: string
   gasto_centavos: number
 }
@@ -20,11 +21,14 @@ export function PainelFormasPagamento({ formas }: { formas: LinhaFormaPagamento[
       </CardHeader>
       <CardContent className="space-y-2">
         {formas.length === 0 ? (
-          <EstadoVazio titulo="Nenhuma forma de pagamento" descricao="Cadastre suas formas em Configurações." />
+          <EstadoVazio
+            titulo="Nenhuma forma de pagamento"
+            descricao="Cadastre suas formas em Configurações."
+          />
         ) : (
           <ul className="divide-y divide-border">
             {formas.map((forma) => (
-              <li key={forma.id} className="flex items-center justify-between py-2 text-sm">
+              <li key={forma.id ?? 'sem-forma'} className="flex items-center justify-between py-2 text-sm">
                 <span>{forma.nome}</span>
                 <span className="tabular font-medium">{formatCentavos(forma.gasto_centavos)}</span>
               </li>

@@ -6,7 +6,8 @@ import { calcularPercentualLimite, nivelDoLimite } from '@/lib/calculations'
 import { cn } from '@/lib/utils'
 
 export interface LinhaCategoria {
-  id: string
+  /** NULL na linha sintética "Sem categoria", que não existe no banco. */
+  id: string | null
   nome: string
   cor: string
   limite_centavos: number | null
@@ -42,7 +43,7 @@ export function PainelCategorias({ categorias }: { categorias: LinhaCategoria[] 
               const percentual = calcularPercentualLimite(categoria.gasto_centavos, categoria.limite_centavos)
               const nivel = nivelDoLimite(categoria.gasto_centavos, categoria.limite_centavos)
               return (
-                <li key={categoria.id} className="space-y-1.5">
+                <li key={categoria.id ?? 'sem-categoria'} className="space-y-1.5">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
                     <span className="flex items-center gap-2 font-medium">
                       <span

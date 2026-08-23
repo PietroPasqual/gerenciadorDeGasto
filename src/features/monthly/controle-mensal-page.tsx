@@ -20,7 +20,7 @@ import { usePeriodoStore } from '@/store/periodo'
 import { useControleMensal } from './use-controle-mensal'
 import { exportarMesCSV } from './exportar'
 import { ImportarCSV } from './components/importar-csv'
-import { CategorizarAutomatico } from './components/categorizar-automatico'
+import { PreencherEmBloco } from './components/preencher-em-bloco'
 import { ResumoMes } from './components/resumo-mes'
 import { TabelaEntradas } from './components/tabela-entradas'
 import { TabelaGastosFixos } from './components/tabela-gastos-fixos'
@@ -189,7 +189,7 @@ export function ControleMensalPage() {
       },
       {
         id: 'categorizar-auto',
-        rotulo: 'Categorizar em bloco',
+        rotulo: 'Preencher em bloco',
         Icone: Wand2,
         desabilitada: !dados,
         executar: () => setCategorizando(true),
@@ -224,7 +224,7 @@ export function ControleMensalPage() {
                 corte é 2xl e não xl porque em 1280 — com os rótulos de volta —
                 ele voltava a quebrar. */}
             <AcaoCabecalho
-              rotulo="Categorizar"
+              rotulo="Preencher"
               Icone={Wand2}
               onClick={() => setCategorizando(true)}
               desabilitada={!dados}
@@ -395,15 +395,14 @@ export function ControleMensalPage() {
             onExcluir={gastoEditando ? () => excluirComDesfazer(gastoEditando) : undefined}
           />
 
-          <CategorizarAutomatico
+          <PreencherEmBloco
             aberto={categorizando}
             onOpenChange={setCategorizando}
             ano={ano}
             categorias={dados.categorias}
-            aoAplicar={(quantidade) => {
-              toast.success(
-                `${quantidade} ${quantidade === 1 ? 'gasto categorizado' : 'gastos categorizados'}`,
-              )
+            formas={dados.formasPagamento}
+            aoAplicar={(quantidade: number) => {
+              toast.success(`${quantidade} ${quantidade === 1 ? 'gasto preenchido' : 'gastos preenchidos'}`)
               void recarregar()
             }}
           />

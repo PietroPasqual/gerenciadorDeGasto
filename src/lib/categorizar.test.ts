@@ -6,6 +6,7 @@ import {
   REGRAS,
   regraDe,
   sugerirCategoria,
+  sugerirFormaPagamento,
 } from './categorizar'
 
 /** As categorias que o app cria para todo usuário novo. */
@@ -122,5 +123,47 @@ describe('sugerirCategoria', () => {
     expect(sugerirCategoria('', CATEGORIAS)).toBeNull()
     expect(sugerirCategoria('   ', CATEGORIAS)).toBeNull()
     expect(sugerirCategoria('123456', CATEGORIAS)).toBeNull()
+  })
+})
+
+describe('sugerirFormaPagamento', () => {
+  const FORMAS = [
+    { id: 'f-dinheiro', nome: 'Dinheiro' },
+    { id: 'f-pix', nome: 'Pix' },
+    { id: 'f-debito', nome: 'Débito' },
+    { id: 'f-boleto', nome: 'Boleto' },
+    { id: 'f-credito', nome: 'Crédito' },
+  ]
+  const sugerir = (d: string, formas = FORMAS) => sugerirFormaPagamento(d, formas)
+
+  it('lê a forma no verbo da operação, que o banco escreve', () => {
+    expect(sugerir('Pix enviado para Verli Friedrich')).toBe('f-pix')
+    expect(sugerir('Pix automático enviado para Ebanx')).toBe('f-pix')
+    expect(sugerir('TRANSF ENVIADA PIX')).toBe('f-pix')
+    expect(sugerir('DEBITO DE CARTAO')).toBe('f-debito')
+    expect(sugerir('Pagamento de boleto')).toBe('f-boleto')
+    expect(sugerir('SAQUE CAIXA ELETRONICO')).toBe('f-dinheiro')
+  })
+
+  it('"Compra com Cartão" sozinho não decide entre débito e crédito', () => {
+    // Chutar um dos dois erraria metade das vezes, em silêncio.
+    expect(sugerir('Compra com Cartão PADARIA')).toBeNull()
+  })
+
+  it('não sugere forma que o usuário não tem cadastrada', () => {
+    expect(sugerir('Pix enviado para X', [{ id: 'f-dinheiro', nome: 'Dinheiro' }])).toBeNull()
+    expect(sugerir('Pix enviado para X', [])).toBeNull()
+  })
+
+  it('para na regra que casou, sem tentar a seguinte por acaso', () => {
+    // "Pix" casou mas não existe Pix cadastrado: o resultado é null, e não
+    // "Transferência" só porque a palavra "enviado" lembra transferência.
+    const semPix = [{ id: 'f-transf', nome: 'Transferência' }]
+    expect(sugerir('Pix enviado para X', semPix)).toBeNull()
+  })
+
+  it('descrição vazia não vira forma', () => {
+    expect(sugerir('')).toBeNull()
+    expect(sugerir('   ')).toBeNull()
   })
 })

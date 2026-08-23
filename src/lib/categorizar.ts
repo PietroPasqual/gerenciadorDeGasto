@@ -286,3 +286,48 @@ export function sugerirCategoria(descricao: string, categorias: Categoria[]): st
   }
   return null
 }
+
+// ------------------------------------------------------ forma de pagamento
+
+/**
+ * A forma de pagamento, ao contrário da categoria, MUITAS VEZES está escrita
+ * na descrição: "Pix enviado para X" é Pix, "DEBITO DE CARTAO" é débito.
+ *
+ * Não é palpite sobre o que a pessoa quis dizer — é o próprio banco dizendo
+ * como o dinheiro saiu. Por isso as regras aqui são coladas no verbo da
+ * operação, e nada que dependa do nome do destinatário entra.
+ */
+const REGRAS_FORMA: Array<{ termos: string[]; nomes: string[] }> = [
+  { termos: ['pix'], nomes: ['Pix'] },
+  { termos: ['boleto'], nomes: ['Boleto'] },
+  { termos: ['saque', 'dinheiro', 'especie'], nomes: ['Dinheiro'] },
+  // "DEBITO DE CARTAO", "compra no debito", "debito automatico"
+  { termos: ['debito'], nomes: ['Débito', 'Cartão de débito'] },
+  { termos: ['credito'], nomes: ['Crédito', 'Cartão de crédito'] },
+  { termos: ['ted', 'doc', 'transferencia'], nomes: ['Transferência', 'TED'] },
+]
+
+/**
+ * O id da forma de pagamento que combina com a descrição, ou null.
+ *
+ * "Compra com Cartão" sozinho NÃO decide nada de propósito: pode ser débito ou
+ * crédito, e escolher um dos dois no chute erraria metade das vezes em
+ * silêncio. Só cai numa forma quando a palavra está lá.
+ */
+export function sugerirFormaPagamento(descricao: string, formas: Categoria[]): string | null {
+  const acolchoado = ` ${normalizar(descricao)} `
+  if (acolchoado.trim() === '') return null
+
+  const porNome = new Map(formas.map((f) => [normalizar(f.nome), f.id]))
+  for (const regra of REGRAS_FORMA) {
+    if (!regra.termos.some((t) => temPalavra(acolchoado, t))) continue
+    for (const nome of regra.nomes) {
+      const id = porNome.get(normalizar(nome))
+      if (id) return id
+    }
+    // Achou a operação mas o usuário não tem essa forma cadastrada: para aqui
+    // em vez de tentar a próxima regra, que casaria por acaso.
+    return null
+  }
+  return null
+}

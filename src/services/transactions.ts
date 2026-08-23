@@ -131,3 +131,23 @@ export async function atualizarCategoriaDeVarios(ids: string[], category_id: str
   }
   return alterados
 }
+
+/**
+ * Põe a mesma forma de pagamento em vários lançamentos de uma vez.
+ *
+ * Gêmea de `atualizarCategoriaDeVarios`, e pelo mesmo motivo: extrato de banco
+ * não traz forma de pagamento, então depois de importar são centenas de linhas
+ * sem ela.
+ */
+export async function atualizarFormaDeVarios(ids: string[], payment_method_id: string): Promise<number> {
+  if (ids.length === 0) return 0
+  const TAMANHO_BLOCO = 200
+  let alterados = 0
+  for (let i = 0; i < ids.length; i += TAMANHO_BLOCO) {
+    const bloco = ids.slice(i, i + TAMANHO_BLOCO)
+    const { error } = await supabase.from('transactions').update({ payment_method_id }).in('id', bloco)
+    if (error) throw traduzErro(error, 'Não foi possível salvar as formas de pagamento.')
+    alterados += bloco.length
+  }
+  return alterados
+}

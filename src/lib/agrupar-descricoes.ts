@@ -94,6 +94,14 @@ export type GrupoDescricao = {
   chave: string
   /** O destinatário, sem o verbo da transferência, para mostrar na tela. */
   rotulo: string
+  /**
+   * A descrição inteira da primeira linha, como veio.
+   *
+   * Necessária porque o `rotulo` corta exatamente a parte que diz a FORMA DE
+   * PAGAMENTO: em "Pix enviado para Verli Friedrich", o rótulo é o nome e o
+   * "Pix" fica no prefixo descartado.
+   */
+  exemploCru: string
   ids: string[]
   total: number
 }
@@ -109,9 +117,10 @@ export function agruparPorDestinatario(itens: ItemAgrupavel[]): GrupoDescricao[]
     // Descrição que virou vazia (só números, por exemplo) não forma grupo:
     // juntaria coisas sem nada em comum sob um rótulo em branco.
     if (chave === '') continue
-    const grupo = mapa.get(chave) ?? {
+    const grupo: GrupoDescricao = mapa.get(chave) ?? {
       chave,
       rotulo: rotuloDoDestinatario(item.descricao),
+      exemploCru: item.descricao,
       ids: [],
       total: 0,
     }

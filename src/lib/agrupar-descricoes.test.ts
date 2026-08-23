@@ -106,3 +106,14 @@ describe('rotuloDoDestinatario', () => {
     expect(rotuloDoDestinatario('TRANSF ENVIADA PIX')).toBe('TRANSF ENVIADA PIX')
   })
 })
+
+describe('exemploCru', () => {
+  it('guarda a descrição inteira, que é onde está a forma de pagamento', () => {
+    // O rótulo corta "Pix enviado para" — justamente a parte que diz Pix.
+    const g = agruparPorDestinatario([
+      { id: '1', descricao: 'Pix enviado para Verli Friedrich', valor_centavos: 1120 },
+    ])
+    expect(g[0].rotulo).toBe('Verli Friedrich')
+    expect(g[0].exemploCru).toBe('Pix enviado para Verli Friedrich')
+  })
+})

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -20,12 +21,14 @@ import { NumeroAnimado } from '@/components/common/numero-animado'
 import { EstadoErro } from '@/components/common/estados'
 import { Donut } from '@/components/common/donut'
 import { useRecurso } from '@/lib/hooks'
-import { obterResumoMensal, obterGastosPorCategoria } from '@/services/reports'
+import { obterResumoMensal, obterGastosPorCategoria, obterComparativoAnual } from '@/services/reports'
 import { nomeDoMes, periodoAtual } from '@/lib/dates'
 import { formatCentavos } from '@/lib/money'
 import { useAuthStore } from '@/store/auth'
 import { usePeriodoStore } from '@/store/periodo'
 import { cn } from '@/lib/utils'
+import { observacoesDoMes } from '@/lib/observacoes'
+import { ObservacoesMes } from './components/observacoes-mes'
 
 const ATALHOS = [
   {
@@ -40,8 +43,18 @@ const ATALHOS = [
     descricao: 'Entrada x gastos nos 12 meses do ano.',
     Icone: LineChart,
   },
-  { para: '/metas', titulo: 'Metas e wishlist', descricao: 'O quanto você já guardou para cada objetivo.', Icone: Target },
-  { para: '/configuracoes', titulo: 'Configurações', descricao: 'Categorias, limites, formas de pagamento e tema.', Icone: Settings },
+  {
+    para: '/metas',
+    titulo: 'Metas e wishlist',
+    descricao: 'O quanto você já guardou para cada objetivo.',
+    Icone: Target,
+  },
+  {
+    para: '/configuracoes',
+    titulo: 'Configurações',
+    descricao: 'Categorias, limites, formas de pagamento e tema.',
+    Icone: Settings,
+  },
   { para: '/ajuda', titulo: 'Ajuda', descricao: 'Como usar cada tela do app.', Icone: HelpCircle },
 ]
 
@@ -51,10 +64,12 @@ export function DashboardPage() {
   const hoje = periodoAtual()
 
   // Resumo vem pronto do banco (função SQL resumo_mensal) — o painel não carrega linhas.
-  const { dados: resumo, carregando, erro, recarregar } = useRecurso(
-    () => obterResumoMensal(hoje.ano, hoje.mes),
-    [hoje.ano, hoje.mes],
-  )
+  const {
+    dados: resumo,
+    carregando,
+    erro,
+    recarregar,
+  } = useRecurso(() => obterResumoMensal(hoje.ano, hoje.mes), [hoje.ano, hoje.mes])
 
   const {
     dados: gastosCategoria,
@@ -62,6 +77,24 @@ export function DashboardPage() {
     erro: erroCategorias,
     recarregar: recarregarCategorias,
   } = useRecurso(() => obterGastosPorCategoria(hoje.ano, hoje.mes), [hoje.ano, hoje.mes])
+
+  // O ano inteiro serve só para comparar o mês com a SUA média — é a mesma
+  // função que o comparativo usa, então não é consulta nova para o banco.
+  const { dados: meses } = useRecurso(() => obterComparativoAnual(hoje.ano), [hoje.ano])
+
+  const observacoes = useMemo(
+    () =>
+      resumo
+        ? observacoesDoMes({
+            resumo,
+            categorias: gastosCategoria ?? [],
+            meses: meses ?? [],
+            mes: hoje.mes,
+            ano: hoje.ano,
+          })
+        : [],
+    [resumo, gastosCategoria, meses, hoje.mes, hoje.ano],
+  )
 
   const primeiroNome = (perfil?.nome ?? '').split(' ')[0]
 
@@ -77,6 +110,10 @@ export function DashboardPage() {
       {erroCategorias && (
         <EstadoErro mensagem={erroCategorias} onTentarNovamente={() => void recarregarCategorias()} />
       )}
+
+      {/* Antes do gráfico de propósito: as frases dizem o que olhar, o gráfico
+          mostra. Depois dele, virariam legenda de algo já visto. */}
+      <ObservacoesMes observacoes={observacoes} />
 
       {carregandoCategorias && !gastosCategoria ? (
         <Skeleton className="h-72 w-full" />
@@ -103,8 +140,18 @@ export function DashboardPage() {
         </div>
       ) : resumo ? (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <CardResumo rotulo="Entradas" valor={resumo.total_entradas} Icone={TrendingUp} className="text-success" />
-          <CardResumo rotulo="Saídas" valor={resumo.total_saidas} Icone={TrendingDown} className="text-destructive" />
+          <CardResumo
+            rotulo="Entradas"
+            valor={resumo.total_entradas}
+            Icone={TrendingUp}
+            className="text-success"
+          />
+          <CardResumo
+            rotulo="Saídas"
+            valor={resumo.total_saidas}
+            Icone={TrendingDown}
+            className="text-destructive"
+          />
           {/* Saldo é a resposta que a pessoa abre o app para ver — ganha destaque */}
           <CardResumo
             rotulo="Saldo"
@@ -125,8 +172,8 @@ export function DashboardPage() {
                 </p>
                 <Progress value={Math.min(resumo.percentual_investido, 100)} />
                 <p className="text-xs text-muted-foreground">
-                  {Number(resumo.percentual_investido).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}% do que
-                  entrou
+                  {Number(resumo.percentual_investido).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}%
+                  do que entrou
                 </p>
               </div>
             </CardContent>

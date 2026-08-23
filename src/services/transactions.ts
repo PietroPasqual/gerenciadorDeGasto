@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { Transaction, TipoLancamento } from '@/lib/database.types'
 import { primeiroDiaISO, ultimoDiaISO } from '@/lib/dates'
-import { ErroServico, unwrap, userIdAtual } from './base'
+import { ErroServico, traduzErro, unwrap, userIdAtual } from './base'
 
 export async function listarLancamentos(ano: number, mes: number, tipo?: TipoLancamento): Promise<Transaction[]> {
   let query = supabase
@@ -109,4 +109,25 @@ export async function criarLancamentosEmLote(
     aoProgredir?.(gravados, lista.length)
   }
   return gravados
+}
+
+/**
+ * Põe a mesma categoria em vários lançamentos de uma vez.
+ *
+ * Existe para a categorização automática: depois de importar um extrato de um
+ * ano, são centenas de linhas para classificar. Uma requisição por linha seria
+ * centenas de idas ao servidor; agrupando por categoria são poucas, uma por
+ * categoria sugerida.
+ */
+export async function atualizarCategoriaDeVarios(ids: string[], category_id: string): Promise<number> {
+  if (ids.length === 0) return 0
+  const TAMANHO_BLOCO = 200
+  let alterados = 0
+  for (let i = 0; i < ids.length; i += TAMANHO_BLOCO) {
+    const bloco = ids.slice(i, i + TAMANHO_BLOCO)
+    const { error } = await supabase.from('transactions').update({ category_id }).in('id', bloco)
+    if (error) throw traduzErro(error, 'Não foi possível salvar as categorias.')
+    alterados += bloco.length
+  }
+  return alterados
 }

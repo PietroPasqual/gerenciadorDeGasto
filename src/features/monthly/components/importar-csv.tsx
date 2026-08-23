@@ -91,6 +91,7 @@ export function ImportarCSV({
   const [regraSinal, setRegraSinal] = React.useState<RegraSinal>('pelo-sinal')
   const [regraSugerida, setRegraSugerida] = React.useState<RegraSinal>('pelo-sinal')
   const [trazerJaExistentes, setTrazerJaExistentes] = React.useState(false)
+  const [autoCategorizar, setAutoCategorizar] = React.useState(true)
   const [erroLeitura, setErroLeitura] = React.useState('')
   const [existentes, setExistentes] = React.useState<Existente[] | null>(null)
   const [gravando, setGravando] = React.useState(false)
@@ -106,6 +107,7 @@ export function ImportarCSV({
     setRegraSinal('pelo-sinal')
     setRegraSugerida('pelo-sinal')
     setTrazerJaExistentes(false)
+    setAutoCategorizar(true)
     setErroLeitura('')
     setExistentes(null)
     setGravando(false)
@@ -148,8 +150,9 @@ export function ImportarCSV({
       categorias,
       formas,
       existentes: existentes ?? [],
+      autoCategorizar,
     })
-  }, [arquivo, mapa, regraSinal, categorias, formas, existentes])
+  }, [arquivo, mapa, regraSinal, categorias, formas, existentes, autoCategorizar])
 
   React.useEffect(() => {
     if (!previa || previa.prontos.length === 0 || existentes !== null) return
@@ -184,6 +187,7 @@ export function ImportarCSV({
   const selecionados = previa ? previa.prontos.filter((p) => trazerJaExistentes || !p.jaNoBanco) : []
   const jaExistentes = previa ? previa.prontos.filter((p) => p.jaNoBanco).length : 0
   const repetidosNoArquivo = previa ? previa.prontos.filter((p) => p.repetidoNoArquivo).length : 0
+  const comCategoria = selecionados.filter((p) => p.category_id).length
   const foraDoMes = selecionados.filter((p) => {
     const [a, m] = p.data.split('-').map(Number)
     return a !== ano || m !== mes
@@ -339,6 +343,29 @@ export function ImportarCSV({
             </p>
           ) : (
             previa && <Conferencia previa={previa} selecionados={selecionados} foraDoMes={foraDoMes} />
+          )}
+
+          {categorias.length > 0 && (
+            <label className="flex items-start gap-3 rounded-lg border border-border p-3">
+              <Checkbox
+                checked={autoCategorizar}
+                onCheckedChange={(v) => setAutoCategorizar(v === true)}
+                aria-label="Adivinhar a categoria pela descrição"
+                className="mt-0.5"
+              />
+              <span className="text-sm">
+                <strong>Adivinhar a categoria pela descrição</strong>
+                {' — '}
+                {autoCategorizar && selecionados.length > 0 ? (
+                  <>
+                    {comCategoria} de {selecionados.length} reconhecidos (Uber, iFood, farmácia, supermercado,
+                    streaming…). O resto fica sem categoria, e você ajusta depois.
+                  </>
+                ) : (
+                  <>extrato de banco não traz categoria; isto tenta preencher pelo nome do lugar.</>
+                )}
+              </span>
+            </label>
           )}
 
           {jaExistentes > 0 && (

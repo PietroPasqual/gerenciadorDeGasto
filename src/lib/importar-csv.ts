@@ -7,6 +7,7 @@
  */
 
 import { parseParaCentavos } from './money'
+import { sugerirCategoria } from './categorizar'
 import type { TipoLancamento } from './database.types'
 
 /** Tira acento e caixa, para comparar nome de categoria com o do arquivo. */
@@ -442,6 +443,7 @@ export function prepararImportacao({
   formas,
   existentes,
   ordemData,
+  autoCategorizar = false,
 }: {
   arquivo: ArquivoCSV
   mapa: Mapa
@@ -451,6 +453,12 @@ export function prepararImportacao({
   existentes: Existente[]
   /** Ausente = detectar pela própria coluna. */
   ordemData?: OrdemData
+  /**
+   * Quando o arquivo não diz a categoria, tentar adivinhar pela descrição.
+   * Extrato de banco nunca traz categoria, então sem isto um extrato de um ano
+   * entra inteiro sem classificar.
+   */
+  autoCategorizar?: boolean
 }): Resultado {
   const colunaData = mapa.data
   const ordem =
@@ -545,7 +553,11 @@ export function prepararImportacao({
       descricao,
       valor_centavos,
       tipo,
-      category_id: mapaCategorias.get(normalizar(pegar(mapa.categoria))) ?? null,
+      // A coluna do arquivo manda; adivinhar é só o que sobra quando ela não
+      // existe ou não casa com nenhuma categoria do usuário.
+      category_id:
+        mapaCategorias.get(normalizar(pegar(mapa.categoria))) ??
+        (autoCategorizar ? sugerirCategoria(descricao, categorias) : null),
       payment_method_id: mapaFormas.get(normalizar(pegar(mapa.forma))) ?? null,
       jaNoBanco,
       repetidoNoArquivo,

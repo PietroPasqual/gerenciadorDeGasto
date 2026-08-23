@@ -1,8 +1,9 @@
 import { useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Download, Upload } from 'lucide-react'
+import { Download, Upload, Wand2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton, SkeletonTabela } from '@/components/ui/skeleton'
 import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
@@ -19,6 +20,7 @@ import { usePeriodoStore } from '@/store/periodo'
 import { useControleMensal } from './use-controle-mensal'
 import { exportarMesCSV } from './exportar'
 import { ImportarCSV } from './components/importar-csv'
+import { CategorizarAutomatico } from './components/categorizar-automatico'
 import { ResumoMes } from './components/resumo-mes'
 import { TabelaEntradas } from './components/tabela-entradas'
 import { TabelaGastosFixos } from './components/tabela-gastos-fixos'
@@ -38,6 +40,7 @@ export function ControleMensalPage() {
     useControleMensal(ano, mes)
   const [aba, definirAba] = useAbaMes()
   const [importando, setImportando] = useState(false)
+  const [categorizando, setCategorizando] = useState(false)
 
   /**
    * Swipe horizontal troca de mês (M7). A direção fica guardada para a
@@ -50,7 +53,7 @@ export function ControleMensalPage() {
   const irParaPeriodo = (proximo: { ano: number; mes: number }) => {
     // Só passo de um mês tem lado. Pular de Março para Setembro pela lista
     // não "veio" de lugar nenhum, então entra só com fade.
-    const distancia = (proximo.ano * 12 + proximo.mes) - (ano * 12 + mes)
+    const distancia = proximo.ano * 12 + proximo.mes - (ano * 12 + mes)
     direcao.current = distancia === 1 ? 1 : distancia === -1 ? -1 : 0
     definirPeriodo(proximo)
   }
@@ -185,6 +188,13 @@ export function ControleMensalPage() {
         executar: () => setImportando(true),
       },
       {
+        id: 'categorizar-auto',
+        rotulo: 'Categorizar automaticamente',
+        Icone: Wand2,
+        desabilitada: !dados,
+        executar: () => setCategorizando(true),
+      },
+      {
         id: 'exportar-mes',
         rotulo: 'Exportar CSV',
         Icone: Download,
@@ -209,24 +219,28 @@ export function ControleMensalPage() {
             </div>
             {/* Só decoração duplicada: no celular esta mesma ação aparece no
                 menu "⋯" do topo (ver useRegistrarAcoes acima). */}
-            <Button
-              variant="outline"
-              className="hidden sm:inline-flex"
+            {/* Só ícone abaixo de xl: com os três rótulos escritos, o
+                cabeçalho quebrava em duas linhas em 1024 e 1280 (medido). O
+                corte é 2xl e não xl porque em 1280 — com os rótulos de volta —
+                ele voltava a quebrar. */}
+            <AcaoCabecalho
+              rotulo="Categorizar"
+              Icone={Wand2}
+              onClick={() => setCategorizando(true)}
+              desabilitada={!dados}
+            />
+            <AcaoCabecalho
+              rotulo="Importar CSV"
+              Icone={Upload}
               onClick={() => setImportando(true)}
-              disabled={!dados}
-            >
-              <Upload className="h-4 w-4" />
-              Importar CSV
-            </Button>
-            <Button
-              variant="outline"
-              className="hidden sm:inline-flex"
+              desabilitada={!dados}
+            />
+            <AcaoCabecalho
+              rotulo="Exportar CSV"
+              Icone={Download}
               onClick={() => dados && exportarMesCSV(ano, mes, dados)}
-              disabled={!dados}
-            >
-              <Download className="h-4 w-4" />
-              Exportar CSV
-            </Button>
+              desabilitada={!dados}
+            />
           </>
         }
       />
@@ -257,8 +271,7 @@ export function ControleMensalPage() {
             className="space-y-6"
             {...gestos}
           >
-
-          {/* Grade de 12 colunas (D2): 3 + 9. Era `[20rem,1fr]`, uma largura
+            {/* Grade de 12 colunas (D2): 3 + 9. Era `[20rem,1fr]`, uma largura
               fixa que não conversava com nenhuma outra tela.
 
               A divisão em duas colunas só entra em `xl` e não em `lg`: a barra
@@ -272,88 +285,88 @@ export function ControleMensalPage() {
               ordem no celular é a ordem de leitura e o `gap` não sobra quando
               o SecaoMes não renderiza nada. A partir de `lg` eles voltam a ser
               as duas colunas da grade. */}
-          <div className="flex flex-col gap-6 xl:grid xl:grid-cols-12 xl:gap-6">
-            <div className="contents xl:col-span-3 xl:flex xl:flex-col xl:gap-6 2xl:col-span-4">
-              <SecaoMes id="resumo" aba={aba}>
-                <ResumoMes ano={ano} mes={mes} resumo={resumo} />
-              </SecaoMes>
-              <SecaoMes id="analise" aba={aba}>
-                <PainelFormasPagamento formas={porFormaPagamento} />
-              </SecaoMes>
-            </div>
+            <div className="flex flex-col gap-6 xl:grid xl:grid-cols-12 xl:gap-6">
+              <div className="contents xl:col-span-3 xl:flex xl:flex-col xl:gap-6 2xl:col-span-4">
+                <SecaoMes id="resumo" aba={aba}>
+                  <ResumoMes ano={ano} mes={mes} resumo={resumo} />
+                </SecaoMes>
+                <SecaoMes id="analise" aba={aba}>
+                  <PainelFormasPagamento formas={porFormaPagamento} />
+                </SecaoMes>
+              </div>
 
-            <div className="contents xl:col-span-9 xl:flex xl:min-w-0 xl:flex-col xl:gap-6 2xl:col-span-8">
-              <SecaoMes id="entradas" aba={aba}>
-                <TabelaEntradas
-                  entradas={dados.entradas}
-                  entradasComData={entradasAvulsas}
-                  onAdicionar={acoes.adicionarEntrada}
-                  onEditar={acoes.editarEntrada}
-                  onRemover={acoes.removerEntrada}
-                  onEditarComData={acoes.editarLancamento}
-                  onRemoverComData={acoes.removerLancamento}
-                />
-              </SecaoMes>
+              <div className="contents xl:col-span-9 xl:flex xl:min-w-0 xl:flex-col xl:gap-6 2xl:col-span-8">
+                <SecaoMes id="entradas" aba={aba}>
+                  <TabelaEntradas
+                    entradas={dados.entradas}
+                    entradasComData={entradasAvulsas}
+                    onAdicionar={acoes.adicionarEntrada}
+                    onEditar={acoes.editarEntrada}
+                    onRemover={acoes.removerEntrada}
+                    onEditarComData={acoes.editarLancamento}
+                    onRemoverComData={acoes.removerLancamento}
+                  />
+                </SecaoMes>
 
-              <SecaoMes id="fixos" aba={aba}>
-                <TabelaGastosFixos
-                  ano={ano}
-                  mes={mes}
-                  gastosFixos={dados.gastosFixos}
-                  pagamentos={dados.pagamentos}
-                  formasPagamento={dados.formasPagamento}
-                  categorias={dados.categorias}
-                  onAdicionar={acoes.adicionarGastoFixo}
-                  onEditar={acoes.editarGastoFixo}
-                  onRemover={acoes.removerGastoFixo}
-                  onAlternarPago={acoes.alternarPago}
-                />
-              </SecaoMes>
+                <SecaoMes id="fixos" aba={aba}>
+                  <TabelaGastosFixos
+                    ano={ano}
+                    mes={mes}
+                    gastosFixos={dados.gastosFixos}
+                    pagamentos={dados.pagamentos}
+                    formasPagamento={dados.formasPagamento}
+                    categorias={dados.categorias}
+                    onAdicionar={acoes.adicionarGastoFixo}
+                    onEditar={acoes.editarGastoFixo}
+                    onRemover={acoes.removerGastoFixo}
+                    onAlternarPago={acoes.alternarPago}
+                  />
+                </SecaoMes>
 
-              <SecaoMes id="gastos" aba={aba}>
-                <TabelaGastos
-                  ano={ano}
-                  mes={mes}
-                  gastos={gastos}
-                  formasPagamento={dados.formasPagamento}
-                  categorias={dados.categorias}
-                  onAdicionar={acoes.adicionarLancamento}
-                  onEditar={acoes.editarLancamento}
-                  onRemover={acoes.removerLancamento}
-                  onAbrirEdicao={abrirEdicao}
-                />
-              </SecaoMes>
+                <SecaoMes id="gastos" aba={aba}>
+                  <TabelaGastos
+                    ano={ano}
+                    mes={mes}
+                    gastos={gastos}
+                    formasPagamento={dados.formasPagamento}
+                    categorias={dados.categorias}
+                    onAdicionar={acoes.adicionarLancamento}
+                    onEditar={acoes.editarLancamento}
+                    onRemover={acoes.removerLancamento}
+                    onAbrirEdicao={abrirEdicao}
+                  />
+                </SecaoMes>
 
-              <SecaoMes id="investir" aba={aba}>
-                <TabelaInvestimentos
-                  metas={dados.metas}
-                  aportes={dados.aportes}
-                  investimentos={dados.investimentos}
-                  onSalvarAporte={acoes.salvarAporteMeta}
-                  onAdicionarAvulso={acoes.adicionarInvestimentoAvulso}
-                  onEditarAvulso={acoes.editarInvestimentoAvulso}
-                  onRemoverAvulso={acoes.removerInvestimentoAvulso}
-                />
-              </SecaoMes>
+                <SecaoMes id="investir" aba={aba}>
+                  <TabelaInvestimentos
+                    metas={dados.metas}
+                    aportes={dados.aportes}
+                    investimentos={dados.investimentos}
+                    onSalvarAporte={acoes.salvarAporteMeta}
+                    onAdicionarAvulso={acoes.adicionarInvestimentoAvulso}
+                    onEditarAvulso={acoes.editarInvestimentoAvulso}
+                    onRemoverAvulso={acoes.removerInvestimentoAvulso}
+                  />
+                </SecaoMes>
 
-              <SecaoMes id="analise" aba={aba}>
-                <PainelCategorias categorias={porCategoria} />
-              </SecaoMes>
+                <SecaoMes id="analise" aba={aba}>
+                  <PainelCategorias categorias={porCategoria} />
+                </SecaoMes>
 
-              <SecaoMes id="analise" aba={aba}>
-                <GraficosMes
-                  porFormaPagamento={porFormaPagamento.map((f) => ({
-                    nome: f.nome,
-                    valor: f.gasto_centavos,
-                  }))}
-                  porMeta={porMeta}
-                  porCategoria={porCategoria.map((c) => ({
-                    nome: c.nome,
-                    valor: c.gasto_centavos,
-                    cor: c.cor,
-                  }))}
-                />
-              </SecaoMes>
+                <SecaoMes id="analise" aba={aba}>
+                  <GraficosMes
+                    porFormaPagamento={porFormaPagamento.map((f) => ({
+                      nome: f.nome,
+                      valor: f.gasto_centavos,
+                    }))}
+                    porMeta={porMeta}
+                    porCategoria={porCategoria.map((c) => ({
+                      nome: c.nome,
+                      valor: c.gasto_centavos,
+                      cor: c.cor,
+                    }))}
+                  />
+                </SecaoMes>
               </div>
             </div>
           </motion.div>
@@ -380,6 +393,19 @@ export function ControleMensalPage() {
             gasto={gastoEditando}
             onSalvar={salvarGastoDaSheet}
             onExcluir={gastoEditando ? () => excluirComDesfazer(gastoEditando) : undefined}
+          />
+
+          <CategorizarAutomatico
+            aberto={categorizando}
+            onOpenChange={setCategorizando}
+            ano={ano}
+            categorias={dados.categorias}
+            aoAplicar={(quantidade) => {
+              toast.success(
+                `${quantidade} ${quantidade === 1 ? 'gasto categorizado' : 'gastos categorizados'}`,
+              )
+              void recarregar()
+            }}
           />
 
           <ImportarCSV
@@ -452,5 +478,46 @@ function EsqueletoMes() {
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * Ação do cabeçalho no desktop: ícone sozinho até `xl`, ícone + texto a partir
+ * dali. O nome nunca some — abaixo de xl ele vive no tooltip e no aria-label,
+ * e no celular a mesma ação está escrita por extenso no menu "⋯".
+ */
+function AcaoCabecalho({
+  rotulo,
+  Icone,
+  onClick,
+  desabilitada,
+}: {
+  rotulo: string
+  Icone: typeof Download
+  onClick: () => void
+  desabilitada?: boolean
+}) {
+  return (
+    // Provider local, mesmo já existindo um no App: sem ele a página não
+    // renderiza fora da árvore inteira do app — foi assim que o teste desta
+    // página quebrou. Provider aninhado é suportado e página que só monta com
+    // um ancestral específico é frágil.
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            className="hidden sm:inline-flex"
+            onClick={onClick}
+            disabled={desabilitada}
+            aria-label={rotulo}
+          >
+            <Icone className="h-4 w-4" />
+            <span className="hidden 2xl:inline">{rotulo}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="2xl:hidden">{rotulo}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }

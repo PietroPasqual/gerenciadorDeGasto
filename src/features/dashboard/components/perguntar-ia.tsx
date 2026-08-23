@@ -3,7 +3,7 @@ import { AlertTriangle, Loader2, Send, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { PERGUNTAS_SUGERIDAS, perguntar } from '@/services/assistente'
+import { PERGUNTAS_SUGERIDAS, perguntar, type Resposta } from '@/services/assistente'
 
 /**
  * Perguntar em português sobre os próprios números.
@@ -20,7 +20,7 @@ import { PERGUNTAS_SUGERIDAS, perguntar } from '@/services/assistente'
  */
 export function PerguntarIA({ ano, mes }: { ano: number; mes: number }) {
   const [pergunta, setPergunta] = React.useState('')
-  const [resposta, setResposta] = React.useState('')
+  const [resposta, setResposta] = React.useState<Resposta | null>(null)
   const [erro, setErro] = React.useState('')
   const [carregando, setCarregando] = React.useState(false)
 
@@ -29,7 +29,7 @@ export function PerguntarIA({ ano, mes }: { ano: number; mes: number }) {
     if (limpa === '' || carregando) return
     setCarregando(true)
     setErro('')
-    setResposta('')
+    setResposta(null)
     try {
       setResposta(await perguntar(limpa, ano, mes))
     } catch (e) {
@@ -98,7 +98,22 @@ export function PerguntarIA({ ano, mes }: { ano: number; mes: number }) {
 
         {resposta && (
           <div className="space-y-2 rounded-xl border border-border bg-muted/30 p-3" aria-live="polite">
-            <p className="whitespace-pre-wrap text-sm">{resposta}</p>
+            <p className="whitespace-pre-wrap text-sm">{resposta.texto}</p>
+
+            {/* Todo valor da resposta é conferido contra os números que foram
+                enviados. Quando um não bate, isso aparece — esconder seria
+                deixar um número inventado passar por conferido. */}
+            {resposta.valoresNaoConferidos.length > 0 && (
+              <p className="flex items-start gap-2 rounded-lg bg-destructive/10 p-2 text-sm text-destructive">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  Não confira por esta resposta: <strong>{resposta.valoresNaoConferidos.join(', ')}</strong>{' '}
+                  {resposta.valoresNaoConferidos.length === 1 ? 'não confere' : 'não conferem'} com os seus
+                  números. Use os cards acima.
+                </span>
+              </p>
+            )}
+
             <p className="text-xs text-muted-foreground">
               Resposta gerada por IA a partir dos seus totais — pode errar. Os cards acima são a fonte.
             </p>
@@ -113,8 +128,8 @@ export function PerguntarIA({ ano, mes }: { ano: number; mes: number }) {
         )}
 
         <p className="text-xs text-muted-foreground">
-          Ao perguntar, os <strong>totais</strong> do mês e do ano são enviados para a Anthropic para gerar a
-          resposta. Nenhum lançamento individual é enviado — nomes de pessoas nas descrições ficam no seu
+          Ao perguntar, os <strong>totais</strong> do mês e do ano são enviados ao Google (Gemini) para gerar
+          a resposta. Nenhum lançamento individual é enviado — nomes de pessoas nas descrições ficam no seu
           banco.
         </p>
       </CardContent>

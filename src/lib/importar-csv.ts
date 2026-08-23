@@ -159,7 +159,7 @@ export function interpretarData(valor: string, ordem: OrdemData = 'dia-mes'): st
 
 // -------------------------------------------------------------- mapeamento
 
-export type Campo = 'data' | 'descricao' | 'valor' | 'categoria' | 'forma'
+export type Campo = 'data' | 'descricao' | 'valor' | 'valorSaida' | 'valorEntrada' | 'categoria' | 'forma'
 
 /** Índice da coluna do arquivo para cada campo; -1 = não usar. */
 export type Mapa = Record<Campo, number>
@@ -176,7 +176,10 @@ const PISTAS: Record<Campo, string[]> = {
     'memo',
     'detalhe',
   ],
-  valor: ['valor', 'amount', 'value', 'quantia', 'valor (r$)', 'preco', 'debito', 'montante'],
+  valor: ['valor', 'amount', 'value', 'quantia', 'valor (r$)', 'preco', 'montante'],
+  // Extrato de Bradesco, Santander e Caixa não usa sinal: usa DUAS colunas.
+  valorSaida: ['debito', 'saida', 'saidas', 'debit', 'valor debito', 'pagamento/debito'],
+  valorEntrada: ['credito', 'entrada', 'entradas', 'credit', 'valor credito', 'deposito/credito'],
   categoria: ['categoria', 'category', 'tipo de gasto', 'classificacao'],
   forma: ['forma de pagamento', 'forma', 'pagamento', 'payment', 'meio de pagamento', 'cartao', 'conta'],
 }
@@ -184,10 +187,21 @@ const PISTAS: Record<Campo, string[]> = {
 /** Chuta a coluna de cada campo pelo nome do cabeçalho. Exato ganha de parcial. */
 export function adivinharColunas(cabecalho: string[]): Mapa {
   const nomes = cabecalho.map(normalizar)
-  const mapa: Mapa = { data: -1, descricao: -1, valor: -1, categoria: -1, forma: -1 }
+  const mapa: Mapa = {
+    data: -1,
+    descricao: -1,
+    valor: -1,
+    valorSaida: -1,
+    valorEntrada: -1,
+    categoria: -1,
+    forma: -1,
+  }
   const usadas = new Set<number>()
 
-  for (const campo of Object.keys(PISTAS) as Campo[]) {
+  // Débito/crédito são tentados ANTES de 'valor': num extrato de duas colunas,
+  // deixar 'valor' pegar a de débito primeiro faria toda compra virar entrada.
+  const ordem: Campo[] = ['data', 'descricao', 'valorSaida', 'valorEntrada', 'valor', 'categoria', 'forma']
+  for (const campo of ordem) {
     let achou = nomes.findIndex((n, i) => !usadas.has(i) && PISTAS[campo].includes(n))
     if (achou === -1) {
       achou = nomes.findIndex(
@@ -199,6 +213,10 @@ export function adivinharColunas(cabecalho: string[]): Mapa {
       usadas.add(achou)
     }
   }
+
+  // Achou as duas colunas separadas? Então 'valor' não tem papel — e uma coluna
+  // de "Saldo" pega por semelhança só atrapalharia.
+  if (mapa.valorSaida !== -1 || mapa.valorEntrada !== -1) mapa.valor = -1
   return mapa
 }
 
@@ -268,6 +286,10 @@ export function prepararImportacao({
   // Duplicata dentro do próprio arquivo conta igual: extrato repete parcela.
   const vistasNoArquivo = new Set<string>()
 
+  // Duas colunas de valor mapeadas? Então a direção vem delas e a regra de
+  // sinal não se aplica.
+  const duasColunas = mapa.valorSaida >= 0 || mapa.valorEntrada >= 0
+
   const prontos: LancamentoImportado[] = []
   const problemas: Problema[] = []
 
@@ -282,29 +304,44 @@ export function prepararImportacao({
       return
     }
 
-    const centavos = parseParaCentavos(pegar(mapa.valor))
-    if (centavos === null) {
-      problemas.push({ linha: numero, motivo: 'valor não reconhecido', conteudo: bruta })
-      return
-    }
-    if (centavos === 0) {
-      problemas.push({ linha: numero, motivo: 'valor zerado', conteudo: bruta })
-      return
-    }
-
     const descricao = pegar(mapa.descricao) || 'Sem descrição'
 
-    const tipo: TipoLancamento =
-      regraSinal === 'tudo-gasto'
-        ? 'gasto'
-        : regraSinal === 'tudo-entrada'
-          ? 'entrada'
-          : centavos < 0
-            ? 'gasto'
-            : 'entrada'
+    let valor_centavos: number
+    let tipo: TipoLancamento
 
-    // O banco guarda o valor sempre positivo; quem diz entrada ou saída é o tipo.
-    const valor_centavos = Math.abs(centavos)
+    if (duasColunas) {
+      // Extrato de duas colunas: quem diz a direção é a coluna preenchida, não
+      // o sinal. A coluna não usada costuma vir vazia OU como 0,00 — por isso
+      // "preenchida" aqui quer dizer diferente de zero, e não "não vazia".
+      const saida = parseParaCentavos(pegar(mapa.valorSaida)) ?? 0
+      const entrada = parseParaCentavos(pegar(mapa.valorEntrada)) ?? 0
+      if (saida === 0 && entrada === 0) {
+        problemas.push({ linha: numero, motivo: 'sem valor em débito nem em crédito', conteudo: bruta })
+        return
+      }
+      tipo = saida !== 0 ? 'gasto' : 'entrada'
+      valor_centavos = Math.abs(saida !== 0 ? saida : entrada)
+    } else {
+      const centavos = parseParaCentavos(pegar(mapa.valor))
+      if (centavos === null) {
+        problemas.push({ linha: numero, motivo: 'valor não reconhecido', conteudo: bruta })
+        return
+      }
+      if (centavos === 0) {
+        problemas.push({ linha: numero, motivo: 'valor zerado', conteudo: bruta })
+        return
+      }
+      tipo =
+        regraSinal === 'tudo-gasto'
+          ? 'gasto'
+          : regraSinal === 'tudo-entrada'
+            ? 'entrada'
+            : centavos < 0
+              ? 'gasto'
+              : 'entrada'
+      // O banco guarda o valor sempre positivo; quem diz a direção é o tipo.
+      valor_centavos = Math.abs(centavos)
+    }
 
     const chave = chaveDuplicata(data, descricao, valor_centavos, tipo)
     const duplicado = jaExiste.has(chave) || vistasNoArquivo.has(chave)

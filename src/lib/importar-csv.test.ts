@@ -269,3 +269,56 @@ describe('decodificarTexto', () => {
     expect(decodificarTexto(bytes.buffer as ArrayBuffer)).toBe('Alimentação;12,50')
   })
 })
+
+describe('formatos que os bancos brasileiros usam de verdade', () => {
+  function rodar(csv: string) {
+    const a = lerCSV(csv)
+    const mapa = adivinharColunas(a.cabecalho)
+    return { mapa, ...prepararImportacao({ ...base, arquivo: a, mapa }) }
+  }
+
+  it('Nubank: vírgula separando colunas e PONTO decimal, com dd/mm/aaaa', () => {
+    const r = rodar(
+      'Data,Valor,Identificador,Descrição\n' +
+        '01/08/2026,-50.00,63d9a1,Transferência enviada pelo Pix\n' +
+        '02/08/2026,1200.00,63d9a2,Transferência recebida pelo Pix\n' +
+        '03/08/2026,-1234.56,63d9a3,Compra no débito\n',
+    )
+    expect(r.problemas).toEqual([])
+    expect(r.prontos[0]).toMatchObject({ data: '2026-08-01', tipo: 'gasto', valor_centavos: 5000 })
+    expect(r.prontos[1]).toMatchObject({ tipo: 'entrada', valor_centavos: 120000 })
+    expect(r.prontos[2]).toMatchObject({ tipo: 'gasto', valor_centavos: 123456 })
+  })
+
+  it('extrato com coluna Saldo não confunde saldo com valor', () => {
+    const r = rodar('Data;Lançamento;Valor;Saldo\n01/08/2026;PIX ENVIADO;-50,00;1.200,00\n')
+    expect(r.mapa.valor).toBe(2)
+    expect(r.prontos[0]).toMatchObject({ tipo: 'gasto', valor_centavos: 5000 })
+  })
+
+  it('Bradesco/Santander/Caixa: débito e crédito em COLUNAS SEPARADAS, sem sinal', () => {
+    const r = rodar(
+      'Data;Histórico;Débito;Crédito\n' +
+        '01/08/2026;COMPRA SUPERMERCADO;50,00;\n' +
+        '02/08/2026;DEPOSITO;;3.500,00\n' +
+        '03/08/2026;TARIFA;12,90;0,00\n' +
+        '04/08/2026;SEM VALOR NENHUM;;\n',
+    )
+    // A direção vem da coluna preenchida, não do sinal: sem isto a compra
+    // entrava como ENTRADA e o depósito era descartado.
+    expect(r.mapa).toMatchObject({ valor: -1, valorSaida: 2, valorEntrada: 3 })
+    expect(r.prontos[0]).toMatchObject({ tipo: 'gasto', valor_centavos: 5000 })
+    expect(r.prontos[1]).toMatchObject({ tipo: 'entrada', valor_centavos: 350000 })
+    // "0,00" na coluna não usada é preenchimento, não um crédito de zero.
+    expect(r.prontos[2]).toMatchObject({ tipo: 'gasto', valor_centavos: 1290 })
+    expect(r.problemas).toEqual([
+      { linha: 5, motivo: 'sem valor em débito nem em crédito', conteudo: expect.any(String) },
+    ])
+  })
+
+  it('categoria e forma nunca são obrigatórias — extrato de banco não traz isso', () => {
+    const r = rodar('Data;Descrição;Valor\n01/08/2026;Qualquer coisa;-10,00\n')
+    expect(r.prontos[0]).toMatchObject({ category_id: null, payment_method_id: null })
+    expect(r.problemas).toEqual([])
+  })
+})

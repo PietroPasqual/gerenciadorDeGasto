@@ -28,12 +28,26 @@ const SEM_COLUNA = '__nenhuma__'
 const ROTULOS: Record<Campo, string> = {
   data: 'Data',
   descricao: 'Descrição',
-  valor: 'Valor',
-  categoria: 'Categoria',
-  forma: 'Forma de pagamento',
+  valor: 'Valor (com sinal)',
+  valorSaida: 'Valor de saída (débito)',
+  valorEntrada: 'Valor de entrada (crédito)',
+  categoria: 'Categoria (opcional)',
+  forma: 'Forma de pagamento (opcional)',
 }
 
-const OBRIGATORIOS: Campo[] = ['data', 'valor']
+/**
+ * O arquivo precisa de data e de ALGUMA coluna de valor — seja uma só, com
+ * sinal, sejam as duas separadas de débito e crédito que Bradesco, Santander e
+ * Caixa usam. Categoria e forma de pagamento nunca são obrigatórias: extrato de
+ * banco não traz isso, e importar só entrada e saída já resolve.
+ */
+function faltaColuna(mapa: Mapa | null): Campo[] {
+  if (!mapa) return []
+  const falta: Campo[] = []
+  if (mapa.data === -1) falta.push('data')
+  if (mapa.valor === -1 && mapa.valorSaida === -1 && mapa.valorEntrada === -1) falta.push('valor')
+  return falta
+}
 
 /**
  * Importa lançamentos de um CSV — extrato do banco, fatura do cartão ou o
@@ -152,7 +166,9 @@ export function ImportarCSV({
     }
   }, [previa, existentes])
 
-  const faltando = mapa ? OBRIGATORIOS.filter((c) => mapa[c] === -1) : []
+  const faltando = faltaColuna(mapa)
+  // Duas colunas separadas? Então a regra de sinal não tem o que fazer.
+  const duasColunas = !!mapa && (mapa.valorSaida >= 0 || mapa.valorEntrada >= 0)
   const selecionados = previa ? previa.prontos.filter((p) => trazerDuplicados || !p.duplicado) : []
   const duplicados = previa ? previa.prontos.filter((p) => p.duplicado).length : 0
   const foraDoMes = selecionados.filter((p) => {
@@ -234,7 +250,7 @@ export function ImportarCSV({
                 <label key={campo} className="space-y-1.5">
                   <span className="text-sm text-muted-foreground">
                     {ROTULOS[campo]}
-                    {OBRIGATORIOS.includes(campo) && <span className="text-destructive"> *</span>}
+                    {campo === 'data' && <span className="text-destructive"> *</span>}
                   </span>
                   <Select
                     value={mapa && mapa[campo] >= 0 ? String(mapa[campo]) : SEM_COLUNA}
@@ -259,26 +275,35 @@ export function ImportarCSV({
             </div>
           </details>
 
-          <label className="block space-y-1.5">
-            <span className="text-sm text-muted-foreground">O que fazer com os valores</span>
-            <Select value={regraSinal} onValueChange={(v) => setRegraSinal(v as RegraSinal)}>
-              <SelectTrigger aria-label="Como interpretar o sinal do valor">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pelo-sinal">Negativo é gasto, positivo é entrada</SelectItem>
-                <SelectItem value="tudo-gasto">Tratar tudo como gasto</SelectItem>
-                <SelectItem value="tudo-entrada">Tratar tudo como entrada</SelectItem>
-              </SelectContent>
-            </Select>
-          </label>
+          {/* Com débito e crédito em colunas separadas, a direção já está
+              decidida pelo arquivo — perguntar sobre o sinal aqui só confundiria. */}
+          {duasColunas ? (
+            <p className="rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+              Este arquivo tem colunas separadas de débito e crédito, então cada linha já vem com a direção
+              definida.
+            </p>
+          ) : (
+            <label className="block space-y-1.5">
+              <span className="text-sm text-muted-foreground">O que fazer com os valores</span>
+              <Select value={regraSinal} onValueChange={(v) => setRegraSinal(v as RegraSinal)}>
+                <SelectTrigger aria-label="Como interpretar o sinal do valor">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pelo-sinal">Negativo é gasto, positivo é entrada</SelectItem>
+                  <SelectItem value="tudo-gasto">Tratar tudo como gasto</SelectItem>
+                  <SelectItem value="tudo-entrada">Tratar tudo como entrada</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+          )}
 
           {faltando.length > 0 ? (
             <p className="flex items-start gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
-                Escolha a coluna de {faltando.map((c) => ROTULOS[c].toLowerCase()).join(' e de ')} para
-                continuar.
+                Escolha a coluna de {faltando.map((c) => (c === 'valor' ? 'valor' : 'data')).join(' e de ')}{' '}
+                para continuar.
               </span>
             </p>
           ) : (

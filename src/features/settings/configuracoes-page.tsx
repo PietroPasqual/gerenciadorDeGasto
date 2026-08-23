@@ -1,5 +1,16 @@
 import { useState } from 'react'
-import { ArrowDown, ArrowUp, Check, CreditCard, Palette, Plus, Tags, Target, Trash2 } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  CreditCard,
+  Database,
+  Palette,
+  Plus,
+  Tags,
+  Target,
+  Trash2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,6 +28,7 @@ import { EstadoErro, EstadoVazio } from '@/components/common/estados'
 import { CampoSheet, CartaoConfig, SheetConfig } from './components/sheet-config'
 import { BotaoCor, COR_PADRAO, SeletorCor } from '@/components/common/seletor-cor'
 import { IndiceConfig, useSecaoVisivel, type SecaoConfig } from './components/indice-config'
+import { ApagarDados } from './components/apagar-dados'
 import { PreviaTema } from './components/previa-tema'
 import { formatCentavos } from '@/lib/money'
 import { useEhMobile } from '@/lib/hooks'
@@ -38,7 +50,10 @@ const TIPOS: Array<{ valor: TipoPagamento; rotulo: string }> = [
 ]
 
 /** Aba estreita no celular para os quatro rótulos caberem lado a lado. */
-const ABA = 'w-full px-1.5 text-xs sm:w-auto sm:px-4 sm:text-sm'
+// `w-auto` e não `w-full`: com a grade de 4 colunas cada aba era 1/4 da
+// largura, mas numa tira flex `w-full` faz cada uma ocupar a tira inteira — e
+// "Dados" ficaria a cinco telas de rolagem de distância.
+const ABA = 'w-auto px-3 text-xs sm:px-4 sm:text-sm'
 
 const DENSIDADES: Array<{ valor: Densidade; rotulo: string; dica: string }> = [
   { valor: 'confortavel', rotulo: 'Confortável', dica: 'Linhas mais altas, mais respiro.' },
@@ -59,6 +74,7 @@ const SECOES: SecaoConfig[] = [
   { id: 'categorias', rotulo: 'Categorias', Icone: Tags },
   { id: 'pagamento', rotulo: 'Formas de pagamento', Icone: CreditCard },
   { id: 'metas', rotulo: 'Metas', Icone: Target },
+  { id: 'dados', rotulo: 'Dados', Icone: Database },
 ]
 
 export function ConfiguracoesPage() {
@@ -78,6 +94,7 @@ export function ConfiguracoesPage() {
     if (id === 'aparencia') return <AbaAparencia />
     if (id === 'categorias') return <AbaCategorias dados={dados} acoes={acoes} />
     if (id === 'pagamento') return <AbaFormasPagamento dados={dados} acoes={acoes} />
+    if (id === 'dados') return <ApagarDados aoApagar={() => void recarregar()} />
     return <AbaMetas dados={dados} acoes={acoes} />
   }
 
@@ -97,12 +114,12 @@ export function ConfiguracoesPage() {
         </div>
       ) : !dados ? null : ehEstreito ? (
         <Tabs defaultValue="aparencia">
-          {/* Quatro colunas iguais numa linha só. O que não deixava caber era
-              "Formas de pagamento": no celular ele vira "Pagamento", e assim
-              some a segunda fileira. */}
-          <TabsList className="grid w-full grid-cols-4 sm:inline-flex sm:w-auto">
+          {/* Com cinco seções a grade de colunas iguais espremia os rótulos em
+              360px. Vira uma tira rolável — o mesmo recurso das abas do mês —
+              e cada aba fica com a largura do próprio texto. */}
+          <TabsList className="sem-barra-rolagem flex w-full justify-start overflow-x-auto sm:inline-flex sm:w-auto">
             {SECOES.map(({ id, rotulo }) => (
-              <TabsTrigger key={id} value={id} className={ABA}>
+              <TabsTrigger key={id} value={id} className={cn(ABA, 'shrink-0')}>
                 {id === 'pagamento' ? (
                   <>
                     <span className="sm:hidden">Pagamento</span>
@@ -298,7 +315,11 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
     if (!rascunho || !rascunho.nome.trim()) return
     const limite = rascunho.limite === 0 ? null : rascunho.limite
     if (rascunho.id) {
-      void acoes.editarCategoria(rascunho.id, { nome: rascunho.nome.trim(), limite_centavos: limite, cor: rascunho.cor })
+      void acoes.editarCategoria(rascunho.id, {
+        nome: rascunho.nome.trim(),
+        limite_centavos: limite,
+        cor: rascunho.cor,
+      })
     } else {
       void acoes.criarCategoria(rascunho.nome.trim(), limite, rascunho.cor)
     }
@@ -310,14 +331,19 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
       <CardHeader>
         <CardTitle>Categorias</CardTitle>
         <CardDescription>
-          O limite mensal é opcional — quando existe, a barra fica amarela a partir de 80% e vermelha ao estourar.
+          O limite mensal é opcional — quando existe, a barra fica amarela a partir de 80% e vermelha ao
+          estourar.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
         {dados.categorias.length === 0 ? (
           <EstadoVazio
             titulo="Nenhuma categoria"
-            descricao={ehCelular ? 'Toque em “Nova categoria” para criar a primeira.' : 'Crie a primeira categoria abaixo.'}
+            descricao={
+              ehCelular
+                ? 'Toque em “Nova categoria” para criar a primeira.'
+                : 'Crie a primeira categoria abaixo.'
+            }
           />
         ) : ehCelular ? (
           <ul className="space-y-2">
@@ -364,7 +390,8 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
                   aria-label="Nome da categoria"
                   defaultValue={categoria.nome}
                   onBlur={(e) => {
-                    if (e.target.value !== categoria.nome) void acoes.editarCategoria(categoria.id, { nome: e.target.value })
+                    if (e.target.value !== categoria.nome)
+                      void acoes.editarCategoria(categoria.id, { nome: e.target.value })
                   }}
                   className="min-w-0 border-transparent bg-transparent hover:border-input focus:bg-card"
                 />
@@ -441,7 +468,9 @@ function AbaCategorias({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
               : undefined
           }
           avisoExclusao="Os gastos já lançados nesta categoria continuam existindo, mas ficam sem categoria."
-          onMover={rascunho?.id ? (direcao) => void acoes.moverCategoria(rascunho.id as string, direcao) : undefined}
+          onMover={
+            rascunho?.id ? (direcao) => void acoes.moverCategoria(rascunho.id as string, direcao) : undefined
+          }
           podeSubir={indice > 0}
           podeDescer={indice >= 0 && indice < dados.categorias.length - 1}
         >
@@ -581,13 +610,16 @@ function AbaFormasPagamento({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
                   aria-label="Nome da forma de pagamento"
                   defaultValue={forma.nome}
                   onBlur={(e) => {
-                    if (e.target.value !== forma.nome) void acoes.editarForma(forma.id, { nome: e.target.value })
+                    if (e.target.value !== forma.nome)
+                      void acoes.editarForma(forma.id, { nome: e.target.value })
                   }}
                   className="min-w-0 border-transparent bg-transparent hover:border-input focus:bg-card"
                 />
                 <Select
                   value={forma.tipo}
-                  onValueChange={(valor) => void acoes.editarForma(forma.id, { tipo: valor as TipoPagamento })}
+                  onValueChange={(valor) =>
+                    void acoes.editarForma(forma.id, { tipo: valor as TipoPagamento })
+                  }
                 >
                   <SelectTrigger
                     data-celula
@@ -669,7 +701,9 @@ function AbaFormasPagamento({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
               : undefined
           }
           avisoExclusao="Os gastos já lançados nesta forma continuam existindo, mas ficam sem forma de pagamento."
-          onMover={rascunho?.id ? (direcao) => void acoes.moverForma(rascunho.id as string, direcao) : undefined}
+          onMover={
+            rascunho?.id ? (direcao) => void acoes.moverForma(rascunho.id as string, direcao) : undefined
+          }
           podeSubir={indice > 0}
           podeDescer={indice >= 0 && indice < dados.formasPagamento.length - 1}
         >
@@ -729,7 +763,8 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
 
   const salvarSheet = () => {
     if (!rascunho || !rascunho.nome.trim()) return
-    if (rascunho.id) void acoes.editarMeta(rascunho.id, { nome: rascunho.nome.trim(), valor_meta_centavos: rascunho.alvo })
+    if (rascunho.id)
+      void acoes.editarMeta(rascunho.id, { nome: rascunho.nome.trim(), valor_meta_centavos: rascunho.alvo })
     else void acoes.criarMeta(rascunho.nome.trim(), rascunho.alvo)
     setRascunho(null)
   }
@@ -739,8 +774,8 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
       <CardHeader>
         <CardTitle>Metas</CardTitle>
         <CardDescription>
-          Até {MAX_METAS} metas. O quanto você guarda em cada uma é lançado no controle mensal.
-          ({dados.metas.length}/{MAX_METAS})
+          Até {MAX_METAS} metas. O quanto você guarda em cada uma é lançado no controle mensal. (
+          {dados.metas.length}/{MAX_METAS})
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -755,7 +790,9 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
             {dados.metas.map((meta) => (
               <li key={meta.id}>
                 <CartaoConfig
-                  onClick={() => setRascunho({ id: meta.id, nome: meta.nome, alvo: meta.valor_meta_centavos })}
+                  onClick={() =>
+                    setRascunho({ id: meta.id, nome: meta.nome, alvo: meta.valor_meta_centavos })
+                  }
                   titulo={meta.nome}
                   detalhe={<span className="tabular">{formatCentavos(meta.valor_meta_centavos)}</span>}
                 />
@@ -849,7 +886,9 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
               : undefined
           }
           avisoExclusao="Tudo o que você já guardou nesta meta some junto com ela."
-          onMover={rascunho?.id ? (direcao) => void acoes.moverMeta(rascunho.id as string, direcao) : undefined}
+          onMover={
+            rascunho?.id ? (direcao) => void acoes.moverMeta(rascunho.id as string, direcao) : undefined
+          }
           podeSubir={indice > 0}
           podeDescer={indice >= 0 && indice < dados.metas.length - 1}
         >

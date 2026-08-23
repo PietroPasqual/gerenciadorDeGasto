@@ -85,6 +85,7 @@ export function CategorizarAutomatico({
 
   const reconhecidos = grupos.reduce((s, g) => s + g.ids.length, 0)
   const totalSemCategoria = semCategoria?.length ?? 0
+  const restantes = totalSemCategoria - reconhecidos
 
   async function aplicar() {
     setAplicando(true)
@@ -115,13 +116,15 @@ export function CategorizarAutomatico({
       ) : (
         <>
           <p className="text-sm">
-            <strong>{reconhecidos}</strong> de <strong>{totalSemCategoria}</strong> gastos sem categoria em{' '}
-            {ano} foram reconhecidos pela descrição.
-            {reconhecidos < totalSemCategoria && (
+            <strong>{reconhecidos}</strong> de <strong>{totalSemCategoria}</strong>{' '}
+            {totalSemCategoria === 1 ? 'gasto sem categoria' : 'gastos sem categoria'} em {ano}{' '}
+            {reconhecidos === 1 ? 'foi reconhecido' : 'foram reconhecidos'} pela descrição.
+            {restantes > 0 && (
               <>
                 {' '}
-                Os outros {totalSemCategoria - reconhecidos} ficam como estão — em geral são Pix para pessoas,
-                que o extrato não explica.
+                {restantes === 1
+                  ? 'O outro fica como está — em geral é Pix para pessoa, que o extrato não explica.'
+                  : `Os outros ${restantes} ficam como estão — em geral são Pix para pessoas, que o extrato não explica.`}
               </>
             )}
           </p>

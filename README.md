@@ -22,22 +22,22 @@ com banco de verdade e interface em português do Brasil.
 ### 1.2 Criar o projeto no Supabase
 
 1. Acesse <https://supabase.com/dashboard> → **New project**.
-2. Escolha nome, senha do banco e a região mais próxima (ex.: *South America (São Paulo)*).
+2. Escolha nome, senha do banco e a região mais próxima (ex.: _South America (São Paulo)_).
 3. Espere o provisionamento terminar (~2 min).
 
 ### 1.3 Rodar as migrations
 
 As migrations estão em `supabase/migrations/`, **na ordem em que devem ser executadas**:
 
-| Arquivo | O que faz |
-| --- | --- |
-| `0001_schema.sql` | Tabelas, enums, índices e a trava de 10 metas por usuário |
-| `0002_rls.sql` | Habilita RLS e cria as policies (`user_id = auth.uid()`) |
-| `0003_views.sql` | Funções SQL dos agregados (resumo do mês, categorias, comparativo anual…) |
+| Arquivo                 | O que faz                                                                 |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `0001_schema.sql`       | Tabelas, enums, índices e a trava de 10 metas por usuário                 |
+| `0002_rls.sql`          | Habilita RLS e cria as policies (`user_id = auth.uid()`)                  |
+| `0003_views.sql`        | Funções SQL dos agregados (resumo do mês, categorias, comparativo anual…) |
 | `0004_seed_trigger.sql` | Trigger que cria o profile e popula categorias/formas de pagamento padrão |
 
 **Opção A — pelo painel (mais simples):** SQL Editor → **New query** → cole o conteúdo de cada
-arquivo, na ordem, e clique em *Run*.
+arquivo, na ordem, e clique em _Run_.
 
 **Opção B — pela CLI:**
 
@@ -52,12 +52,12 @@ supabase db push                  # aplica tudo que está em supabase/migrations
 
 No painel do Supabase, em **Authentication → Providers**:
 
-- **Email**: já vem ligado. Para testar sem confirmar e-mail, desligue *Confirm email*
-  em *Authentication → Sign In / Providers → Email*.
-- **Google** (opcional): ative o provider e informe *Client ID* e *Client Secret* de um
+- **Email**: já vem ligado. Para testar sem confirmar e-mail, desligue _Confirm email_
+  em _Authentication → Sign In / Providers → Email_.
+- **Google** (opcional): ative o provider e informe _Client ID_ e _Client Secret_ de um
   OAuth Client do Google Cloud. Em **Authentication → URL Configuration**, defina
-  *Site URL* como `http://localhost:5173` e adicione `http://localhost:5173/painel`
-  em *Redirect URLs* (em produção, use o domínio real).
+  _Site URL_ como `http://localhost:5173` e adicione `http://localhost:5173/painel`
+  em _Redirect URLs_ (em produção, use o domínio real).
 
 ### 1.5 Variáveis de ambiente
 

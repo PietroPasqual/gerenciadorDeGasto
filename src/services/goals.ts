@@ -8,10 +8,18 @@ export async function listarMetas(): Promise<Goal[]> {
   return unwrap(await supabase.from('goals').select('*').order('ordem').order('created_at')) ?? []
 }
 
-export async function criarMeta(dados: { nome: string; valor_meta_centavos: number; ordem?: number }): Promise<Goal> {
+export async function criarMeta(dados: {
+  nome: string
+  valor_meta_centavos: number
+  ordem?: number
+}): Promise<Goal> {
   const user_id = await userIdAtual()
   return unwrap(
-    await supabase.from('goals').insert({ ...dados, user_id }).select().single(),
+    await supabase
+      .from('goals')
+      .insert({ ...dados, user_id })
+      .select()
+      .single(),
     'Não foi possível criar a meta.',
   )
 }

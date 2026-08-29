@@ -16,7 +16,15 @@ vi.mock('@/services/payment-methods', () => ({
 
 vi.mock('@/services/categories', () => ({
   listarCategorias: vi.fn(async () => [
-    { id: 'cat1', user_id: 'u', nome: 'Mercado', limite_centavos: 50_000, cor: '#a5f6d8', ordem: 1, created_at: '' },
+    {
+      id: 'cat1',
+      user_id: 'u',
+      nome: 'Mercado',
+      limite_centavos: 50_000,
+      cor: '#a5f6d8',
+      ordem: 1,
+      created_at: '',
+    },
   ]),
 }))
 
@@ -33,7 +41,15 @@ vi.mock('@/services/goals', () => ({
 
 vi.mock('@/services/incomes', () => ({
   listarEntradas: vi.fn(async () => [
-    { id: 'i1', user_id: 'u', ano: 2026, mes: 8, descricao: 'Salário', valor_centavos: 300_000, created_at: '' },
+    {
+      id: 'i1',
+      user_id: 'u',
+      ano: 2026,
+      mes: 8,
+      descricao: 'Salário',
+      valor_centavos: 300_000,
+      created_at: '',
+    },
   ]),
   criarEntrada: vi.fn(),
   atualizarEntrada: vi.fn(),

@@ -66,7 +66,13 @@ export function LoginPage() {
       <form onSubmit={handleSubmit(aoEnviar)} className="space-y-4" noValidate>
         <div className="space-y-1.5">
           <Label htmlFor="email">E-mail</Label>
-          <Input id="email" type="email" autoComplete="email" placeholder="voce@email.com" {...register('email')} />
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="voce@email.com"
+            {...register('email')}
+          />
           {errors.email && (
             <p role="alert" className="text-xs text-destructive">
               {errors.email.message}
@@ -77,7 +83,11 @@ export function LoginPage() {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="senha">Senha</Label>
-            <button type="button" onClick={aoRecuperar} className="text-xs text-primary-strong hover:underline">
+            <button
+              type="button"
+              onClick={aoRecuperar}
+              className="text-xs text-primary-strong hover:underline"
+            >
               Esqueci minha senha
             </button>
           </div>

@@ -52,41 +52,41 @@ export default function App() {
   return (
     <LimiteDeErro chave={local.pathname} destinoInicio="/">
       <TooltipProvider delayDuration={200}>
-      <ProvedorAcoesPagina>
-      <AnimatePresence mode="wait">
-        <Routes location={local} key={local.pathname}>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/entrar" element={<LoginPage />} />
-          <Route path="/criar-conta" element={<CadastroPage />} />
+        <ProvedorAcoesPagina>
+          <AnimatePresence mode="wait">
+            <Routes location={local} key={local.pathname}>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/entrar" element={<LoginPage />} />
+              <Route path="/criar-conta" element={<CadastroPage />} />
 
-          <Route
-            element={
-              <RotaProtegida>
-                <LayoutApp />
-              </RotaProtegida>
-            }
-          >
-            <Route path="/painel" element={<DashboardPage />} />
-            <Route path="/mes" element={<ControleMensalPage />} />
-            <Route path="/comparativo" element={<ComparativoAnualPage />} />
-            <Route path="/metas" element={<MetasPage />} />
-            <Route path="/configuracoes" element={<ConfiguracoesPage />} />
-            <Route path="/ajuda" element={<AjudaPage />} />
-          </Route>
+              <Route
+                element={
+                  <RotaProtegida>
+                    <LayoutApp />
+                  </RotaProtegida>
+                }
+              >
+                <Route path="/painel" element={<DashboardPage />} />
+                <Route path="/mes" element={<ControleMensalPage />} />
+                <Route path="/comparativo" element={<ComparativoAnualPage />} />
+                <Route path="/metas" element={<MetasPage />} />
+                <Route path="/configuracoes" element={<ConfiguracoesPage />} />
+                <Route path="/ajuda" element={<AjudaPage />} />
+              </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AnimatePresence>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AnimatePresence>
 
-      {/* No celular o toast vai para baixo, perto do polegar — mas acima da
+          {/* No celular o toast vai para baixo, perto do polegar — mas acima da
           barra de navegação, senão ele cobriria as abas. */}
-      <Toaster
-        position={ehMobile ? 'bottom-center' : 'top-right'}
-        offset={ehMobile ? 88 : 16}
-        richColors
-        closeButton
-      />
-      </ProvedorAcoesPagina>
+          <Toaster
+            position={ehMobile ? 'bottom-center' : 'top-right'}
+            offset={ehMobile ? 88 : 16}
+            richColors
+            closeButton
+          />
+        </ProvedorAcoesPagina>
       </TooltipProvider>
     </LimiteDeErro>
   )

@@ -18,7 +18,10 @@ export function Estrelas({
 }) {
   if (somenteLeitura || !onChange) {
     return (
-      <span className={cn('inline-flex items-center gap-0.5', className)} aria-label={`Prioridade ${valor} de 5`}>
+      <span
+        className={cn('inline-flex items-center gap-0.5', className)}
+        aria-label={`Prioridade ${valor} de 5`}
+      >
         {[1, 2, 3, 4, 5].map((n) => (
           <Star
             key={n}
@@ -59,7 +62,9 @@ export function Estrelas({
             botaoClassName,
           )}
         >
-          <Star className={cn('h-4 w-4', n <= valor ? 'fill-primary text-primary' : 'text-muted-foreground/40')} />
+          <Star
+            className={cn('h-4 w-4', n <= valor ? 'fill-primary text-primary' : 'text-muted-foreground/40')}
+          />
         </button>
       ))}
     </span>

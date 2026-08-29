@@ -3,7 +3,11 @@ import type { Transaction, TipoLancamento } from '@/lib/database.types'
 import { primeiroDiaISO, ultimoDiaISO } from '@/lib/dates'
 import { ErroServico, traduzErro, unwrap, userIdAtual } from './base'
 
-export async function listarLancamentos(ano: number, mes: number, tipo?: TipoLancamento): Promise<Transaction[]> {
+export async function listarLancamentos(
+  ano: number,
+  mes: number,
+  tipo?: TipoLancamento,
+): Promise<Transaction[]> {
   let query = supabase
     .from('transactions')
     .select('*')
@@ -39,7 +43,11 @@ export async function criarLancamento(dados: {
 }): Promise<Transaction> {
   const user_id = await userIdAtual()
   return unwrap(
-    await supabase.from('transactions').insert({ ...dados, user_id }).select().single(),
+    await supabase
+      .from('transactions')
+      .insert({ ...dados, user_id })
+      .select()
+      .single(),
     'Não foi possível salvar o lançamento.',
   )
 }
@@ -59,10 +67,18 @@ export async function excluirLancamento(id: string): Promise<void> {
 }
 
 /** Lançamentos de um intervalo qualquer — usado para achar duplicata na importação. */
-export async function listarLancamentosPorIntervalo(inicioISO: string, fimISO: string): Promise<Transaction[]> {
+export async function listarLancamentosPorIntervalo(
+  inicioISO: string,
+  fimISO: string,
+): Promise<Transaction[]> {
   return (
     unwrap(
-      await supabase.from('transactions').select('*').gte('data', inicioISO).lte('data', fimISO).order('data'),
+      await supabase
+        .from('transactions')
+        .select('*')
+        .gte('data', inicioISO)
+        .lte('data', fimISO)
+        .order('data'),
     ) ?? []
   )
 }

@@ -13,7 +13,15 @@ import type { TemaCor } from '@/lib/database.types'
  * a miniatura fica de verdade naquele tema, sem trocar o app inteiro. Por isso
  * a prévia acompanha o modo escuro sozinha.
  */
-export function PreviaTema({ tema, escuro, className }: { tema: TemaCor; escuro: boolean; className?: string }) {
+export function PreviaTema({
+  tema,
+  escuro,
+  className,
+}: {
+  tema: TemaCor
+  escuro: boolean
+  className?: string
+}) {
   return (
     <div
       data-tema={tema}

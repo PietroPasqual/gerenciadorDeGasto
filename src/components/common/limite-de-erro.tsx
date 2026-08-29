@@ -56,8 +56,8 @@ export class LimiteDeErro extends Component<Props, Estado> {
             <div className="space-y-1">
               <p className="text-lg font-medium">Essa tela travou</p>
               <p className="text-sm text-muted-foreground">
-                Seus dados estão salvos — o problema foi só em mostrar essa página. Tentar de novo
-                costuma resolver.
+                Seus dados estão salvos — o problema foi só em mostrar essa página. Tentar de novo costuma
+                resolver.
               </p>
             </div>
             <div className="flex w-full flex-col gap-2 sm:flex-row">

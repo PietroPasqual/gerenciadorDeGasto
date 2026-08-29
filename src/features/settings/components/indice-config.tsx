@@ -36,8 +36,7 @@ export function useSecaoVisivel(secoes: SecaoConfig[], ligado: boolean) {
      * chegou ao fim; fora isso vale a primeira que cruzou a linha de leitura.
      */
     const recalcular = () => {
-      const chegouAoFim =
-        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
+      const chegouAoFim = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
       // A última seção nunca acende sozinha: a página acaba antes de ela
       // conseguir cruzar a linha, então "Formas de pagamento" ficava marcada
       // enquanto você olhava "Metas".

@@ -143,7 +143,10 @@ export function useConfiguracoes() {
       chave: `categoria:${id}`,
       snapshot: snapshot(),
       aplicar: () =>
-        mutar((d) => ({ ...d, categorias: d.categorias.map((c) => (c.id === id ? { ...c, ...mudancas } : c)) })),
+        mutar((d) => ({
+          ...d,
+          categorias: d.categorias.map((c) => (c.id === id ? { ...c, ...mudancas } : c)),
+        })),
       restaurar: definirDados,
       acao: () => categoriasSvc.atualizarCategoria(id, mudancas),
     })
@@ -172,7 +175,8 @@ export function useConfiguracoes() {
       aplicar: () => mutar((d) => ({ ...d, metas: [...d.metas, provisorio] })),
       restaurar: definirDados,
       acao: () => metasSvc.criarMeta({ nome, valor_meta_centavos: valorMeta, ordem: provisorio.ordem }),
-      confirmar: (salvo) => mutar((d) => ({ ...d, metas: d.metas.map((m) => (m.id === provisorio.id ? salvo : m)) })),
+      confirmar: (salvo) =>
+        mutar((d) => ({ ...d, metas: d.metas.map((m) => (m.id === provisorio.id ? salvo : m)) })),
       mensagemErro: 'Não foi possível criar a meta',
     })
   }
@@ -181,7 +185,8 @@ export function useConfiguracoes() {
     executarOtimista({
       chave: `meta:${id}`,
       snapshot: snapshot(),
-      aplicar: () => mutar((d) => ({ ...d, metas: d.metas.map((m) => (m.id === id ? { ...m, ...mudancas } : m)) })),
+      aplicar: () =>
+        mutar((d) => ({ ...d, metas: d.metas.map((m) => (m.id === id ? { ...m, ...mudancas } : m)) })),
       restaurar: definirDados,
       acao: () => metasSvc.atualizarMeta(id, mudancas),
     })

@@ -22,7 +22,11 @@ export async function criarItemWishlist(dados: {
 }): Promise<WishlistItem> {
   const user_id = await userIdAtual()
   return unwrap(
-    await supabase.from('wishlist_items').insert({ ...dados, user_id }).select().single(),
+    await supabase
+      .from('wishlist_items')
+      .insert({ ...dados, user_id })
+      .select()
+      .single(),
     'Não foi possível criar o item.',
   )
 }

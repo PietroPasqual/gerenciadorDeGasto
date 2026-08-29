@@ -169,7 +169,12 @@ describe('progressoDaMeta', () => {
 describe('progressoWishlist', () => {
   it('conta cumpridas, pendentes e percentual', () => {
     expect(
-      progressoWishlist([{ concluido: true }, { concluido: false }, { concluido: true }, { concluido: false }]),
+      progressoWishlist([
+        { concluido: true },
+        { concluido: false },
+        { concluido: true },
+        { concluido: false },
+      ]),
     ).toEqual({ cumpridas: 2, pendentes: 2, percentual: 50 })
   })
 

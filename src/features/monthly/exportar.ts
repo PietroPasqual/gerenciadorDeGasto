@@ -7,11 +7,18 @@ export function exportarMesCSV(ano: number, mes: number, dados: DadosMes) {
   const nomeForma = (id: string | null) => dados.formasPagamento.find((f) => f.id === id)?.nome ?? ''
   const nomeCategoria = (id: string | null) => dados.categorias.find((c) => c.id === id)?.nome ?? ''
   const nomeMeta = (id: string | null) => dados.metas.find((m) => m.id === id)?.nome ?? ''
-  const pago = (id: string) =>
-    dados.pagamentos.find((p) => p.fixed_expense_id === id)?.pago ? 'Sim' : 'Não'
+  const pago = (id: string) => (dados.pagamentos.find((p) => p.fixed_expense_id === id)?.pago ? 'Sim' : 'Não')
 
   const linhas: LinhaCSV[] = [
-    ...dados.entradas.map((e) => ['Entrada', formatDataISO(`${ano}-${String(mes).padStart(2, '0')}-01`), e.descricao, '', '', csvMoeda(e.valor_centavos), '']),
+    ...dados.entradas.map((e) => [
+      'Entrada',
+      formatDataISO(`${ano}-${String(mes).padStart(2, '0')}-01`),
+      e.descricao,
+      '',
+      '',
+      csvMoeda(e.valor_centavos),
+      '',
+    ]),
     ...dados.gastosFixos.map((g) => [
       'Gasto fixo',
       g.dia_vencimento ? `dia ${g.dia_vencimento}` : '',
@@ -30,8 +37,24 @@ export function exportarMesCSV(ano: number, mes: number, dados: DadosMes) {
       csvMoeda(l.valor_centavos),
       '',
     ]),
-    ...dados.aportes.map((a) => ['Investimento', '', nomeMeta(a.goal_id), '', '', csvMoeda(a.valor_centavos), '']),
-    ...dados.investimentos.map((i) => ['Investimento', '', i.descricao, '', '', csvMoeda(i.valor_centavos), '']),
+    ...dados.aportes.map((a) => [
+      'Investimento',
+      '',
+      nomeMeta(a.goal_id),
+      '',
+      '',
+      csvMoeda(a.valor_centavos),
+      '',
+    ]),
+    ...dados.investimentos.map((i) => [
+      'Investimento',
+      '',
+      i.descricao,
+      '',
+      '',
+      csvMoeda(i.valor_centavos),
+      '',
+    ]),
   ]
 
   const conteudo = gerarCSV(

@@ -15,7 +15,11 @@ export async function criarFormaPagamento(dados: {
 }): Promise<PaymentMethod> {
   const user_id = await userIdAtual()
   return unwrap(
-    await supabase.from('payment_methods').insert({ ...dados, user_id }).select().single(),
+    await supabase
+      .from('payment_methods')
+      .insert({ ...dados, user_id })
+      .select()
+      .single(),
     'Não foi possível criar a forma de pagamento.',
   )
 }

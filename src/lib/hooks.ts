@@ -64,10 +64,7 @@ export function useRecurso<T>(
   const definirDados = useCallback((atualizar: T | ((anterior: T) => T)) => {
     setEstado((anterior) => ({
       ...anterior,
-      dados:
-        typeof atualizar === 'function'
-          ? (atualizar as (a: T) => T)(anterior.dados as T)
-          : atualizar,
+      dados: typeof atualizar === 'function' ? (atualizar as (a: T) => T)(anterior.dados as T) : atualizar,
     }))
   }, [])
 

@@ -59,7 +59,11 @@ export function SeletorCor({
   const cores = conhecidas.includes(normalizada) ? conhecidas : [...conhecidas, normalizada]
 
   return (
-    <div className={cn('grid grid-cols-6 gap-2 sm:grid-cols-8', className)} role="radiogroup" aria-label="Cor">
+    <div
+      className={cn('grid grid-cols-6 gap-2 sm:grid-cols-8', className)}
+      role="radiogroup"
+      aria-label="Cor"
+    >
       {cores.map((cor) => {
         const escolhida = cor === normalizada
         return (

@@ -206,17 +206,15 @@ export function ImportarCSV({
       // arquivo, porque a numeração das repetições faz parte da chave.
       const impressoes = impressoesDigitais(selecionados)
       const resultado = await criarLancamentosEmLote(
-        selecionados.map(
-          ({ data, descricao, valor_centavos, tipo, category_id, payment_method_id }, i) => ({
-            data,
-            descricao,
-            valor_centavos,
-            tipo,
-            category_id,
-            payment_method_id,
-            fingerprint: impressoes[i],
-          }),
-        ),
+        selecionados.map(({ data, descricao, valor_centavos, tipo, category_id, payment_method_id }, i) => ({
+          data,
+          descricao,
+          valor_centavos,
+          tipo,
+          category_id,
+          payment_method_id,
+          fingerprint: impressoes[i],
+        })),
       )
       aoImportar(resultado)
       onOpenChange(false)
@@ -501,8 +499,7 @@ function Conferencia({
       <p className="flex items-start gap-2 text-sm">
         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
         <span>
-          <strong>{selecionados.length}</strong>{' '}
-          {selecionados.length === 1 ? 'novo' : 'novos'}
+          <strong>{selecionados.length}</strong> {selecionados.length === 1 ? 'novo' : 'novos'}
           {jaExistentes > 0 && ` · ${jaExistentes} já existiam`}
           {previa.ordemData === 'mes-dia' && ' · datas lidas como mês/dia'}
           {previa.ordemData === 'dia-mes' && ' · datas lidas como dia/mês'}

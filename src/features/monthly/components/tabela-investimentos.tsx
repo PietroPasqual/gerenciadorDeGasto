@@ -97,7 +97,9 @@ export function TabelaInvestimentos({
 
         {/* Aportes sem meta */}
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Outros aportes</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Outros aportes
+          </p>
           <GradeEditavel className="space-y-2 md:space-y-0">
             {investimentos.map((investimento) => (
               <Linha key={investimento.id} template={TEMPLATE_AVULSO}>

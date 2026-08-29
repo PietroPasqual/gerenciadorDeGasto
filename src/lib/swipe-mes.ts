@@ -54,6 +54,6 @@ export function useSwipeMes(aoTrocar: (direcao: 1 | -1) => void, ativo: boolean)
 
 /** mês + delta, virando o ano quando passa de dezembro ou de janeiro. */
 export function mesVizinho(ano: number, mes: number, delta: number) {
-  const total = (ano * 12 + (mes - 1)) + delta
+  const total = ano * 12 + (mes - 1) + delta
   return { ano: Math.floor(total / 12), mes: (total % 12) + 1 }
 }

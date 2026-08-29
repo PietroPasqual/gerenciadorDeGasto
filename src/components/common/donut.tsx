@@ -63,7 +63,12 @@ export function Donut({
 
   if (ordenado.length === 0) {
     return (
-      <EstadoVazio ilustracao="grafico" titulo={titulo ?? 'Sem dados'} descricao={vazioTexto} className="py-6" />
+      <EstadoVazio
+        ilustracao="grafico"
+        titulo={titulo ?? 'Sem dados'}
+        descricao={vazioTexto}
+        className="py-6"
+      />
     )
   }
 

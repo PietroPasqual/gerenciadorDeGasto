@@ -1,13 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
-import {
-  ArrowRight,
-  CalendarDays,
-  LineChart,
-  PiggyBank,
-  ShieldCheck,
-  Target,
-} from 'lucide-react'
+import { ArrowRight, CalendarDays, LineChart, PiggyBank, ShieldCheck, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Marca } from '@/components/common/marca'
 import { PreviaApp } from '@/components/common/previa-app'
@@ -76,49 +69,49 @@ export function LandingPage() {
       <section className="container relative overflow-hidden py-16 sm:py-24">
         <div className="absolute -right-24 -top-16 -z-10 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
         <div className="grid items-center gap-12 lg:grid-cols-2">
-        <motion.div
-          initial={reduzir ? false : { opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-2xl space-y-6"
-        >
-          <span className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-accent-foreground">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Seus dados só seus — protegidos por RLS no Supabase
-          </span>
-          <h1 className="titulo-serif text-4xl leading-tight sm:text-5xl">
-            O planner financeiro da planilha, agora como app.
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Controle mensal completo, metas, wishlist e comparativo anual. Em reais, em português, com o
-            resumo do mês sempre à vista.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Button asChild size="lg">
-              <Link to={session ? '/painel' : '/criar-conta'}>
-                Começar agora
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link to="/entrar">Já tenho conta</Link>
-            </Button>
-          </div>
-        </motion.div>
+          <motion.div
+            initial={reduzir ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-2xl space-y-6"
+          >
+            <span className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-accent-foreground">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Seus dados só seus — protegidos por RLS no Supabase
+            </span>
+            <h1 className="titulo-serif text-4xl leading-tight sm:text-5xl">
+              O planner financeiro da planilha, agora como app.
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              Controle mensal completo, metas, wishlist e comparativo anual. Em reais, em português, com o
+              resumo do mês sempre à vista.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild size="lg">
+                <Link to={session ? '/painel' : '/criar-conta'}>
+                  Começar agora
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link to="/entrar">Já tenho conta</Link>
+              </Button>
+            </div>
+          </motion.div>
 
-        <motion.div
-          initial={reduzir ? false : { opacity: 0, y: 24, rotate: -1.5 }}
-          animate={{ opacity: 1, y: 0, rotate: -1.5 }}
-          transition={{ duration: 0.6, delay: 0.15 }}
-          // Largura de tela de app, e não a coluna inteira: solta, a prévia
-          // esticava para 668px e os valores iam parar na borda direita — lia
-          // como banner, não como o produto.
-          // Inclinação de 1,5°: o suficiente para parecer um objeto pousado na
-          // página, e não um bloco colado no grid.
-          className="mx-auto w-full max-w-[23rem]"
-        >
-          <PreviaApp />
-        </motion.div>
+          <motion.div
+            initial={reduzir ? false : { opacity: 0, y: 24, rotate: -1.5 }}
+            animate={{ opacity: 1, y: 0, rotate: -1.5 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+            // Largura de tela de app, e não a coluna inteira: solta, a prévia
+            // esticava para 668px e os valores iam parar na borda direita — lia
+            // como banner, não como o produto.
+            // Inclinação de 1,5°: o suficiente para parecer um objeto pousado na
+            // página, e não um bloco colado no grid.
+            className="mx-auto w-full max-w-[23rem]"
+          >
+            <PreviaApp />
+          </motion.div>
         </div>
       </section>
 

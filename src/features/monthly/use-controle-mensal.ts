@@ -45,18 +45,27 @@ export interface DadosMes {
  */
 export function useControleMensal(ano: number, mes: number) {
   const recurso = useRecurso<DadosMes>(async () => {
-    const [formasPagamento, categorias, metas, entradas, gastosFixos, pagamentos, lancamentos, investimentos, aportes] =
-      await Promise.all([
-        listarFormasPagamento(),
-        listarCategorias(),
-        metasSvc.listarMetas(),
-        entradasSvc.listarEntradas(ano, mes),
-        fixosSvc.listarGastosFixos(),
-        fixosSvc.listarPagamentosDoMes(ano, mes),
-        lancamentosSvc.listarLancamentos(ano, mes),
-        investimentosSvc.listarInvestimentos(ano, mes),
-        metasSvc.listarAportesDoMes(ano, mes),
-      ])
+    const [
+      formasPagamento,
+      categorias,
+      metas,
+      entradas,
+      gastosFixos,
+      pagamentos,
+      lancamentos,
+      investimentos,
+      aportes,
+    ] = await Promise.all([
+      listarFormasPagamento(),
+      listarCategorias(),
+      metasSvc.listarMetas(),
+      entradasSvc.listarEntradas(ano, mes),
+      fixosSvc.listarGastosFixos(),
+      fixosSvc.listarPagamentosDoMes(ano, mes),
+      lancamentosSvc.listarLancamentos(ano, mes),
+      investimentosSvc.listarInvestimentos(ano, mes),
+      metasSvc.listarAportesDoMes(ano, mes),
+    ])
     return {
       formasPagamento,
       categorias,
@@ -107,7 +116,10 @@ export function useControleMensal(ano: number, mes: number) {
     })
   }
 
-  const editarEntrada = async (id: string, mudancas: Partial<Pick<Income, 'descricao' | 'valor_centavos'>>) => {
+  const editarEntrada = async (
+    id: string,
+    mudancas: Partial<Pick<Income, 'descricao' | 'valor_centavos'>>,
+  ) => {
     await executarOtimista({
       chave: `entrada:${id}`,
       snapshot: snapshot(),
@@ -176,7 +188,10 @@ export function useControleMensal(ano: number, mes: number) {
       chave: `gasto-fixo:${id}`,
       snapshot: snapshot(),
       aplicar: () =>
-        mutar((d) => ({ ...d, gastosFixos: d.gastosFixos.map((g) => (g.id === id ? { ...g, ...mudancas } : g)) })),
+        mutar((d) => ({
+          ...d,
+          gastosFixos: d.gastosFixos.map((g) => (g.id === id ? { ...g, ...mudancas } : g)),
+        })),
       restaurar: (s) => definirDados(s),
       acao: () => fixosSvc.atualizarGastoFixo(id, mudancas),
       mensagemErro: 'Não foi possível salvar o gasto fixo',
@@ -268,7 +283,10 @@ export function useControleMensal(ano: number, mes: number) {
       chave: `lancamento:${id}`,
       snapshot: snapshot(),
       aplicar: () =>
-        mutar((d) => ({ ...d, lancamentos: d.lancamentos.map((l) => (l.id === id ? { ...l, ...mudancas } : l)) })),
+        mutar((d) => ({
+          ...d,
+          lancamentos: d.lancamentos.map((l) => (l.id === id ? { ...l, ...mudancas } : l)),
+        })),
       restaurar: (s) => definirDados(s),
       acao: () => lancamentosSvc.atualizarLancamento(id, mudancas),
       mensagemErro: 'Não foi possível salvar o lançamento',
@@ -308,11 +326,14 @@ export function useControleMensal(ano: number, mes: number) {
       aplicar: () =>
         mutar((d) => ({
           ...d,
-          aportes: existente ? d.aportes.map((a) => (a.id === existente.id ? provisorio : a)) : [...d.aportes, provisorio],
+          aportes: existente
+            ? d.aportes.map((a) => (a.id === existente.id ? provisorio : a))
+            : [...d.aportes, provisorio],
         })),
       restaurar: (s) => definirDados(s),
       acao: () => metasSvc.salvarAporte({ goal_id, ano, mes, valor_centavos }),
-      confirmar: (salvo) => mutar((d) => ({ ...d, aportes: d.aportes.map((a) => (a.goal_id === goal_id ? salvo : a)) })),
+      confirmar: (salvo) =>
+        mutar((d) => ({ ...d, aportes: d.aportes.map((a) => (a.goal_id === goal_id ? salvo : a)) })),
       mensagemErro: 'Não foi possível salvar o aporte',
     })
   }
@@ -334,7 +355,10 @@ export function useControleMensal(ano: number, mes: number) {
       restaurar: (s) => definirDados(s),
       acao: () => investimentosSvc.criarInvestimento({ ano, mes, descricao, valor_centavos, goal_id: null }),
       confirmar: (salvo) =>
-        mutar((d) => ({ ...d, investimentos: d.investimentos.map((i) => (i.id === provisorio.id ? salvo : i)) })),
+        mutar((d) => ({
+          ...d,
+          investimentos: d.investimentos.map((i) => (i.id === provisorio.id ? salvo : i)),
+        })),
       mensagemErro: 'Não foi possível adicionar o investimento',
     })
   }
@@ -344,7 +368,10 @@ export function useControleMensal(ano: number, mes: number) {
       chave: `investimento:${id}`,
       snapshot: snapshot(),
       aplicar: () =>
-        mutar((d) => ({ ...d, investimentos: d.investimentos.map((i) => (i.id === id ? { ...i, ...mudancas } : i)) })),
+        mutar((d) => ({
+          ...d,
+          investimentos: d.investimentos.map((i) => (i.id === id ? { ...i, ...mudancas } : i)),
+        })),
       restaurar: (s) => definirDados(s),
       acao: () => investimentosSvc.atualizarInvestimento(id, mudancas),
       mensagemErro: 'Não foi possível salvar o investimento',

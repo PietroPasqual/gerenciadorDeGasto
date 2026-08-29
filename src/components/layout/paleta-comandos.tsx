@@ -175,7 +175,9 @@ export function PaletaComandos() {
                     className={cn(
                       'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors',
                       'disabled:cursor-not-allowed disabled:opacity-50',
-                      i === indice && !c.desabilitado ? 'bg-accent text-accent-foreground' : 'text-foreground',
+                      i === indice && !c.desabilitado
+                        ? 'bg-accent text-accent-foreground'
+                        : 'text-foreground',
                     )}
                   >
                     {c.Icone && <c.Icone className="h-4 w-4 shrink-0 text-muted-foreground" />}
@@ -196,7 +198,12 @@ export function DicaAtalho({ className }: { className?: string }) {
   const [mac, setMac] = React.useState(false)
   React.useEffect(() => setMac(ehMac()), [])
   return (
-    <kbd className={cn('rounded border border-border px-1.5 py-0.5 text-[0.7rem] text-muted-foreground', className)}>
+    <kbd
+      className={cn(
+        'rounded border border-border px-1.5 py-0.5 text-[0.7rem] text-muted-foreground',
+        className,
+      )}
+    >
       {mac ? '⌘' : 'Ctrl'} K
     </kbd>
   )

@@ -70,7 +70,13 @@ export function CadastroPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="email">E-mail</Label>
-          <Input id="email" type="email" autoComplete="email" placeholder="voce@email.com" {...register('email')} />
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="voce@email.com"
+            {...register('email')}
+          />
           {errors.email && (
             <p role="alert" className="text-xs text-destructive">
               {errors.email.message}
@@ -90,7 +96,12 @@ export function CadastroPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="confirmarSenha">Confirmar senha</Label>
-          <Input id="confirmarSenha" type="password" autoComplete="new-password" {...register('confirmarSenha')} />
+          <Input
+            id="confirmarSenha"
+            type="password"
+            autoComplete="new-password"
+            {...register('confirmarSenha')}
+          />
           {errors.confirmarSenha && (
             <p role="alert" className="text-xs text-destructive">
               {errors.confirmarSenha.message}

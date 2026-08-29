@@ -21,19 +21,9 @@ export function IlustracaoLista({ className }: Props) {
   return (
     <svg viewBox="0 0 80 64" fill="none" aria-hidden className={cn(base, className)}>
       <rect x="12" y="8" width="56" height="48" rx="6" stroke="currentColor" strokeWidth="2" />
-      <path
-        d="M22 24h24M22 34h32M22 44h16"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+      <path d="M22 24h24M22 34h32M22 44h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       {/* a primeira linha em destaque sugere onde o conteúdo vai aparecer */}
-      <path
-        d="M22 24h14"
-        stroke="hsl(var(--primary))"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-      />
+      <path d="M22 24h14" stroke="hsl(var(--primary))" strokeWidth="2.5" strokeLinecap="round" />
     </svg>
   )
 }
@@ -62,12 +52,7 @@ export function IlustracaoMeta({ className }: Props) {
       <circle cx="36" cy="32" r="11" stroke="currentColor" strokeWidth="2" />
       <circle cx="36" cy="32" r="3.5" fill="hsl(var(--primary))" />
       <path d="M58 12 41 27" stroke="hsl(var(--primary))" strokeWidth="2.5" strokeLinecap="round" />
-      <path
-        d="M58 12v6M58 12h-6"
-        stroke="hsl(var(--primary))"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-      />
+      <path d="M58 12v6M58 12h-6" stroke="hsl(var(--primary))" strokeWidth="2.5" strokeLinecap="round" />
     </svg>
   )
 }

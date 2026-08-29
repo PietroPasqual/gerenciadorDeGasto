@@ -93,9 +93,7 @@ export function TabelaGastos({
               // frase antiga mandava a pessoa procurar algo que não está lá.
               <>
                 <span className="md:hidden">Toque no + para lançar o primeiro gasto.</span>
-                <span className="hidden md:inline">
-                  Comece pelo primeiro gasto do mês na linha abaixo.
-                </span>
+                <span className="hidden md:inline">Comece pelo primeiro gasto do mês na linha abaixo.</span>
               </>
             }
           />
@@ -154,87 +152,87 @@ export function TabelaGastos({
             </ul>
 
             <GradeEditavel className="space-y-2 md:space-y-0">
-            <Cabecalho template={TEMPLATE}>
-              <span>Descrição</span>
-              <span className="text-right">Valor</span>
-              <span>Data</span>
-              <span>Forma de pagamento</span>
-              <span>Categoria</span>
-              <span className="sr-only">Ações</span>
-            </Cabecalho>
+              <Cabecalho template={TEMPLATE}>
+                <span>Descrição</span>
+                <span className="text-right">Valor</span>
+                <span>Data</span>
+                <span>Forma de pagamento</span>
+                <span>Categoria</span>
+                <span className="sr-only">Ações</span>
+              </Cabecalho>
 
-            {/* No celular a linha tem duas faixas fixas — nada de wrap, para
+              {/* No celular a linha tem duas faixas fixas — nada de wrap, para
                 que todos os cards fiquem com a mesma altura e cada controle no
                 mesmo lugar. A lixeira fica ancorada no canto superior direito
                 (por isso o `pr-9` na 1ª faixa). No desktop `md:contents`
                 desmonta os agrupamentos e devolve tudo para as 6 colunas. */}
-            {gastos.map((gasto) => (
-              <Linha
-                key={gasto.id}
-                template={TEMPLATE}
-                className="relative hidden gap-1.5 md:grid md:static"
-              >
-                <div className="flex items-center gap-2 pr-9 md:contents md:pr-0">
-                  <Input
-                    data-celula
-                    aria-label="Descrição do gasto"
-                    defaultValue={gasto.descricao}
-                    onBlur={(e) => {
-                      if (e.target.value !== gasto.descricao) onEditar(gasto.id, { descricao: e.target.value })
-                    }}
-                    className="min-w-0 flex-1 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:font-normal"
-                  />
-                  <MoneyInput
-                    data-celula
-                    aria-label="Valor do gasto"
-                    value={gasto.valor_centavos}
-                    onValueChange={(valor) => onEditar(gasto.id, { valor_centavos: valor })}
-                    className="w-24 shrink-0 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:w-full md:font-normal"
-                  />
-                </div>
+              {gastos.map((gasto) => (
+                <Linha
+                  key={gasto.id}
+                  template={TEMPLATE}
+                  className="relative hidden gap-1.5 md:grid md:static"
+                >
+                  <div className="flex items-center gap-2 pr-9 md:contents md:pr-0">
+                    <Input
+                      data-celula
+                      aria-label="Descrição do gasto"
+                      defaultValue={gasto.descricao}
+                      onBlur={(e) => {
+                        if (e.target.value !== gasto.descricao)
+                          onEditar(gasto.id, { descricao: e.target.value })
+                      }}
+                      className="min-w-0 flex-1 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:font-normal"
+                    />
+                    <MoneyInput
+                      data-celula
+                      aria-label="Valor do gasto"
+                      value={gasto.valor_centavos}
+                      onValueChange={(valor) => onEditar(gasto.id, { valor_centavos: valor })}
+                      className="w-24 shrink-0 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:w-full md:font-normal"
+                    />
+                  </div>
 
-                <div className="grid grid-cols-[6.25rem,0.85fr,1.15fr] items-center gap-1.5 md:contents">
-                  <Input
-                    data-celula
-                    type="date"
-                    aria-label="Data do gasto"
-                    defaultValue={gasto.data.slice(0, 10)}
-                    onBlur={(e) => {
-                      if (e.target.value && e.target.value !== gasto.data.slice(0, 10)) {
-                        onEditar(gasto.id, { data: e.target.value })
-                      }
-                    }}
-                    className="w-full border-transparent bg-transparent px-2 text-muted-foreground hover:border-input focus:bg-card md:px-3 md:text-foreground"
-                  />
-                  <SelectSimples
-                    ariaLabel="Forma de pagamento do gasto"
-                    valor={gasto.payment_method_id}
-                    opcoes={formasPagamento}
-                    onChange={(valor) => onEditar(gasto.id, { payment_method_id: valor })}
-                    className="px-2 md:px-3"
-                  />
-                  <SelectSimples
-                    ariaLabel="Categoria do gasto"
-                    valor={gasto.category_id}
-                    opcoes={categorias}
-                    onChange={(valor) => onEditar(gasto.id, { category_id: valor })}
-                    className="px-2 md:px-3"
-                  />
-                </div>
+                  <div className="grid grid-cols-[6.25rem,0.85fr,1.15fr] items-center gap-1.5 md:contents">
+                    <Input
+                      data-celula
+                      type="date"
+                      aria-label="Data do gasto"
+                      defaultValue={gasto.data.slice(0, 10)}
+                      onBlur={(e) => {
+                        if (e.target.value && e.target.value !== gasto.data.slice(0, 10)) {
+                          onEditar(gasto.id, { data: e.target.value })
+                        }
+                      }}
+                      className="w-full border-transparent bg-transparent px-2 text-muted-foreground hover:border-input focus:bg-card md:px-3 md:text-foreground"
+                    />
+                    <SelectSimples
+                      ariaLabel="Forma de pagamento do gasto"
+                      valor={gasto.payment_method_id}
+                      opcoes={formasPagamento}
+                      onChange={(valor) => onEditar(gasto.id, { payment_method_id: valor })}
+                      className="px-2 md:px-3"
+                    />
+                    <SelectSimples
+                      ariaLabel="Categoria do gasto"
+                      valor={gasto.category_id}
+                      opcoes={categorias}
+                      onChange={(valor) => onEditar(gasto.id, { category_id: valor })}
+                      className="px-2 md:px-3"
+                    />
+                  </div>
 
-                <div className="acoes-hover absolute right-1.5 top-1.5 md:static md:flex md:justify-end">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    
-                    onClick={() => onRemover(gasto.id)}
-                    aria-label={`Excluir gasto ${gasto.descricao}`}
-                  >
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </div>
-              </Linha>
-            ))}
+                  <div className="acoes-hover absolute right-1.5 top-1.5 md:static md:flex md:justify-end">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onRemover(gasto.id)}
+                      aria-label={`Excluir gasto ${gasto.descricao}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
+                </Linha>
+              ))}
             </GradeEditavel>
           </>
         )}
@@ -290,11 +288,7 @@ export function TabelaGastos({
 
           {/* No celular um botão de largura total é um alvo bem melhor que um
               "+" de 36px; no desktop volta a ser o ícone da última coluna. */}
-          <Button
-            onClick={adicionar}
-            aria-label="Adicionar gasto"
-            className="w-full md:h-10 md:w-10 md:p-0"
-          >
+          <Button onClick={adicionar} aria-label="Adicionar gasto" className="w-full md:h-10 md:w-10 md:p-0">
             <Plus className="h-4 w-4" />
             <span className="md:hidden">Adicionar gasto</span>
           </Button>

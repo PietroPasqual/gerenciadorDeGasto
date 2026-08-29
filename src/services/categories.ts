@@ -14,7 +14,11 @@ export async function criarCategoria(dados: {
 }): Promise<Category> {
   const user_id = await userIdAtual()
   return unwrap(
-    await supabase.from('categories').insert({ ...dados, user_id }).select().single(),
+    await supabase
+      .from('categories')
+      .insert({ ...dados, user_id })
+      .select()
+      .single(),
     'Não foi possível criar a categoria.',
   )
 }

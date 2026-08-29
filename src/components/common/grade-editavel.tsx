@@ -17,13 +17,7 @@ import * as React from 'react'
  * onBlur porque são umas quinze chamadas espalhadas por seis tabelas — e
  * porque a condição é exatamente a mesma que dispara o save.
  */
-export function GradeEditavel({
-  children,
-  className,
-}: {
-  children: React.ReactNode
-  className?: string
-}) {
+export function GradeEditavel({ children, className }: { children: React.ReactNode; className?: string }) {
   const ref = React.useRef<HTMLDivElement>(null)
 
   const celulas = () =>
@@ -102,13 +96,7 @@ export function GradeEditavel({
   }
 
   return (
-    <div
-      ref={ref}
-      className={className}
-      onKeyDown={handleKeyDown}
-      onFocus={aoFocar}
-      onBlur={aoDesfocar}
-    >
+    <div ref={ref} className={className} onKeyDown={handleKeyDown} onFocus={aoFocar} onBlur={aoDesfocar}>
       {children}
     </div>
   )

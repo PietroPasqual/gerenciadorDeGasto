@@ -8,12 +8,14 @@ import type { Vigencia } from '@/lib/calculations'
 
 /** "todo mês" · "desde ago/26" · "até jun/26" · "ago/26 – jun/26" */
 export function textoVigencia(v: Vigencia): string {
-  const de = v.inicio_ano !== null && v.inicio_mes !== null
-    ? `${nomeCurtoDoMes(v.inicio_mes).toLowerCase()}/${String(v.inicio_ano).slice(2)}`
-    : null
-  const ate = v.fim_ano !== null && v.fim_mes !== null
-    ? `${nomeCurtoDoMes(v.fim_mes).toLowerCase()}/${String(v.fim_ano).slice(2)}`
-    : null
+  const de =
+    v.inicio_ano !== null && v.inicio_mes !== null
+      ? `${nomeCurtoDoMes(v.inicio_mes).toLowerCase()}/${String(v.inicio_ano).slice(2)}`
+      : null
+  const ate =
+    v.fim_ano !== null && v.fim_mes !== null
+      ? `${nomeCurtoDoMes(v.fim_mes).toLowerCase()}/${String(v.fim_ano).slice(2)}`
+      : null
   if (de && ate) return `${de} – ${ate}`
   if (de) return `desde ${de}`
   if (ate) return `até ${ate}`
@@ -62,8 +64,8 @@ export function SheetVigencia({
       <SheetContent aria-describedby={undefined}>
         <SheetTitle>Quando você paga {nome}?</SheetTitle>
         <SheetDescription className="mb-4">
-          Fora deste período o gasto não entra na conta do mês — é o que evita ele aparecer em meses
-          que você ainda não pagava.
+          Fora deste período o gasto não entra na conta do mês — é o que evita ele aparecer em meses que você
+          ainda não pagava.
         </SheetDescription>
 
         <div className="space-y-4">
@@ -115,9 +117,7 @@ export function SheetVigencia({
           Salvar
         </Button>
         {!periodoValido(rascunho) && (
-          <p className="mt-2 text-center text-sm text-destructive">
-            O fim não pode vir antes do início.
-          </p>
+          <p className="mt-2 text-center text-sm text-destructive">O fim não pode vir antes do início.</p>
         )}
       </SheetContent>
     </Sheet>
@@ -177,7 +177,10 @@ function LinhaPeriodo({
 
       {ativo && (
         <div className="flex gap-2">
-          <Select value={String(mes ?? 1)} onValueChange={(v) => onChange(ano ?? new Date().getFullYear(), Number(v))}>
+          <Select
+            value={String(mes ?? 1)}
+            onValueChange={(v) => onChange(ano ?? new Date().getFullYear(), Number(v))}
+          >
             <SelectTrigger className="flex-1" aria-label={`Mês — ${rotulo}`}>
               <SelectValue />
             </SelectTrigger>
@@ -189,7 +192,10 @@ function LinhaPeriodo({
               ))}
             </SelectContent>
           </Select>
-          <Select value={String(ano ?? new Date().getFullYear())} onValueChange={(v) => onChange(Number(v), mes ?? 1)}>
+          <Select
+            value={String(ano ?? new Date().getFullYear())}
+            onValueChange={(v) => onChange(Number(v), mes ?? 1)}
+          >
             <SelectTrigger className="w-[6.5rem]" aria-label={`Ano — ${rotulo}`}>
               <SelectValue />
             </SelectTrigger>

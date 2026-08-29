@@ -116,8 +116,8 @@ export function AjudaPage() {
                 “Exportar CSV” no controle mensal baixa o mês inteiro; no comparativo, o ano.
               </li>
               <li className="flex gap-2">
-                <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                O arquivo usa ponto e vírgula e abre direto no Excel em português.
+                <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />O arquivo
+                usa ponto e vírgula e abre direto no Excel em português.
               </li>
               <li className="flex gap-2">
                 <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
@@ -136,7 +136,9 @@ function Atalho({ tecla, texto }: { tecla: string; texto: string }) {
   return (
     <div className="flex items-baseline gap-3">
       <dt>
-        <kbd className="rounded-md border border-border bg-muted px-2 py-0.5 text-xs font-medium">{tecla}</kbd>
+        <kbd className="rounded-md border border-border bg-muted px-2 py-0.5 text-xs font-medium">
+          {tecla}
+        </kbd>
       </dt>
       <dd className="text-muted-foreground">{texto}</dd>
     </div>

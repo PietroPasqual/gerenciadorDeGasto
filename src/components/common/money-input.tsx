@@ -57,7 +57,10 @@ export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
           onClick?.(e)
         }}
         onChange={(e) => {
-          const digitos = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, LIMITE_DIGITOS)
+          const digitos = e.target.value
+            .replace(/\D/g, '')
+            .replace(/^0+(?=\d)/, '')
+            .slice(0, LIMITE_DIGITOS)
           const novo = digitos === '' ? 0 : Number(digitos)
           setCentavos(novo)
           onValueChange(novo)

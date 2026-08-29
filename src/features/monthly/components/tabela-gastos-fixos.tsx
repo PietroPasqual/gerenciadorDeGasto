@@ -80,7 +80,8 @@ export function TabelaGastosFixos({
       <CardHeader className="pb-3">
         <CardTitle>Gastos fixos</CardTitle>
         <CardDescription>
-          Cadastre uma vez e diga desde quando você paga — ele se repete só nesses meses. O “pago?” é marcado mês a mês.
+          Cadastre uma vez e diga desde quando você paga — ele se repete só nesses meses. O “pago?” é marcado
+          mês a mês.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -188,7 +189,6 @@ export function TabelaGastosFixos({
                     <Button
                       variant="ghost"
                       size="icon"
-                      
                       onClick={() => onRemover(gasto.id)}
                       aria-label={`Excluir gasto fixo ${gasto.nome}`}
                     >
@@ -233,9 +233,7 @@ export function TabelaGastosFixos({
           aberta={vigenciaDe !== null}
           onOpenChange={(aberta) => !aberta && setVigenciaDe(null)}
           nome={vigenciaDe?.nome ?? ''}
-          vigencia={
-            vigenciaDe ?? { inicio_ano: null, inicio_mes: null, fim_ano: null, fim_mes: null }
-          }
+          vigencia={vigenciaDe ?? { inicio_ano: null, inicio_mes: null, fim_ano: null, fim_mes: null }}
           anoAtual={ano}
           mesAtual={mes}
           onSalvar={(v) => vigenciaDe && onEditar(vigenciaDe.id, v)}

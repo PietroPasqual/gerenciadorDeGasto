@@ -3,7 +3,9 @@ import type { Income } from '@/lib/database.types'
 import { unwrap, userIdAtual } from './base'
 
 export async function listarEntradas(ano: number, mes: number): Promise<Income[]> {
-  return unwrap(await supabase.from('incomes').select('*').eq('ano', ano).eq('mes', mes).order('created_at')) ?? []
+  return (
+    unwrap(await supabase.from('incomes').select('*').eq('ano', ano).eq('mes', mes).order('created_at')) ?? []
+  )
 }
 
 export async function criarEntrada(dados: {
@@ -14,7 +16,11 @@ export async function criarEntrada(dados: {
 }): Promise<Income> {
   const user_id = await userIdAtual()
   return unwrap(
-    await supabase.from('incomes').insert({ ...dados, user_id }).select().single(),
+    await supabase
+      .from('incomes')
+      .insert({ ...dados, user_id })
+      .select()
+      .single(),
     'Não foi possível salvar a entrada.',
   )
 }

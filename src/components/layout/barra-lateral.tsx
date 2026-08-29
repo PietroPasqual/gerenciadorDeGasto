@@ -46,9 +46,7 @@ export function BarraLateral({ className }: { className?: string }) {
         <button
           type="button"
           onClick={() =>
-            window.dispatchEvent(
-              new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }),
-            )
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))
           }
           className="flex w-full items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/50"
         >

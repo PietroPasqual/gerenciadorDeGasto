@@ -64,21 +64,11 @@ export function SheetConfig({
 
         {onMover && (
           <div className="mt-5 flex gap-2">
-            <Button
-              variant="outline"
-              className="flex-1"
-              disabled={!podeSubir}
-              onClick={() => onMover(-1)}
-            >
+            <Button variant="outline" className="flex-1" disabled={!podeSubir} onClick={() => onMover(-1)}>
               <ArrowUp className="h-4 w-4" />
               Subir
             </Button>
-            <Button
-              variant="outline"
-              className="flex-1"
-              disabled={!podeDescer}
-              onClick={() => onMover(1)}
-            >
+            <Button variant="outline" className="flex-1" disabled={!podeDescer} onClick={() => onMover(1)}>
               <ArrowDown className="h-4 w-4" />
               Descer
             </Button>

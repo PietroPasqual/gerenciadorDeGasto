@@ -8,7 +8,11 @@ import { unwrap, userIdAtual } from './base'
  * assim nada é contado duas vezes no total investido do mês.
  */
 export async function listarInvestimentos(ano: number, mes: number): Promise<Investment[]> {
-  return unwrap(await supabase.from('investments').select('*').eq('ano', ano).eq('mes', mes).order('created_at')) ?? []
+  return (
+    unwrap(
+      await supabase.from('investments').select('*').eq('ano', ano).eq('mes', mes).order('created_at'),
+    ) ?? []
+  )
 }
 
 export async function criarInvestimento(dados: {
@@ -20,7 +24,11 @@ export async function criarInvestimento(dados: {
 }): Promise<Investment> {
   const user_id = await userIdAtual()
   return unwrap(
-    await supabase.from('investments').insert({ ...dados, user_id }).select().single(),
+    await supabase
+      .from('investments')
+      .insert({ ...dados, user_id })
+      .select()
+      .single(),
     'Não foi possível salvar o investimento.',
   )
 }

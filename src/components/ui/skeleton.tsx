@@ -21,10 +21,7 @@ export function SkeletonTabela({ linhas = 5, colunas = 4 }: { linhas?: number; c
       {Array.from({ length: linhas }).map((_, i) => (
         <div key={i}>
           <Skeleton className="h-[4.25rem] w-full md:hidden" />
-          <div
-            className="hidden gap-2 md:grid"
-            style={{ gridTemplateColumns: `repeat(${colunas}, 1fr)` }}
-          >
+          <div className="hidden gap-2 md:grid" style={{ gridTemplateColumns: `repeat(${colunas}, 1fr)` }}>
             {Array.from({ length: colunas }).map((__, j) => (
               <Skeleton key={j} className="h-10" />
             ))}

@@ -422,9 +422,7 @@ export function ControleMensalPage() {
               // não bate com a que o usuário viu antes de confirmar.
               toast.success(frase, {
                 description:
-                  jaExistiam > 0
-                    ? `${jaExistiam} já estavam no app e foram ignorados.`
-                    : undefined,
+                  jaExistiam > 0 ? `${jaExistiam} já estavam no app e foram ignorados.` : undefined,
               })
               void recarregar()
             }}

@@ -13,7 +13,11 @@ import { unwrap, userIdAtual } from './base'
  * O que muda mês a mês é apenas o "pago?" (tabela fixed_expense_payments).
  */
 export async function listarGastosFixos(): Promise<FixedExpense[]> {
-  return unwrap(await supabase.from('fixed_expenses').select('*').eq('ativo', true).order('ordem').order('nome')) ?? []
+  return (
+    unwrap(
+      await supabase.from('fixed_expenses').select('*').eq('ativo', true).order('ordem').order('nome'),
+    ) ?? []
+  )
 }
 
 export async function criarGastoFixo(dados: {
@@ -30,7 +34,11 @@ export async function criarGastoFixo(dados: {
 }): Promise<FixedExpense> {
   const user_id = await userIdAtual()
   return unwrap(
-    await supabase.from('fixed_expenses').insert({ ...dados, user_id }).select().single(),
+    await supabase
+      .from('fixed_expenses')
+      .insert({ ...dados, user_id })
+      .select()
+      .single(),
     'Não foi possível criar o gasto fixo.',
   )
 }

@@ -3,7 +3,10 @@ import { supabase } from '@/lib/supabase'
 
 /** Erro de domínio com mensagem já em português, pronta para o toast. */
 export class ErroServico extends Error {
-  constructor(mensagem: string, public original?: unknown) {
+  constructor(
+    mensagem: string,
+    public original?: unknown,
+  ) {
     super(mensagem)
     this.name = 'ErroServico'
   }
@@ -17,7 +20,10 @@ const MENSAGENS: Record<string, string> = {
   PGRST301: 'Sessão expirada. Entre novamente.',
 }
 
-export function traduzErro(erro: PostgrestError | null, fallback = 'Não foi possível concluir a operação.'): ErroServico {
+export function traduzErro(
+  erro: PostgrestError | null,
+  fallback = 'Não foi possível concluir a operação.',
+): ErroServico {
   if (!erro) return new ErroServico(fallback)
   if (erro.message?.includes('Limite de 10 metas')) {
     return new ErroServico('Você já tem 10 metas. Exclua uma antes de criar outra.', erro)

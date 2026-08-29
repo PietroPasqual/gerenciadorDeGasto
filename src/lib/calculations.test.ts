@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   agruparPorChave,
+  calcularCaixaDoMes,
   calcularPercentualInvestido,
   calcularPercentualLimite,
   calcularResumoMensal,
@@ -244,5 +245,95 @@ describe('estaVigente', () => {
     expect(estaVigente(v, 2027, 3)).toBe(false)
     // mês maior num ano anterior não pode "ganhar" de um mês menor no ano seguinte
     expect(estaVigente(janela(2027, 1, null, null), 2026, 12)).toBe(false)
+  })
+})
+
+describe('calcularCaixaDoMes — competência x caixa', () => {
+  const cartao = {
+    id: 'cartao',
+    dia_fechamento: 20,
+    fatura_inicio_ano: 2025,
+    fatura_inicio_mes: 1,
+  }
+  const pix = { id: 'pix', dia_fechamento: null, fatura_inicio_ano: null, fatura_inicio_mes: null }
+  const formas = [cartao, pix]
+
+  it('sem cartão com fatura, caixa e competência são o mesmo número', () => {
+    const gastos = [
+      { data: '2025-08-05', valor_centavos: 5000, payment_method_id: 'pix' },
+      { data: '2025-08-19', valor_centavos: 3000, payment_method_id: null },
+    ]
+    const caixa = calcularCaixaDoMes({ gastos, formasPagamento: formas, gastosFixos: [], faturas: [] })
+    expect(caixa.totalSaidasCaixa).toBe(8000)
+    expect(caixa.adiadoParaFatura).toBe(0)
+  })
+
+  it('gasto no crédito sai do mês e vira dinheiro adiado', () => {
+    const gastos = [
+      { data: '2025-08-05', valor_centavos: 5000, payment_method_id: 'pix' },
+      { data: '2025-08-10', valor_centavos: 9000, payment_method_id: 'cartao' },
+    ]
+    const caixa = calcularCaixaDoMes({ gastos, formasPagamento: formas, gastosFixos: [], faturas: [] })
+    expect(caixa.totalSaidasCaixa).toBe(5000)
+    expect(caixa.adiadoParaFatura).toBe(9000)
+  })
+
+  it('a fatura que vence agora entra no caixa, mesmo sendo de compras antigas', () => {
+    const caixa = calcularCaixaDoMes({
+      gastos: [{ data: '2025-08-05', valor_centavos: 5000, payment_method_id: 'pix' }],
+      formasPagamento: formas,
+      gastosFixos: [],
+      faturas: [{ total_centavos: 12000 }],
+    })
+    expect(caixa.totalSaidasCaixa).toBe(17000)
+    expect(caixa.totalFaturas).toBe(12000)
+  })
+
+  it('gasto anterior à vigência continua pesando no mês da compra', () => {
+    // A vigência começa em 2025-01; uma compra de dezembro/2024 no mesmo
+    // cartão mantém o comportamento antigo. É a regra 8 na prática.
+    const caixa = calcularCaixaDoMes({
+      gastos: [{ data: '2024-12-10', valor_centavos: 7000, payment_method_id: 'cartao' }],
+      formasPagamento: formas,
+      gastosFixos: [],
+      faturas: [],
+    })
+    expect(caixa.totalSaidasCaixa).toBe(7000)
+    expect(caixa.adiadoParaFatura).toBe(0)
+  })
+
+  it('cartão com dia de fechamento mas sem vigência não tem fatura nenhuma', () => {
+    const semVigencia = [
+      { id: 'cartao', dia_fechamento: 20, fatura_inicio_ano: null, fatura_inicio_mes: null },
+    ]
+    const caixa = calcularCaixaDoMes({
+      gastos: [{ data: '2025-08-10', valor_centavos: 9000, payment_method_id: 'cartao' }],
+      formasPagamento: semVigencia,
+      gastosFixos: [],
+      faturas: [],
+    })
+    expect(caixa.totalSaidasCaixa).toBe(9000)
+  })
+
+  it('os fixos entram no caixa como sempre entraram', () => {
+    const caixa = calcularCaixaDoMes({
+      gastos: [],
+      formasPagamento: formas,
+      gastosFixos: [{ valor_centavos: 180000 }],
+      faturas: [],
+    })
+    expect(caixa.totalSaidasCaixa).toBe(180000)
+  })
+
+  it('nada some: o gasto ou pesa neste mês ou é adiado, nunca os dois nem nenhum', () => {
+    const gastos = [
+      { data: '2025-08-05', valor_centavos: 5000, payment_method_id: 'pix' },
+      { data: '2025-08-10', valor_centavos: 9000, payment_method_id: 'cartao' },
+      { data: '2025-08-25', valor_centavos: 1234, payment_method_id: 'cartao' },
+      { data: '2025-08-30', valor_centavos: 777, payment_method_id: null },
+    ]
+    const caixa = calcularCaixaDoMes({ gastos, formasPagamento: formas, gastosFixos: [], faturas: [] })
+    const total = gastos.reduce((s, g) => s + g.valor_centavos, 0)
+    expect(caixa.totalSaidasCaixa + caixa.adiadoParaFatura).toBe(total)
   })
 })

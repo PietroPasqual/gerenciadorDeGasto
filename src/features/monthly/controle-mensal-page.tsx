@@ -14,6 +14,8 @@ import { EstadoErro } from '@/components/common/estados'
 import { Fab } from '@/components/common/fab'
 import { SheetGasto, type DadosGasto } from './components/sheet-gasto'
 import { SecaoMes, useAbaMes } from './components/abas-mes'
+import { PainelFaturas } from './components/painel-faturas'
+import { DialogoSerie } from './components/dialogo-serie'
 import { BarraMesCelular } from './components/barra-mes-celular'
 import type { Transaction } from '@/lib/database.types'
 import { usePeriodoStore } from '@/store/periodo'
@@ -36,8 +38,19 @@ import { useEhMobile } from '@/lib/hooks'
 
 export function ControleMensalPage() {
   const { ano, mes, definirPeriodo } = usePeriodoStore()
-  const { dados, gastos, entradasAvulsas, fixosDoMes, resumo, carregando, erro, recarregar, acoes } =
-    useControleMensal(ano, mes)
+  const {
+    dados,
+    gastos,
+    entradasAvulsas,
+    fixosDoMes,
+    resumo,
+    caixa,
+    faturas,
+    carregando,
+    erro,
+    recarregar,
+    acoes,
+  } = useControleMensal(ano, mes)
   const [aba, definirAba] = useAbaMes()
   const [importando, setImportando] = useState(false)
   const [categorizando, setCategorizando] = useState(false)
@@ -137,6 +150,9 @@ export function ControleMensalPage() {
   const [sheetAberta, setSheetAberta] = useState(false)
   const [gastoEditando, setGastoEditando] = useState<Transaction | null>(null)
 
+  const [serie, setSerie] = useState<{ acao: 'excluir' | 'editar'; gasto: Transaction } | null>(null)
+  const [editandoSerie, setEditandoSerie] = useState<Transaction | null>(null)
+
   const abrirNovo = () => {
     setGastoEditando(null)
     setSheetAberta(true)
@@ -148,8 +164,14 @@ export function ControleMensalPage() {
   }
 
   const salvarGastoDaSheet = (d: DadosGasto) => {
-    if (gastoEditando) acoes.editarLancamento(gastoEditando.id, d)
-    else acoes.adicionarLancamento({ ...d, tipo: 'gasto' })
+    if (gastoEditando) {
+      const { parcelas: _ignorado, ...mudancas } = d
+      void acoes.editarLancamento(gastoEditando.id, mudancas)
+      return
+    }
+    // O valor digitado é o TOTAL da compra; quem divide é criarParcelamento.
+    if (d.parcelas && d.parcelas > 1) void acoes.adicionarParcelamento({ ...d, parcelas: d.parcelas })
+    else void acoes.adicionarLancamento({ ...d, tipo: 'gasto' })
   }
 
   /**
@@ -158,6 +180,35 @@ export function ControleMensalPage() {
    * prazo, um delete adiado nunca rodaria e o gasto voltaria sozinho.
    * O registro recriado ganha um id novo, o que é invisível na tela.
    */
+  /**
+   * Excluir e editar param para perguntar quando o gasto é uma parcela.
+   * Fora disso o caminho é o de sempre — a pergunta só aparece onde ela existe.
+   */
+  const pedirExclusao = (gasto: Transaction) => {
+    if (gasto.parcelamento_id) setSerie({ acao: 'excluir', gasto })
+    else excluirComDesfazer(gasto)
+  }
+
+  const pedirEdicao = (gasto: Transaction) => {
+    if (gasto.parcelamento_id) setSerie({ acao: 'editar', gasto })
+    else abrirEdicao(gasto)
+  }
+
+  const resolverSerie = (escopo: 'parcela' | 'serie') => {
+    if (!serie) return
+    const { acao, gasto } = serie
+    setSerie(null)
+    if (acao === 'excluir') {
+      if (escopo === 'serie') void acoes.removerSerie(gasto.parcelamento_id as string)
+      else excluirComDesfazer(gasto)
+      return
+    }
+    // Editar a série inteira: só descrição, forma e categoria. Mudar o valor
+    // exige redividir tudo, e isso é apagar e recriar, não um update.
+    if (escopo === 'serie') setEditandoSerie(gasto)
+    else abrirEdicao(gasto)
+  }
+
   const excluirComDesfazer = (gasto: Transaction) => {
     acoes.removerLancamento(gasto.id)
     toast('Gasto excluído', {
@@ -253,7 +304,7 @@ export function ControleMensalPage() {
         <EsqueletoMes />
       ) : dados ? (
         <>
-          <BarraMesCelular resumo={resumo} aba={aba} onAbaChange={definirAba} />
+          <BarraMesCelular resumo={resumo} caixa={caixa} aba={aba} onAbaChange={definirAba} />
 
           {/* `key` no mês: trocar de mês remonta o bloco, então o
               initial->animate roda de novo e o conteúdo entra pelo lado de
@@ -288,10 +339,20 @@ export function ControleMensalPage() {
             <div className="flex flex-col gap-6 xl:grid xl:grid-cols-12 xl:gap-6">
               <div className="contents xl:col-span-3 xl:flex xl:flex-col xl:gap-6 2xl:col-span-4">
                 <SecaoMes id="resumo" aba={aba}>
-                  <ResumoMes ano={ano} mes={mes} resumo={resumo} />
+                  <ResumoMes ano={ano} mes={mes} resumo={resumo} caixa={caixa} />
                 </SecaoMes>
                 <SecaoMes id="analise" aba={aba}>
                   <PainelFormasPagamento formas={porFormaPagamento} />
+                </SecaoMes>
+                {/* A fatura vive na aba Resumo e não na Análise: ela não é
+                    análise do que passou, é dinheiro que vai sair. */}
+                <SecaoMes id="resumo" aba={aba}>
+                  <PainelFaturas
+                    ano={ano}
+                    mes={mes}
+                    faturas={faturas}
+                    onAlternarPaga={(id, paga) => void acoes.alternarFaturaPaga(id, paga)}
+                  />
                 </SecaoMes>
               </div>
 
@@ -332,8 +393,8 @@ export function ControleMensalPage() {
                     categorias={dados.categorias}
                     onAdicionar={acoes.adicionarLancamento}
                     onEditar={acoes.editarLancamento}
-                    onRemover={acoes.removerLancamento}
-                    onAbrirEdicao={abrirEdicao}
+                    onRemover={pedirExclusao}
+                    onAbrirEdicao={pedirEdicao}
                   />
                 </SecaoMes>
 
@@ -392,7 +453,7 @@ export function ControleMensalPage() {
             categorias={dados.categorias}
             gasto={gastoEditando}
             onSalvar={salvarGastoDaSheet}
-            onExcluir={gastoEditando ? () => excluirComDesfazer(gastoEditando) : undefined}
+            onExcluir={gastoEditando ? () => pedirExclusao(gastoEditando) : undefined}
           />
 
           <PreencherEmBloco
@@ -406,6 +467,39 @@ export function ControleMensalPage() {
               void recarregar()
             }}
           />
+
+          <DialogoSerie
+            acao={serie?.acao ?? null}
+            gasto={serie?.gasto ?? null}
+            onEscolher={resolverSerie}
+            onCancelar={() => setSerie(null)}
+          />
+
+          {editandoSerie && (
+            <SheetGasto
+              aberta
+              onOpenChange={(aberta) => !aberta && setEditandoSerie(null)}
+              ano={ano}
+              mes={mes}
+              formasPagamento={dados.formasPagamento}
+              categorias={dados.categorias}
+              gasto={editandoSerie}
+              onSalvar={(d) => {
+                // Valor e data ficam de fora: mudar o total exige redividir a
+                // série inteira, e aí é apagar e recriar, não editar.
+                void acoes.editarSerie(editandoSerie.parcelamento_id as string, {
+                  descricao: d.descricao,
+                  payment_method_id: d.payment_method_id,
+                  category_id: d.category_id,
+                })
+                setEditandoSerie(null)
+              }}
+              onExcluir={() => {
+                void acoes.removerSerie(editandoSerie.parcelamento_id as string)
+                setEditandoSerie(null)
+              }}
+            />
+          )}
 
           <ImportarCSV
             aberto={importando}

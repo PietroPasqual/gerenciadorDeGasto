@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
+import { rotuloParcela } from '@/lib/parcelamento'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -50,7 +51,11 @@ export function TabelaGastos({
     tipo: 'gasto'
   }) => void
   onEditar: (id: string, mudancas: Partial<Transaction>) => void
-  onRemover: (id: string) => void
+  /**
+   * Recebe o gasto inteiro, e não só o id: quando ele é parcela de uma
+   * compra, a tela precisa perguntar se é só esta ou a série toda.
+   */
+  onRemover: (gasto: Transaction) => void
   /** Só no celular: tocar no card abre a sheet de edição (M4). */
   onAbrirEdicao?: (gasto: Transaction) => void
 }) {
@@ -125,6 +130,12 @@ export function TabelaGastos({
                       </span>
                       <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
                         <span className="tabular">{formatDataISO(gasto.data)}</span>
+                        {gasto.parcelas_total !== null && gasto.parcela !== null && (
+                          <>
+                            <span aria-hidden>·</span>
+                            <EtiquetaParcela parcela={gasto.parcela} total={gasto.parcelas_total} />
+                          </>
+                        )}
                         {forma && (
                           <>
                             <span aria-hidden>·</span>
@@ -173,16 +184,21 @@ export function TabelaGastos({
                   className="relative hidden gap-1.5 md:grid md:static"
                 >
                   <div className="flex items-center gap-2 pr-9 md:contents md:pr-0">
-                    <Input
-                      data-celula
-                      aria-label="Descrição do gasto"
-                      defaultValue={gasto.descricao}
-                      onBlur={(e) => {
-                        if (e.target.value !== gasto.descricao)
-                          onEditar(gasto.id, { descricao: e.target.value })
-                      }}
-                      className="min-w-0 flex-1 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:font-normal"
-                    />
+                    <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                      <Input
+                        data-celula
+                        aria-label="Descrição do gasto"
+                        defaultValue={gasto.descricao}
+                        onBlur={(e) => {
+                          if (e.target.value !== gasto.descricao)
+                            onEditar(gasto.id, { descricao: e.target.value })
+                        }}
+                        className="min-w-0 flex-1 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:font-normal"
+                      />
+                      {gasto.parcelas_total !== null && gasto.parcela !== null && (
+                        <EtiquetaParcela parcela={gasto.parcela} total={gasto.parcelas_total} />
+                      )}
+                    </div>
                     <MoneyInput
                       data-celula
                       aria-label="Valor do gasto"
@@ -225,7 +241,7 @@ export function TabelaGastos({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onRemover(gasto.id)}
+                      onClick={() => onRemover(gasto)}
                       aria-label={`Excluir gasto ${gasto.descricao}`}
                     >
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
@@ -297,5 +313,22 @@ export function TabelaGastos({
         <Total rotulo="Total de gastos do mês" valor={formatCentavos(totalDeItens(gastos))} />
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * "3/12" ao lado da descrição.
+ *
+ * Sem ela, uma parcela é indistinguível de um gasto avulso do mesmo valor que
+ * se repete — e a pessoa procuraria de onde saiu essa cobrança todo mês.
+ */
+function EtiquetaParcela({ parcela, total }: { parcela: number; total: number }) {
+  return (
+    <span
+      className="tabular shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground"
+      title={`Parcela ${parcela} de ${total}`}
+    >
+      {rotuloParcela(parcela, total)}
+    </span>
   )
 }

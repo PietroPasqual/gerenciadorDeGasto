@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import { useCallback } from 'react'
 import type {
   Category,
@@ -13,7 +14,8 @@ import type {
 import { useRecurso } from '@/lib/hooks'
 import { executarOtimista } from '@/lib/otimista'
 import { tempId } from '@/lib/utils'
-import { calcularResumoMensal, estaVigente } from '@/lib/calculations'
+import { calcularCaixaDoMes, calcularResumoMensal, estaVigente } from '@/lib/calculations'
+import { definirFaturaPaga, listarFaturasDoMes, type FaturaDoMes } from '@/services/invoices'
 import { listarCategorias } from '@/services/categories'
 import { listarFormasPagamento } from '@/services/payment-methods'
 import * as metasSvc from '@/services/goals'
@@ -32,6 +34,8 @@ export interface DadosMes {
   lancamentos: Transaction[]
   investimentos: Investment[]
   aportes: GoalContribution[]
+  /** As faturas de cartão que vencem neste mês (compras de meses anteriores). */
+  faturas: FaturaDoMes[]
 }
 
 /**
@@ -55,6 +59,7 @@ export function useControleMensal(ano: number, mes: number) {
       lancamentos,
       investimentos,
       aportes,
+      faturas,
     ] = await Promise.all([
       listarFormasPagamento(),
       listarCategorias(),
@@ -65,6 +70,7 @@ export function useControleMensal(ano: number, mes: number) {
       lancamentosSvc.listarLancamentos(ano, mes),
       investimentosSvc.listarInvestimentos(ano, mes),
       metasSvc.listarAportesDoMes(ano, mes),
+      listarFaturasDoMes(ano, mes),
     ])
     return {
       formasPagamento,
@@ -76,6 +82,7 @@ export function useControleMensal(ano: number, mes: number) {
       lancamentos,
       investimentos: investimentos.filter((i) => i.goal_id === null),
       aportes,
+      faturas,
     }
   }, [ano, mes])
 
@@ -250,6 +257,65 @@ export function useControleMensal(ano: number, mes: number) {
   // ------------------------------------------------------------------
   // Lançamentos do mês (gastos e entradas avulsas)
   // ------------------------------------------------------------------
+  /**
+   * Lança uma compra parcelada: N lançamentos de uma vez, um por mês.
+   *
+   * Sem escrita otimista, ao contrário do lançamento avulso: as parcelas dos
+   * outros meses nem aparecem nesta tela, e simular só a primeira mostraria um
+   * total errado até a resposta chegar. Recarregar é mais honesto.
+   */
+  const adicionarParcelamento = async (dadosNovos: {
+    data: string
+    descricao: string
+    payment_method_id: string | null
+    category_id: string | null
+    valor_centavos: number
+    parcelas: number
+  }) => {
+    try {
+      await lancamentosSvc.criarParcelamento({
+        totalCentavos: dadosNovos.valor_centavos,
+        quantidade: dadosNovos.parcelas,
+        primeiraDataISO: dadosNovos.data,
+        descricao: dadosNovos.descricao,
+        payment_method_id: dadosNovos.payment_method_id,
+        category_id: dadosNovos.category_id,
+      })
+      await recurso.recarregar()
+    } catch (erro) {
+      toast.error('Não foi possível salvar a compra parcelada', {
+        description: erro instanceof Error ? erro.message : undefined,
+      })
+    }
+  }
+
+  /** Exclui a série inteira de um parcelamento. */
+  const removerSerie = async (parcelamento_id: string) => {
+    try {
+      await lancamentosSvc.excluirSerie(parcelamento_id)
+      await recurso.recarregar()
+    } catch (erro) {
+      toast.error('Não foi possível excluir o parcelamento', {
+        description: erro instanceof Error ? erro.message : undefined,
+      })
+    }
+  }
+
+  /** Edita todas as parcelas de uma série (descrição, forma e categoria). */
+  const editarSerie = async (
+    parcelamento_id: string,
+    mudancas: { descricao?: string; payment_method_id?: string | null; category_id?: string | null },
+  ) => {
+    try {
+      await lancamentosSvc.atualizarSerie(parcelamento_id, mudancas)
+      await recurso.recarregar()
+    } catch (erro) {
+      toast.error('Não foi possível editar o parcelamento', {
+        description: erro instanceof Error ? erro.message : undefined,
+      })
+    }
+  }
+
   const adicionarLancamento = async (dadosNovos: {
     data: string
     descricao: string
@@ -394,6 +460,27 @@ export function useControleMensal(ano: number, mes: number) {
   }
 
   // ------------------------------------------------------------------
+  // Fatura de cartão
+  // ------------------------------------------------------------------
+  const alternarFaturaPaga = async (payment_method_id: string, paga: boolean) => {
+    await executarOtimista({
+      snapshot: snapshot(),
+      aplicar: () =>
+        mutar((d) => ({
+          ...d,
+          faturas: d.faturas.map((f) =>
+            f.payment_method_id === payment_method_id
+              ? { ...f, paga, pago_em: paga ? new Date().toISOString() : null }
+              : f,
+          ),
+        })),
+      restaurar: (s) => definirDados(s),
+      acao: () => definirFaturaPaga(payment_method_id, ano, mes, paga),
+      mensagemErro: 'Não foi possível salvar o pagamento da fatura',
+    })
+  }
+
+  // ------------------------------------------------------------------
   // Derivados
   // ------------------------------------------------------------------
   const gastos = dados?.lancamentos.filter((l) => l.tipo === 'gasto') ?? []
@@ -406,6 +493,18 @@ export function useControleMensal(ano: number, mes: number) {
    * Mesma regra da função SQL, para o painel e esta tela não divergirem.
    */
   const fixosDoMes = (dados?.gastosFixos ?? []).filter((f) => estaVigente(f, ano, mes))
+
+  /**
+   * O que sai da conta neste mês. Difere de `resumo.totalSaidas` só quando
+   * existe cartão com fatura ligada — sem isso os dois números são iguais e a
+   * tela mostra um só, como sempre mostrou.
+   */
+  const caixa = calcularCaixaDoMes({
+    gastos,
+    formasPagamento: dados?.formasPagamento ?? [],
+    gastosFixos: fixosDoMes,
+    faturas: dados?.faturas ?? [],
+  })
 
   const resumo = calcularResumoMensal({
     entradasAvulsas: dados?.entradas ?? [],
@@ -422,6 +521,8 @@ export function useControleMensal(ano: number, mes: number) {
     entradasAvulsas,
     fixosDoMes,
     resumo,
+    caixa,
+    faturas: dados?.faturas ?? [],
     acoes: {
       adicionarEntrada,
       editarEntrada,
@@ -437,6 +538,10 @@ export function useControleMensal(ano: number, mes: number) {
       adicionarInvestimentoAvulso,
       editarInvestimentoAvulso,
       removerInvestimentoAvulso,
+      alternarFaturaPaga,
+      adicionarParcelamento,
+      removerSerie,
+      editarSerie,
     },
   }
 }

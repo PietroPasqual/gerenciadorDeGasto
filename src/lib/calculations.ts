@@ -7,6 +7,7 @@
  * Toda entrada e saída é em CENTAVOS (inteiro).
  */
 
+import { faturaVigente } from './fatura'
 import { somarCentavos } from './money'
 
 export type NivelLimite = 'ok' | 'atencao' | 'estourado'
@@ -131,6 +132,78 @@ export function calcularResumoMensal(params: {
     saldo: calcularSaldo(totalEntradas, totalSaidas),
     totalInvestido,
     percentualInvestido: calcularPercentualInvestido(totalInvestido, totalEntradas),
+  }
+}
+
+/** O mínimo de uma forma de pagamento para saber se ela tem fatura. */
+export interface FormaComFatura {
+  id: string
+  dia_fechamento: number | null
+  fatura_inicio_ano: number | null
+  fatura_inicio_mes: number | null
+}
+
+/** O mínimo de um gasto para decidir em que mês ele pesa no bolso. */
+export interface GastoComData {
+  data: string
+  valor_centavos: number
+  payment_method_id: string | null
+}
+
+/**
+ * Este gasto vai para uma fatura, em vez de pesar no mês em que aconteceu?
+ *
+ * Espelha `mes_de_caixa` no SQL (migration 0009). Só é verdade quando existem
+ * as três coisas: forma de pagamento, dia de fechamento e vigência que cobre a
+ * data. Faltando qualquer uma, o gasto pesa no próprio mês — que é como o app
+ * sempre se comportou.
+ */
+export function vaiParaFatura(gasto: GastoComData, formas: FormaComFatura[]): boolean {
+  if (!gasto.payment_method_id) return false
+  const forma = formas.find((f) => f.id === gasto.payment_method_id)
+  if (!forma || forma.dia_fechamento === null) return false
+  return faturaVigente(gasto.data, forma.fatura_inicio_ano, forma.fatura_inicio_mes)
+}
+
+export interface CaixaDoMes {
+  /** Gastos sem fatura + fixos + faturas que vencem neste mês. */
+  totalSaidasCaixa: number
+  /** Gasto FEITO neste mês que só sai numa fatura futura. */
+  adiadoParaFatura: number
+  /** O total das faturas que vencem neste mês. */
+  totalFaturas: number
+}
+
+/**
+ * Quanto sai da conta neste mês — a pergunta de CAIXA, diferente de "quanto
+ * gastei", que é a de competência.
+ *
+ * A conta tem três partes, e a terceira é a que só existe por causa do cartão:
+ * o que foi gasto neste mês sem fatura, mais os fixos, mais as faturas que
+ * vencem neste mês (compras de meses anteriores). Os gastos deste mês que
+ * foram para uma fatura futura saem da conta e viram `adiadoParaFatura`, que a
+ * tela mostra para a diferença entre os dois números não ficar sem explicação.
+ *
+ * Espelha `resumo_mensal` da 0009 — regra 9.
+ */
+export function calcularCaixaDoMes(params: {
+  gastos: GastoComData[]
+  formasPagamento: FormaComFatura[]
+  gastosFixos: ItemValor[]
+  /** As faturas que vencem neste mês, vindas de `faturas_do_mes`. */
+  faturas: Array<{ total_centavos: number }>
+}): CaixaDoMes {
+  let noMes = 0
+  let adiadoParaFatura = 0
+  for (const g of params.gastos) {
+    if (vaiParaFatura(g, params.formasPagamento)) adiadoParaFatura += g.valor_centavos
+    else noMes += g.valor_centavos
+  }
+  const totalFaturas = params.faturas.reduce((s, f) => s + f.total_centavos, 0)
+  return {
+    totalSaidasCaixa: noMes + totalDeItens(params.gastosFixos) + totalFaturas,
+    adiadoParaFatura,
+    totalFaturas,
   }
 }
 

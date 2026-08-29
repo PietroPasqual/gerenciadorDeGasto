@@ -1,15 +1,39 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
-import { ArrowDownRight, ArrowUpRight, PiggyBank, Wallet } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, CreditCard, PiggyBank, Wallet } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { NumeroAnimado } from '@/components/common/numero-animado'
 import { formatCentavos } from '@/lib/money'
 import { nomeDoMes } from '@/lib/dates'
 import { cn } from '@/lib/utils'
-import type { ResumoCalculado } from '@/lib/calculations'
+import type { CaixaDoMes, ResumoCalculado } from '@/lib/calculations'
 
-/** Resumo lateral do mês: entradas, saídas, saldo e donut de % investido. */
-export function ResumoMes({ ano, mes, resumo }: { ano: number; mes: number; resumo: ResumoCalculado }) {
+/**
+ * Resumo lateral do mês: entradas, saídas, saldo e donut de % investido.
+ *
+ * Com cartão de crédito, "quanto gastei" e "quanto sai da conta" deixam de ser
+ * o mesmo número, e o saldo passa a usar o segundo. Os dois aparecem juntos,
+ * com nomes diferentes — mostrar um só deixaria o donut de categorias somando
+ * um valor que não bate com o cabeçalho, sem nada explicando a diferença.
+ *
+ * Quem não tem cartão com fatura configurada vê exatamente a tela de antes: os
+ * dois números são iguais e só um é mostrado.
+ */
+export function ResumoMes({
+  ano,
+  mes,
+  resumo,
+  caixa,
+}: {
+  ano: number
+  mes: number
+  resumo: ResumoCalculado
+  caixa: CaixaDoMes
+}) {
   const percentual = Math.min(resumo.percentualInvestido, 100)
+  // Sem cartão com fatura os dois totais são idênticos; nesse caso a tela não
+  // ganha uma linha nova para dizer a mesma coisa duas vezes.
+  const temFatura = caixa.totalSaidasCaixa !== resumo.totalSaidas
+  const saldoCaixa = resumo.totalEntradas - caixa.totalSaidasCaixa
   const dadosDonut = [
     { nome: 'investido', valor: percentual },
     { nome: 'restante', valor: Math.max(100 - percentual, 0) },
@@ -37,17 +61,41 @@ export function ResumoMes({ ano, mes, resumo }: { ano: number; mes: number; resu
           />
           <ItemResumo
             Icone={ArrowDownRight}
-            rotulo="Saídas"
+            rotulo={temFatura ? 'Gastei' : 'Saídas'}
             valor={resumo.totalSaidas}
             className="text-destructive"
           />
+          {temFatura && (
+            <ItemResumo
+              Icone={CreditCard}
+              rotulo="Sai da conta"
+              valor={caixa.totalSaidasCaixa}
+              className="text-destructive"
+            />
+          )}
           <ItemResumo
             Icone={Wallet}
             rotulo="Saldo"
-            valor={resumo.saldo}
-            className={resumo.saldo < 0 ? 'text-destructive' : 'text-foreground'}
+            valor={saldoCaixa}
+            className={saldoCaixa < 0 ? 'text-destructive' : 'text-foreground'}
             destaque
           />
+          {temFatura && (
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {caixa.adiadoParaFatura > 0 && (
+                <>
+                  <strong>{formatCentavos(caixa.adiadoParaFatura)}</strong> deste mês foram no crédito e só
+                  saem numa fatura futura.{' '}
+                </>
+              )}
+              {caixa.totalFaturas > 0 && (
+                <>
+                  <strong>{formatCentavos(caixa.totalFaturas)}</strong> em faturas de meses anteriores vencem
+                  agora.
+                </>
+              )}
+            </p>
+          )}
         </div>
 
         <div className="rounded-xl bg-muted/50 p-4">

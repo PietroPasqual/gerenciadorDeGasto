@@ -47,6 +47,12 @@ lembrar para quem for refazê-la:
 | Entradas, aportes por meta e aportes avulsos — linha inline   | A mesma linha em duas faixas: nome em cima, valor + ação embaixo                               |
 | Gastos por categoria e por forma de pagamento                 | Aba **Análise**                                                                                |
 | Ver "X novos · Y já existiam" antes de gravar a importação    | A mesma contagem no topo da sheet de conferência                                               |
+| Ver as faturas que vencem no mês — cartão na aba Resumo       | O mesmo cartão, na aba **Resumo**                                                              |
+| Marcar fatura como paga — botão no cartão da fatura           | O mesmo botão, com 44px de altura                                                              |
+| Ver "Gastei" e "Sai da conta" separados                       | Os dois na faixa fixa: a faixa mostra "Sai da conta", e o cartão de Resumo mostra os dois      |
+| Lançar compra parcelada — campo "Parcelas" na linha de adição | O mesmo campo na sheet do FAB, com − e + de 44px                                               |
+| Ver "3/12" na linha do gasto                                  | A mesma etiqueta no card                                                                       |
+| Editar/excluir parcela — pergunta "só esta ou as N?"          | O mesmo diálogo, com os botões empilhados e 44px cada                                          |
 
 ## Comparativo anual
 
@@ -81,6 +87,18 @@ lembrar para quem for refazê-la:
 | Tema de cor, com miniatura de cada um                             | O mesmo                                                                                      |
 | Modo escuro                                                       | O mesmo                                                                                      |
 | Nome do perfil                                                    | O mesmo                                                                                      |
+
+## Cartão de crédito
+
+A fatura é opt-in por cartão: enquanto ela não é configurada, todas estas
+linhas simplesmente não aparecem, e a tela é a de antes da fase 2.
+
+| No PC                                                                | No celular                                                     |
+| -------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Configurar fechamento e vencimento — chip embaixo do nome do cartão  | O mesmo chip no card da forma de pagamento, com 44px de altura |
+| Escolher desde quando a fatura vale                                  | O mesmo, na mesma sheet                                        |
+| Ver o exemplo ("compra em 20/08 → fatura de set/25") antes de salvar | O mesmo                                                        |
+| Ver o aviso de que o app não conhece feriado                         | O mesmo                                                        |
 
 ## Quando alguma tela quebra
 

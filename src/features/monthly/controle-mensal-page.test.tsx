@@ -28,6 +28,13 @@ vi.mock('@/services/categories', () => ({
   ]),
 }))
 
+// Sem cartão de fatura configurado: é o estado de quem não usa a função, e é
+// justamente onde a tela tem que continuar idêntica à de antes da fase 2.
+vi.mock('@/services/invoices', () => ({
+  listarFaturasDoMes: vi.fn(async () => []),
+  definirFaturaPaga: vi.fn(async () => {}),
+}))
+
 vi.mock('@/services/goals', () => ({
   MAX_METAS: 10,
   listarMetas: vi.fn(async () => [

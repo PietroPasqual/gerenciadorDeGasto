@@ -1,7 +1,7 @@
 import { AbasMes, type AbaMes } from './abas-mes'
 import { formatCentavos } from '@/lib/money'
 import { cn } from '@/lib/utils'
-import type { ResumoCalculado } from '@/lib/calculations'
+import type { CaixaDoMes, ResumoCalculado } from '@/lib/calculations'
 
 /**
  * Barra fixa do mês no celular: abas + faixa de resumo.
@@ -16,14 +16,22 @@ import type { ResumoCalculado } from '@/lib/calculations'
  */
 export function BarraMesCelular({
   resumo,
+  caixa,
   aba,
   onAbaChange,
 }: {
   resumo: ResumoCalculado
+  caixa: CaixaDoMes
   aba: AbaMes
   onAbaChange: (aba: AbaMes) => void
 }) {
-  const negativo = resumo.saldo < 0
+  // Paridade com o resumo do PC: com cartão de fatura, a faixa mostra o que
+  // sai da conta, e o saldo sai daí. Sem cartão os dois números são o mesmo e
+  // a faixa fica idêntica à de antes.
+  const temFatura = caixa.totalSaidasCaixa !== resumo.totalSaidas
+  const saidas = temFatura ? caixa.totalSaidasCaixa : resumo.totalSaidas
+  const saldo = resumo.totalEntradas - saidas
+  const negativo = saldo < 0
 
   return (
     <div
@@ -45,10 +53,14 @@ export function BarraMesCelular({
             conferir, e é o que mais cresce (leva sinal na frente). */}
         <dl className="grid grid-cols-[1fr,1fr,1.25fr] items-end gap-1.5 pb-2 pt-0.5">
           <Numero rotulo="Entradas" valor={resumo.totalEntradas} className="text-success" />
-          <Numero rotulo="Saídas" valor={resumo.totalSaidas} className="text-destructive" />
+          <Numero
+            rotulo={temFatura ? 'Sai da conta' : 'Saídas'}
+            valor={saidas}
+            className="text-destructive"
+          />
           <Numero
             rotulo="Saldo"
-            valor={resumo.saldo}
+            valor={saldo}
             destaque
             className={negativo ? 'text-destructive' : 'text-foreground'}
           />

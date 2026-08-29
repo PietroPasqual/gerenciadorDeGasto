@@ -28,6 +28,9 @@ import { EstadoErro, EstadoVazio } from '@/components/common/estados'
 import { CampoSheet, CartaoConfig, SheetConfig } from './components/sheet-config'
 import { BotaoCor, COR_PADRAO, SeletorCor } from '@/components/common/seletor-cor'
 import { IndiceConfig, useSecaoVisivel, type SecaoConfig } from './components/indice-config'
+import { SheetFatura, textoFatura } from './components/sheet-fatura'
+import { periodoAtual } from '@/lib/dates'
+import type { PaymentMethod } from '@/lib/database.types'
 import { ApagarDados } from './components/apagar-dados'
 import { PreviaTema } from './components/previa-tema'
 import { formatCentavos } from '@/lib/money'
@@ -558,6 +561,10 @@ function AbaFormasPagamento({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
   const [tipo, setTipo] = useState<TipoPagamento>('credito')
   const ehCelular = useEhMobile(768)
   const [rascunho, setRascunho] = useState<Rascunho<{ nome: string; tipo: TipoPagamento }>>(null)
+  // O cartão cuja fatura está sendo configurada. Fica separado do rascunho de
+  // nome/tipo porque as duas sheets podem ser abertas de lugares diferentes.
+  const [faturaDe, setFaturaDe] = useState<PaymentMethod | null>(null)
+  const hoje = periodoAtual()
 
   const adicionar = () => {
     if (!nome.trim()) return
@@ -593,6 +600,7 @@ function AbaFormasPagamento({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
                   titulo={forma.nome}
                   detalhe={ROTULO_TIPO(forma.tipo)}
                 />
+                {forma.tipo === 'credito' && <ChipFatura forma={forma} onAbrir={() => setFaturaDe(forma)} />}
               </li>
             ))}
           </ul>
@@ -605,16 +613,21 @@ function AbaFormasPagamento({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
             </Cabecalho>
             {dados.formasPagamento.map((forma) => (
               <Linha key={forma.id} template={TEMPLATE_FORMA}>
-                <Input
-                  data-celula
-                  aria-label="Nome da forma de pagamento"
-                  defaultValue={forma.nome}
-                  onBlur={(e) => {
-                    if (e.target.value !== forma.nome)
-                      void acoes.editarForma(forma.id, { nome: e.target.value })
-                  }}
-                  className="min-w-0 border-transparent bg-transparent hover:border-input focus:bg-card"
-                />
+                <div className="min-w-0">
+                  <Input
+                    data-celula
+                    aria-label="Nome da forma de pagamento"
+                    defaultValue={forma.nome}
+                    onBlur={(e) => {
+                      if (e.target.value !== forma.nome)
+                        void acoes.editarForma(forma.id, { nome: e.target.value })
+                    }}
+                    className="min-w-0 border-transparent bg-transparent hover:border-input focus:bg-card"
+                  />
+                  {forma.tipo === 'credito' && (
+                    <ChipFatura forma={forma} onAbrir={() => setFaturaDe(forma)} />
+                  )}
+                </div>
                 <Select
                   value={forma.tipo}
                   onValueChange={(valor) =>
@@ -685,6 +698,23 @@ function AbaFormasPagamento({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
           </div>
         )}
 
+        {faturaDe && (
+          <SheetFatura
+            aberta
+            onOpenChange={(aberta) => !aberta && setFaturaDe(null)}
+            nome={faturaDe.nome}
+            anoAtual={hoje.ano}
+            mesAtual={hoje.mes}
+            config={{
+              dia_fechamento: faturaDe.dia_fechamento,
+              dia_vencimento: faturaDe.dia_vencimento,
+              fatura_inicio_ano: faturaDe.fatura_inicio_ano,
+              fatura_inicio_mes: faturaDe.fatura_inicio_mes,
+            }}
+            onSalvar={(c) => void acoes.editarForma(faturaDe.id, c)}
+          />
+        )}
+
         <SheetConfig
           aberta={rascunho !== null}
           onOpenChange={(aberta) => !aberta && setRascunho(null)}
@@ -734,6 +764,25 @@ function AbaFormasPagamento({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
         </SheetConfig>
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * O atalho para a fatura, embaixo do nome do cartão. Mesmo lugar e mesma forma
+ * do chip de vigência do gasto fixo, para quem já conhece um reconhecer o
+ * outro. Alvo de 44px porque no celular ele é a única entrada.
+ */
+function ChipFatura({ forma, onAbrir }: { forma: PaymentMethod; onAbrir: () => void }) {
+  const semFatura = forma.dia_fechamento === null || forma.fatura_inicio_ano === null
+  return (
+    <button
+      type="button"
+      onClick={onAbrir}
+      className="mt-1 inline-flex min-h-11 items-center gap-1.5 rounded-md px-1 text-xs text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground md:min-h-0 md:py-1"
+    >
+      <CreditCard className="h-3.5 w-3.5" aria-hidden />
+      {semFatura ? 'Configurar fatura' : textoFatura(forma)}
+    </button>
   )
 }
 

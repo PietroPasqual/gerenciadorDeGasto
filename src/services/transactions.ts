@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { Transaction, TipoLancamento } from '@/lib/database.types'
 import { primeiroDiaISO, ultimoDiaISO } from '@/lib/dates'
+import { montarParcelas } from '@/lib/parcelamento'
 import { ErroServico, traduzErro, unwrap, userIdAtual } from './base'
 
 export async function listarLancamentos(
@@ -149,6 +150,95 @@ export async function criarLancamentosEmLote(
     aoProgredir?.(processados, lista.length)
   }
   return { novos, jaExistiam: lista.length - novos }
+}
+
+/**
+ * Cria uma compra parcelada: uma linha por parcela, todas amarradas pelo mesmo
+ * `parcelamento_id`.
+ *
+ * São lançamentos de verdade, e não um lançamento só marcado como "parcelado",
+ * porque cada parcela precisa cair na fatura do seu mês. O mês que a pessoa
+ * abre tem que mostrar o que ela vai pagar naquele mês — não a compra inteira
+ * no mês da primeira parcela.
+ *
+ * A divisão vem de `montarParcelas`, que garante que a soma fecha exatamente
+ * com o total (a sobra de centavos vai na primeira parcela).
+ */
+export async function criarParcelamento(dados: {
+  totalCentavos: number
+  quantidade: number
+  primeiraDataISO: string
+  descricao: string
+  payment_method_id?: string | null
+  category_id?: string | null
+}): Promise<Transaction[]> {
+  const user_id = await userIdAtual()
+  const parcelamento_id = crypto.randomUUID()
+  const parcelas = montarParcelas(dados.totalCentavos, dados.quantidade, dados.primeiraDataISO)
+
+  return unwrap(
+    await supabase
+      .from('transactions')
+      .insert(
+        parcelas.map((p) => ({
+          user_id,
+          data: p.data,
+          descricao: dados.descricao,
+          payment_method_id: dados.payment_method_id ?? null,
+          category_id: dados.category_id ?? null,
+          valor_centavos: p.valor_centavos,
+          tipo: 'gasto' as const,
+          parcelamento_id,
+          parcela: p.parcela,
+          parcelas_total: p.parcelas_total,
+        })),
+      )
+      .select(),
+    'Não foi possível salvar a compra parcelada.',
+  )
+}
+
+/** Todas as parcelas de uma série, em ordem. */
+export async function listarParcelas(parcelamento_id: string): Promise<Transaction[]> {
+  return (
+    unwrap(
+      await supabase.from('transactions').select('*').eq('parcelamento_id', parcelamento_id).order('parcela'),
+    ) ?? []
+  )
+}
+
+/**
+ * Exclui uma parcela só, ou a série inteira — mesma escolha de um evento
+ * recorrente de calendário.
+ *
+ * Excluir a série toda é uma operação e não N: um delete por parcela deixaria
+ * a série pela metade se a rede caísse no meio, e "meia compra parcelada" é um
+ * estado que ninguém sabe consertar depois.
+ */
+export async function excluirSerie(parcelamento_id: string): Promise<void> {
+  const { error } = await supabase.from('transactions').delete().eq('parcelamento_id', parcelamento_id)
+  if (error) throw error
+}
+
+/**
+ * Edita a série inteira. O valor NÃO entra aqui de propósito: mudar o total de
+ * uma compra parcelada exige redividir tudo (e a sobra de centavos muda de
+ * lugar), então isso é apagar e recriar, não um update.
+ */
+export async function atualizarSerie(
+  parcelamento_id: string,
+  mudancas: Partial<Pick<Transaction, 'descricao' | 'payment_method_id' | 'category_id'>>,
+): Promise<Transaction[]> {
+  return (
+    unwrap(
+      await supabase
+        .from('transactions')
+        .update(mudancas)
+        .eq('parcelamento_id', parcelamento_id)
+        .select()
+        .order('parcela'),
+    ) ?? []
+  )
 }
 
 /**

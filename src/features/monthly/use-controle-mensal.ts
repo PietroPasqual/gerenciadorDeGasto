@@ -265,6 +265,11 @@ export function useControleMensal(ano: number, mes: number) {
       // Lançamento à mão não tem impressão digital: ela só serve para o banco
       // recusar a segunda cópia de uma importação (ver 0008).
       fingerprint: null,
+      // Parcelamento tem caminho próprio (criarParcelamento); por aqui passa
+      // sempre lançamento avulso.
+      parcelamento_id: null,
+      parcela: null,
+      parcelas_total: null,
       ...dadosNovos,
     }
     await executarOtimista({

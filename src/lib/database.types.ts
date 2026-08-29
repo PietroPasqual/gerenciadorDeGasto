@@ -31,6 +31,12 @@ export interface Database {
           ativo: boolean
           ordem: number
           created_at: string
+          /** Dia em que o ciclo fecha. NULL = cartão sem fatura (ver 0009). */
+          dia_fechamento: number | null
+          dia_vencimento: number | null
+          /** Vigência da regra de fatura, modelo da 0005. NULL = nunca. */
+          fatura_inicio_ano: number | null
+          fatura_inicio_mes: number | null
         }
         Insert: {
           id?: string
@@ -40,6 +46,10 @@ export interface Database {
           ativo?: boolean
           ordem?: number
           created_at?: string
+          dia_fechamento?: number | null
+          dia_vencimento?: number | null
+          fatura_inicio_ano?: number | null
+          fatura_inicio_mes?: number | null
         }
         Update: {
           id?: string
@@ -48,6 +58,10 @@ export interface Database {
           tipo?: TipoPagamento
           ativo?: boolean
           ordem?: number
+          dia_fechamento?: number | null
+          dia_vencimento?: number | null
+          fatura_inicio_ano?: number | null
+          fatura_inicio_mes?: number | null
         }
         Relationships: []
       }
@@ -246,6 +260,28 @@ export interface Database {
         Update: { pago?: boolean; pago_em?: string | null }
         Relationships: []
       }
+      invoice_payments: {
+        Row: {
+          id: string
+          user_id: string
+          payment_method_id: string
+          ano: number
+          mes: number
+          pago: boolean
+          pago_em: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          payment_method_id: string
+          ano: number
+          mes: number
+          pago?: boolean
+          pago_em?: string | null
+        }
+        Update: { pago?: boolean; pago_em?: string | null }
+        Relationships: []
+      }
       transactions: {
         Row: {
           id: string
@@ -259,6 +295,11 @@ export interface Database {
           created_at: string
           /** Só quem veio de importação tem; lançamento à mão fica NULL (ver 0008). */
           fingerprint: string | null
+          /** Amarra as parcelas de uma mesma compra. NULL em lançamento avulso (ver 0010). */
+          parcelamento_id: string | null
+          /** O "3" de "3/12". */
+          parcela: number | null
+          parcelas_total: number | null
         }
         Insert: {
           id?: string
@@ -272,6 +313,9 @@ export interface Database {
           tipo?: TipoLancamento
           created_at?: string
           fingerprint?: string | null
+          parcelamento_id?: string | null
+          parcela?: number | null
+          parcelas_total?: number | null
         }
         Update: {
           data?: string
@@ -340,6 +384,20 @@ export interface Database {
           nome: string
           tipo: TipoPagamento
           gasto_centavos: number
+        }[]
+      }
+      faturas_do_mes: {
+        Args: { p_ano: number; p_mes: number }
+        Returns: {
+          payment_method_id: string
+          nome: string
+          dia_fechamento: number
+          dia_vencimento: number | null
+          total_centavos: number
+          paga: boolean
+          pago_em: string | null
+          primeira_compra: string
+          ultima_compra: string
         }[]
       }
       investimentos_por_meta: {

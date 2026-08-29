@@ -81,6 +81,12 @@ export function useConfiguracoes() {
       ativo: true,
       ordem: (dados?.formasPagamento.length ?? 0) + 1,
       created_at: new Date().toISOString(),
+      // Cartão nasce sem fatura: quem liga é o usuário, e é isso que faz a
+      // 0009 não mexer em nenhum número antigo (regra 8).
+      dia_fechamento: null,
+      dia_vencimento: null,
+      fatura_inicio_ano: null,
+      fatura_inicio_mes: null,
     }
     return executarOtimista({
       snapshot: snapshot(),

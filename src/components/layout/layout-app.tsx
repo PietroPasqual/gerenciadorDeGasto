@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Loader2, LogOut, MoreVertical, Moon, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Marca } from '@/components/common/marca'
+import { LimiteDeErro } from '@/components/common/limite-de-erro'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -131,9 +132,15 @@ export function LayoutApp() {
               barra lateral, o cabeçalho e a barra inferior continuam na tela
               enquanto o pedaço da página desce. Trocar a moldura inteira por um
               spinner faria a navegação parecer um recarregamento. */}
-          <Suspense fallback={<EsperandoPagina />}>
-            <Outlet />
-          </Suspense>
+          {/* Pelo mesmo motivo, o limite de erro fica dentro do <main>: uma
+              tela que quebra não pode levar junto a navegação que tira o
+              usuário dali. A chave é a rota, para o erro não sobreviver a uma
+              troca de página. */}
+          <LimiteDeErro chave={local.pathname}>
+            <Suspense fallback={<EsperandoPagina />}>
+              <Outlet />
+            </Suspense>
+          </LimiteDeErro>
         </motion.main>
       </div>
 

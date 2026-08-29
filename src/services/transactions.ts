@@ -67,14 +67,28 @@ export async function listarLancamentosPorIntervalo(inicioISO: string, fimISO: s
   )
 }
 
+/** Quantos entraram de verdade e quantos o banco já tinha. */
+export interface ResultadoImportacao {
+  novos: number
+  jaExistiam: number
+}
+
 /**
  * Grava vários lançamentos de uma vez (importação de CSV).
  *
  * Vai em blocos porque um extrato de cartão passa fácil de mil linhas, e um
- * insert único desse tamanho estoura o limite de corpo da requisição. Cada
- * bloco é uma transação do lado do Postgres: se um bloco falhar, os anteriores
- * já entraram — por isso a função devolve quantos entraram, para a tela poder
- * dizer a verdade em vez de "não importou nada".
+ * insert único desse tamanho estoura o limite de corpo da requisição.
+ *
+ * É upsert e não insert porque a importação precisa ser repetível: se um bloco
+ * falhar, os anteriores já entraram, e a única saída do usuário é mandar o
+ * arquivo de novo. Com `ignoreDuplicates`, a segunda tentativa completa o que
+ * faltou em vez de duplicar o que já estava lá — quem decide é o índice único
+ * `(user_id, fingerprint)` da 0008, dentro da transação do Postgres, então nem
+ * duas abas ao mesmo tempo conseguem furar.
+ *
+ * Cada bloco volta só com as linhas realmente inseridas, e é daí que sai a
+ * contagem: contar `bloco.length` diria "1273 importados" mesmo quando o banco
+ * recusou 1200 deles.
  */
 export async function criarLancamentosEmLote(
   lista: Array<{
@@ -84,31 +98,41 @@ export async function criarLancamentosEmLote(
     category_id?: string | null
     valor_centavos: number
     tipo: TipoLancamento
+    fingerprint?: string | null
   }>,
-  aoProgredir?: (gravados: number, total: number) => void,
-): Promise<number> {
-  if (lista.length === 0) return 0
+  aoProgredir?: (processados: number, total: number) => void,
+): Promise<ResultadoImportacao> {
+  if (lista.length === 0) return { novos: 0, jaExistiam: 0 }
   const user_id = await userIdAtual()
   const TAMANHO_BLOCO = 200
 
-  let gravados = 0
+  let novos = 0
+  let processados = 0
   for (let i = 0; i < lista.length; i += TAMANHO_BLOCO) {
     const bloco = lista.slice(i, i + TAMANHO_BLOCO).map((l) => ({ ...l, user_id }))
     try {
-      unwrap(await supabase.from('transactions').insert(bloco), 'Não foi possível importar os lançamentos.')
+      const inseridos =
+        unwrap(
+          await supabase
+            .from('transactions')
+            .upsert(bloco, { onConflict: 'user_id,fingerprint', ignoreDuplicates: true })
+            .select('id'),
+          'Não foi possível importar os lançamentos.',
+        ) ?? []
+      novos += inseridos.length
     } catch (erro) {
-      if (gravados === 0) throw erro
+      if (novos === 0 && processados === 0) throw erro
       throw new ErroServico(
-        `Importação interrompida: ${gravados} lançamentos entraram antes do erro. ${
-          erro instanceof Error ? erro.message : ''
-        }`.trim(),
+        `Importação interrompida: ${novos} lançamentos entraram antes do erro. ` +
+          'Mandar o mesmo arquivo de novo completa o que faltou, sem duplicar. ' +
+          (erro instanceof Error ? erro.message : ''),
         erro,
       )
     }
-    gravados += bloco.length
-    aoProgredir?.(gravados, lista.length)
+    processados += bloco.length
+    aoProgredir?.(processados, lista.length)
   }
-  return gravados
+  return { novos, jaExistiam: lista.length - novos }
 }
 
 /**

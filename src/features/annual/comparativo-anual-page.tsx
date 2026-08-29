@@ -55,7 +55,9 @@ export function ComparativoAnualPage() {
     [anoComparativo],
   )
 
-  const meses = dados ?? []
+  // O `?? []` precisa ficar memoizado: sem isso ele cria um array novo a cada
+  // render e o useMemo abaixo recalcula sempre, que é o oposto do que ele faz ali.
+  const meses = useMemo(() => dados ?? [], [dados])
 
   const totais = useMemo(() => {
     const entradas = meses.reduce((s, m) => s + m.entradas, 0)

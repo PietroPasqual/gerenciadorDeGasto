@@ -23,6 +23,14 @@ export function useRecurso<T>(
   const carregarRef = useRef(carregar)
   carregarRef.current = carregar
 
+  /**
+   * Número da carga em andamento. Sem ele, trocar de mês rápido (o swipe do
+   * celular convida a isso) deixa a resposta do mês anterior chegar depois da
+   * do mês novo e sobrescrever a tela com números de outro período. Só a carga
+   * mais recente tem direito de escrever no estado.
+   */
+  const geracao = useRef(0)
+
   useEffect(() => {
     montado.current = true
     return () => {
@@ -31,12 +39,14 @@ export function useRecurso<T>(
   }, [])
 
   const executar = useCallback(async () => {
+    const minhaGeracao = ++geracao.current
+    const atual = () => montado.current && geracao.current === minhaGeracao
     setEstado((anterior) => ({ ...anterior, carregando: true, erro: null }))
     try {
       const dados = await carregarRef.current()
-      if (montado.current) setEstado({ dados, carregando: false, erro: null })
+      if (atual()) setEstado({ dados, carregando: false, erro: null })
     } catch (erro) {
-      if (montado.current) {
+      if (atual()) {
         setEstado((anterior) => ({
           ...anterior,
           carregando: false,
@@ -44,7 +54,6 @@ export function useRecurso<T>(
         }))
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {

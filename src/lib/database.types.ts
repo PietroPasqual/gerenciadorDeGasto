@@ -257,17 +257,21 @@ export interface Database {
           valor_centavos: number
           tipo: TipoLancamento
           created_at: string
+          /** Só quem veio de importação tem; lançamento à mão fica NULL (ver 0008). */
+          fingerprint: string | null
         }
         Insert: {
           id?: string
           user_id: string
-          data?: string
+          /** A 0007 tirou o default: quem insere é obrigado a dizer o dia. */
+          data: string
           descricao?: string
           payment_method_id?: string | null
           category_id?: string | null
           valor_centavos?: number
           tipo?: TipoLancamento
           created_at?: string
+          fingerprint?: string | null
         }
         Update: {
           data?: string

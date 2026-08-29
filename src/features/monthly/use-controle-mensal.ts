@@ -247,6 +247,9 @@ export function useControleMensal(ano: number, mes: number) {
       id: tempId(),
       user_id: '',
       created_at: new Date().toISOString(),
+      // Lançamento à mão não tem impressão digital: ela só serve para o banco
+      // recusar a segunda cópia de uma importação (ver 0008).
+      fingerprint: null,
       ...dadosNovos,
     }
     await executarOtimista({

@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion'
 import { Toaster } from 'sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { LayoutApp } from '@/components/layout/layout-app'
+import { LimiteDeErro } from '@/components/common/limite-de-erro'
 import { RotaProtegida } from '@/features/auth/rota-protegida'
 import { LandingPage } from '@/features/landing/landing-page'
 import { LoginPage } from '@/features/auth/login-page'
@@ -46,8 +47,11 @@ export default function App() {
     if (profile?.tema) definirTema(profile.tema, false)
   }, [profile?.tema, definirTema])
 
+  // O limite externo pega o que quebrar fora das telas do app (landing, login)
+  // e o que escapar do limite de dentro do layout.
   return (
-    <TooltipProvider delayDuration={200}>
+    <LimiteDeErro chave={local.pathname} destinoInicio="/">
+      <TooltipProvider delayDuration={200}>
       <ProvedorAcoesPagina>
       <AnimatePresence mode="wait">
         <Routes location={local} key={local.pathname}>
@@ -83,6 +87,7 @@ export default function App() {
         closeButton
       />
       </ProvedorAcoesPagina>
-    </TooltipProvider>
+      </TooltipProvider>
+    </LimiteDeErro>
   )
 }

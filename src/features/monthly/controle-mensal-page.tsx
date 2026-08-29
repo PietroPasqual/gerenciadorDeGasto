@@ -414,10 +414,18 @@ export function ControleMensalPage() {
             mes={mes}
             categorias={dados.categorias}
             formas={dados.formasPagamento}
-            aoImportar={(quantidade) => {
-              toast.success(
-                `${quantidade} ${quantidade === 1 ? 'lançamento importado' : 'lançamentos importados'}`,
-              )
+            aoImportar={({ novos, jaExistiam }) => {
+              const frase = `${novos} ${novos === 1 ? 'lançamento importado' : 'lançamentos importados'}`
+              // O banco pode recusar linhas que a prévia não pegou (importação
+              // feita em outro aparelho, ou uma que morreu no meio). Se isso
+              // acontecer, o número tem que aparecer — senão a conta na tela
+              // não bate com a que o usuário viu antes de confirmar.
+              toast.success(frase, {
+                description:
+                  jaExistiam > 0
+                    ? `${jaExistiam} já estavam no app e foram ignorados.`
+                    : undefined,
+              })
               void recarregar()
             }}
           />

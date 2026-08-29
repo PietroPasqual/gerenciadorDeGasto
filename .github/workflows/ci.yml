@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# Um push logo em cima de outro cancela a execução anterior do mesmo branch:
+# só o último commit interessa, e a fila fica curta.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # `ci` e não `install`: respeita o package-lock à risca, então o CI roda
+      # com as mesmas versões da máquina de quem desenvolveu.
+      - run: npm ci
+
+      - name: Lint (eslint + prettier + tsc)
+        run: npm run lint
+
+      - name: Testes
+        run: npm run test
+
+      # O build fica por último e é o único passo que precisa das variáveis do
+      # Supabase. São valores públicos (URL e chave anon, protegidas por RLS);
+      # a service_role nunca chega perto do cliente.
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://exemplo.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'chave-de-build' }}

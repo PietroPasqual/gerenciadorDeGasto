@@ -21,7 +21,12 @@ import {
   sugerirRegraSinal,
   type Resultado,
 } from '@/lib/importar-csv'
-import { criarLancamentosEmLote, listarLancamentosPorIntervalo } from '@/services/transactions'
+import {
+  criarLancamentosEmLote,
+  listarLancamentosPorIntervalo,
+  type ResultadoImportacao,
+} from '@/services/transactions'
+import { impressoesDigitais } from '@/lib/impressao-digital'
 import type { Category, PaymentMethod } from '@/lib/database.types'
 
 const SEM_COLUNA = '__nenhuma__'
@@ -81,7 +86,7 @@ export function ImportarCSV({
   mes: number
   categorias: Category[]
   formas: PaymentMethod[]
-  aoImportar: (quantidade: number) => void
+  aoImportar: (resultado: ResultadoImportacao) => void
 }) {
   const ehCelular = useEhMobile(640)
 
@@ -197,17 +202,23 @@ export function ImportarCSV({
     if (selecionados.length === 0) return
     setGravando(true)
     try {
-      const quantidade = await criarLancamentosEmLote(
-        selecionados.map(({ data, descricao, valor_centavos, tipo, category_id, payment_method_id }) => ({
-          data,
-          descricao,
-          valor_centavos,
-          tipo,
-          category_id,
-          payment_method_id,
-        })),
+      // A impressão digital é calculada sobre a lista inteira e na ordem do
+      // arquivo, porque a numeração das repetições faz parte da chave.
+      const impressoes = impressoesDigitais(selecionados)
+      const resultado = await criarLancamentosEmLote(
+        selecionados.map(
+          ({ data, descricao, valor_centavos, tipo, category_id, payment_method_id }, i) => ({
+            data,
+            descricao,
+            valor_centavos,
+            tipo,
+            category_id,
+            payment_method_id,
+            fingerprint: impressoes[i],
+          }),
+        ),
       )
-      aoImportar(quantidade)
+      aoImportar(resultado)
       onOpenChange(false)
     } catch (erro) {
       setErroLeitura(erro instanceof Error ? erro.message : 'Não foi possível importar.')
@@ -342,7 +353,14 @@ export function ImportarCSV({
               </span>
             </p>
           ) : (
-            previa && <Conferencia previa={previa} selecionados={selecionados} foraDoMes={foraDoMes} />
+            previa && (
+              <Conferencia
+                previa={previa}
+                selecionados={selecionados}
+                foraDoMes={foraDoMes}
+                jaExistentes={trazerJaExistentes ? 0 : jaExistentes}
+              />
+            )
           )}
 
           {categorias.length > 0 && (
@@ -463,11 +481,14 @@ function Conferencia({
   previa,
   selecionados,
   foraDoMes,
+  jaExistentes,
 }: {
   previa: Resultado
   /** O que vai entrar de fato — já sem os repetidos, se estiverem de fora. */
   selecionados: Resultado['prontos']
   foraDoMes: number
+  /** Quantos ficaram de fora por já estarem no app; 0 se o usuário optou por trazê-los. */
+  jaExistentes: number
 }) {
   const AMOSTRA = 5
   // A amostra sai dos SELECIONADOS, não de todos os prontos: mostrar uma linha
@@ -481,7 +502,8 @@ function Conferencia({
         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
         <span>
           <strong>{selecionados.length}</strong>{' '}
-          {selecionados.length === 1 ? 'lançamento pronto' : 'lançamentos prontos'}
+          {selecionados.length === 1 ? 'novo' : 'novos'}
+          {jaExistentes > 0 && ` · ${jaExistentes} já existiam`}
           {previa.ordemData === 'mes-dia' && ' · datas lidas como mês/dia'}
           {previa.ordemData === 'dia-mes' && ' · datas lidas como dia/mês'}
           {foraDoMes > 0 && ` · ${foraDoMes} de outro mês, que vão para o mês da data`}

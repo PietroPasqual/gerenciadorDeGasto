@@ -46,6 +46,7 @@ lembrar para quem for refazê-la:
 | Desde/até quando o fixo é pago — chip embaixo do nome → sheet | O mesmo chip e a mesma sheet                                                                   |
 | Entradas, aportes por meta e aportes avulsos — linha inline   | A mesma linha em duas faixas: nome em cima, valor + ação embaixo                               |
 | Gastos por categoria e por forma de pagamento                 | Aba **Análise**                                                                                |
+| Ver "X novos · Y já existiam" antes de gravar a importação    | A mesma contagem no topo da sheet de conferência                                               |
 
 ## Comparativo anual
 
@@ -80,6 +81,19 @@ lembrar para quem for refazê-la:
 | Tema de cor, com miniatura de cada um                             | O mesmo                                                                                      |
 | Modo escuro                                                       | O mesmo                                                                                      |
 | Nome do perfil                                                    | O mesmo                                                                                      |
+
+## Quando alguma tela quebra
+
+O limite de erro (`src/components/common/limite-de-erro.tsx`) vive dentro do
+`<main>`, então a moldura de navegação fica de pé nos dois tamanhos e a saída
+está sempre a um toque.
+
+| No PC                                                              | No celular                                                  |
+| ------------------------------------------------------------------ | ----------------------------------------------------------- |
+| Cartão de erro no lugar do conteúdo, abas e barra lateral intactas | O mesmo cartão, com a barra inferior intacta                |
+| **Tentar novamente** — remonta a tela sem recarregar o app         | O mesmo, com os dois botões em coluna e 44px de altura cada |
+| **Voltar ao início** — vai para o painel                           | O mesmo                                                     |
+| Navegar para outra tela limpa o erro sozinho                       | O mesmo, inclusive pela barra inferior                      |
 
 ### A única linha assimétrica
 

@@ -38,11 +38,19 @@ export function SheetVigencia({
   anoAtual,
   mesAtual,
   onSalvar,
+  verbo = 'paga',
 }: {
   aberta: boolean
   onOpenChange: (aberta: boolean) => void
   nome: string
   vigencia: Vigencia
+  /**
+   * 'paga' para gasto fixo, 'recebe' para entrada recorrente. A mecânica é a
+   * mesma dos dois lados (0012 reusa a mesma `fixo_vigente`), só a frase muda —
+   * e "Quando você paga Salário?" seria absurdo o bastante para a pessoa
+   * desconfiar do que está salvando.
+   */
+  verbo?: 'paga' | 'recebe'
   /** Mês aberto na tela — vira o padrão de "encerrar" e de "desde". */
   anoAtual: number
   mesAtual: number
@@ -62,15 +70,18 @@ export function SheetVigencia({
   return (
     <Sheet open={aberta} onOpenChange={onOpenChange}>
       <SheetContent aria-describedby={undefined}>
-        <SheetTitle>Quando você paga {nome}?</SheetTitle>
+        <SheetTitle>
+          Quando você {verbo} {nome}?
+        </SheetTitle>
         <SheetDescription className="mb-4">
-          Fora deste período o gasto não entra na conta do mês — é o que evita ele aparecer em meses que você
-          ainda não pagava.
+          {verbo === 'paga'
+            ? 'Fora deste período o gasto não entra na conta do mês — é o que evita ele aparecer em meses que você ainda não pagava.'
+            : 'Fora deste período a entrada não conta no mês. Encerrar aqui preserva o histórico: os meses em que você recebeu continuam com o valor certo.'}
         </SheetDescription>
 
         <div className="space-y-4">
           <LinhaPeriodo
-            rotulo="Pago desde"
+            rotulo={verbo === 'paga' ? 'Pago desde' : 'Recebo desde'}
             semData="Desde sempre"
             ativo={temInicio}
             ano={rascunho.inicio_ano}
@@ -86,8 +97,8 @@ export function SheetVigencia({
           />
 
           <LinhaPeriodo
-            rotulo="Pago até"
-            semData="Ainda pago (sem data de fim)"
+            rotulo={verbo === 'paga' ? 'Pago até' : 'Recebo até'}
+            semData={verbo === 'paga' ? 'Ainda pago (sem data de fim)' : 'Ainda recebo (sem data de fim)'}
             ativo={temFim}
             ano={rascunho.fim_ano}
             mes={rascunho.fim_mes}

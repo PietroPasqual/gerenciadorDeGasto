@@ -337,3 +337,50 @@ describe('calcularCaixaDoMes — competência x caixa', () => {
     expect(caixa.totalSaidasCaixa + caixa.adiadoParaFatura).toBe(total)
   })
 })
+
+describe('entrada recorrente no resumo', () => {
+  it('sem nenhuma recorrente, o total é idêntico ao de antes da 0012', () => {
+    const base = {
+      entradasAvulsas: [{ valor_centavos: 300_000 }],
+      entradasLancamentos: [{ valor_centavos: 50_000 }],
+      gastos: [{ valor_centavos: 25_000 }],
+      gastosFixos: [{ valor_centavos: 120_000 }],
+      investimentos: [],
+    }
+    const semCampo = calcularResumoMensal(base)
+    const comListaVazia = calcularResumoMensal({ ...base, entradasRecorrentes: [] })
+    expect(semCampo).toEqual(comListaVazia)
+    expect(semCampo.totalEntradas).toBe(350_000)
+  })
+
+  it('a recorrente vigente soma nas entradas e muda o saldo', () => {
+    const resumo = calcularResumoMensal({
+      entradasAvulsas: [],
+      entradasLancamentos: [],
+      entradasRecorrentes: [{ valor_centavos: 550_000 }],
+      gastos: [{ valor_centavos: 25_000 }],
+      gastosFixos: [],
+      investimentos: [],
+    })
+    expect(resumo.totalEntradas).toBe(550_000)
+    expect(resumo.saldo).toBe(525_000)
+  })
+
+  it('quem filtra pela vigência é o chamador — estaVigente decide o mês', () => {
+    // Salário antigo até maio, novo de junho: a mesma regra dos gastos fixos.
+    const antigo = { inicio_ano: null, inicio_mes: null, fim_ano: 2025, fim_mes: 5 }
+    const novo = { inicio_ano: 2025, inicio_mes: 6, fim_ano: null, fim_mes: null }
+
+    expect(estaVigente(antigo, 2025, 5)).toBe(true)
+    expect(estaVigente(antigo, 2025, 6)).toBe(false)
+    expect(estaVigente(novo, 2025, 5)).toBe(false)
+    expect(estaVigente(novo, 2025, 6)).toBe(true)
+
+    // Em nenhum mês do ano os dois valem ao mesmo tempo, nem os dois faltam:
+    // é o que garante que a troca de emprego não duplica nem some.
+    for (let mes = 1; mes <= 12; mes++) {
+      const quantos = [antigo, novo].filter((v) => estaVigente(v, 2025, mes)).length
+      expect(quantos, `mês ${mes}`).toBe(1)
+    }
+  })
+})

@@ -238,6 +238,49 @@ export interface Database {
         }
         Relationships: []
       }
+      recurring_incomes: {
+        Row: {
+          id: string
+          user_id: string
+          descricao: string
+          valor_centavos: number
+          dia_recebimento: number | null
+          ativo: boolean
+          ordem: number
+          created_at: string
+          /** Vigência, modelo da 0005: `fim` encerra sem apagar o histórico. */
+          inicio_ano: number | null
+          inicio_mes: number | null
+          fim_ano: number | null
+          fim_mes: number | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          descricao: string
+          valor_centavos?: number
+          dia_recebimento?: number | null
+          ativo?: boolean
+          ordem?: number
+          created_at?: string
+          inicio_ano?: number | null
+          inicio_mes?: number | null
+          fim_ano?: number | null
+          fim_mes?: number | null
+        }
+        Update: {
+          descricao?: string
+          valor_centavos?: number
+          dia_recebimento?: number | null
+          ativo?: boolean
+          ordem?: number
+          inicio_ano?: number | null
+          inicio_mes?: number | null
+          fim_ano?: number | null
+          fim_mes?: number | null
+        }
+        Relationships: []
+      }
       fixed_expense_payments: {
         Row: {
           id: string
@@ -451,6 +494,7 @@ export type Fn<T extends keyof PublicSchema['Functions']> = PublicSchema['Functi
 
 export type Profile = Tables<'profiles'>
 export type PaymentMethod = Tables<'payment_methods'>
+export type RecurringIncome = Tables<'recurring_incomes'>
 export type Category = Tables<'categories'>
 export type Goal = Tables<'goals'>
 export type GoalContribution = Tables<'goal_contributions'>

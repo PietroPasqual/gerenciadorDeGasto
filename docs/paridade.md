@@ -46,6 +46,9 @@ lembrar para quem for refazê-la:
 | Desde/até quando o fixo é pago — chip embaixo do nome → sheet | O mesmo chip e a mesma sheet                                                                   |
 | Entradas, aportes por meta e aportes avulsos — linha inline   | A mesma linha em duas faixas: nome em cima, valor + ação embaixo                               |
 | Gastos por categoria e por forma de pagamento                 | Aba **Análise**                                                                                |
+| Entrada recorrente (salário) — bloco na aba Entradas          | O mesmo bloco, na aba **Entradas**                                                             |
+| Desde/até quando a entrada é recebida — chip → sheet          | O mesmo chip e a mesma sheet, com 44px de alvo                                                 |
+| Aviso de recorrente e avulsa com a mesma descrição no mês     | O mesmo aviso                                                                                  |
 | Ver "X novos · Y já existiam" antes de gravar a importação    | A mesma contagem no topo da sheet de conferência                                               |
 | Ver as faturas que vencem no mês — cartão na aba Resumo       | O mesmo cartão, na aba **Resumo**                                                              |
 | Marcar fatura como paga — botão no cartão da fatura           | O mesmo botão, com 44px de altura                                                              |

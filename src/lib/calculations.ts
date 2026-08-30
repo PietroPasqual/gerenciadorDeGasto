@@ -111,6 +111,7 @@ export function agruparPorChave<T extends ItemValor>(
 
 /**
  * Resumo completo do mês.
+ * entradas = avulsas do mês + lançamentos de entrada + recorrentes vigentes.
  * saídas = lançamentos do tipo 'gasto' + gastos fixos ativos (que se repetem todo mês).
  * investido = aportes em metas + investimentos avulsos.
  * Espelha exatamente a função SQL `resumo_mensal`.
@@ -118,11 +119,16 @@ export function agruparPorChave<T extends ItemValor>(
 export function calcularResumoMensal(params: {
   entradasAvulsas: ItemValor[]
   entradasLancamentos: ItemValor[]
+  /** Já filtradas pela vigência do mês — quem filtra é o chamador. */
+  entradasRecorrentes?: ItemValor[]
   gastos: ItemValor[]
   gastosFixos: ItemValor[]
   investimentos: ItemValor[]
 }): ResumoCalculado {
-  const totalEntradas = totalDeItens(params.entradasAvulsas) + totalDeItens(params.entradasLancamentos)
+  const totalEntradas =
+    totalDeItens(params.entradasAvulsas) +
+    totalDeItens(params.entradasLancamentos) +
+    totalDeItens(params.entradasRecorrentes ?? [])
   const totalSaidas = totalDeItens(params.gastos) + totalDeItens(params.gastosFixos)
   const totalInvestido = totalDeItens(params.investimentos)
 

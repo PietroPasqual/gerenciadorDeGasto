@@ -9,6 +9,7 @@ import type {
   Income,
   Investment,
   PaymentMethod,
+  RecurringIncome,
   Transaction,
 } from '@/lib/database.types'
 import type { FaturaDoMes } from './invoices'
@@ -18,6 +19,7 @@ export interface DadosDoMes {
   categorias: Category[]
   metas: Goal[]
   entradas: Income[]
+  entradasRecorrentes: RecurringIncome[]
   gastosFixos: FixedExpense[]
   pagamentos: FixedExpensePayment[]
   lancamentos: Transaction[]

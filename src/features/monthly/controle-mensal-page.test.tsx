@@ -60,6 +60,7 @@ vi.mock('@/services/mes', () => ({
         created_at: '',
       },
     ],
+    entradasRecorrentes: [],
     pagamentos: [],
     lancamentos: [
       {
@@ -83,6 +84,11 @@ vi.mock('@/services/mes', () => ({
 }))
 
 vi.mock('@/services/invoices', () => ({ definirFaturaPaga: vi.fn(async () => {}) }))
+vi.mock('@/services/recurring-incomes', () => ({
+  criarEntradaRecorrente: vi.fn(),
+  atualizarEntradaRecorrente: vi.fn(),
+  excluirEntradaRecorrente: vi.fn(),
+}))
 vi.mock('@/services/goals', () => ({ MAX_METAS: 10, salvarAporte: vi.fn() }))
 vi.mock('@/services/incomes', () => ({
   criarEntrada: vi.fn(),

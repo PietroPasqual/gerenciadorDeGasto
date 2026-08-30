@@ -33,6 +33,7 @@ const TEMPLATE_DATADA = 'md:grid-cols-[7rem,1fr,10rem,2.5rem]'
 export function TabelaEntradas({
   entradas,
   entradasComData = [],
+  recorrentes,
   onAdicionar,
   onEditar,
   onRemover,
@@ -41,6 +42,8 @@ export function TabelaEntradas({
 }: {
   entradas: Income[]
   entradasComData?: Transaction[]
+  /** As recorrentes vêm como um bloco pronto — ver tabela-entradas-recorrentes. */
+  recorrentes?: React.ReactNode
   onAdicionar: (descricao: string, valor: number) => void
   onEditar: (id: string, mudancas: Partial<Income>) => void
   onRemover: (id: string) => void
@@ -63,7 +66,7 @@ export function TabelaEntradas({
         <CardTitle>Entradas</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {entradas.length === 0 && entradasComData.length === 0 ? (
+        {entradas.length === 0 && entradasComData.length === 0 && !recorrentes ? (
           <EstadoVazio
             titulo="Nenhuma entrada neste mês"
             descricao="Lance seu salário, freelas e qualquer dinheiro que entrou."
@@ -175,6 +178,8 @@ export function TabelaEntradas({
             </GradeEditavel>
           </div>
         )}
+
+        {recorrentes}
 
         {/* Linha de adição rápida */}
         <div className={`grid grid-cols-1 gap-2 pt-1 ${TEMPLATE}`}>

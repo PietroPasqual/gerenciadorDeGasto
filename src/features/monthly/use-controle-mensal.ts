@@ -9,6 +9,7 @@ import type {
   Income,
   Investment,
   PaymentMethod,
+  RecurringIncome,
   Transaction,
 } from '@/lib/database.types'
 import { useConsulta } from '@/lib/cache'
@@ -22,6 +23,7 @@ import * as entradasSvc from '@/services/incomes'
 import * as fixosSvc from '@/services/fixed-expenses'
 import * as lancamentosSvc from '@/services/transactions'
 import * as investimentosSvc from '@/services/investments'
+import * as recorrentesSvc from '@/services/recurring-incomes'
 
 export interface DadosMes {
   formasPagamento: PaymentMethod[]
@@ -35,6 +37,8 @@ export interface DadosMes {
   aportes: GoalContribution[]
   /** As faturas de cartão que vencem neste mês (compras de meses anteriores). */
   faturas: FaturaDoMes[]
+  /** Entradas que se repetem todo mês; a vigência decide se contam neste. */
+  entradasRecorrentes: RecurringIncome[]
 }
 
 /**
@@ -423,6 +427,77 @@ export function useControleMensal(ano: number, mes: number) {
   }
 
   // ------------------------------------------------------------------
+  // Entradas recorrentes
+  // ------------------------------------------------------------------
+  const adicionarEntradaRecorrente = async (dadosNovos: {
+    descricao: string
+    valor_centavos: number
+    inicio_ano: number | null
+    inicio_mes: number | null
+  }) => {
+    const provisorio: RecurringIncome = {
+      id: tempId(),
+      user_id: '',
+      created_at: new Date().toISOString(),
+      descricao: dadosNovos.descricao,
+      valor_centavos: dadosNovos.valor_centavos,
+      dia_recebimento: null,
+      ativo: true,
+      ordem: (dados?.entradasRecorrentes.length ?? 0) + 1,
+      inicio_ano: dadosNovos.inicio_ano,
+      inicio_mes: dadosNovos.inicio_mes,
+      fim_ano: null,
+      fim_mes: null,
+    }
+    await executarOtimista({
+      snapshot: snapshot(),
+      aplicar: () => mutar((d) => ({ ...d, entradasRecorrentes: [...d.entradasRecorrentes, provisorio] })),
+      restaurar: (s) => definirDados(s),
+      acao: () =>
+        recorrentesSvc.criarEntradaRecorrente({
+          descricao: provisorio.descricao,
+          valor_centavos: provisorio.valor_centavos,
+          ordem: provisorio.ordem,
+          inicio_ano: provisorio.inicio_ano,
+          inicio_mes: provisorio.inicio_mes,
+        }),
+      confirmar: (salvo) =>
+        mutar((d) => ({
+          ...d,
+          entradasRecorrentes: d.entradasRecorrentes.map((r) => (r.id === provisorio.id ? salvo : r)),
+        })),
+      mensagemErro: 'Não foi possível adicionar a entrada recorrente',
+    })
+  }
+
+  const editarEntradaRecorrente = async (id: string, mudancas: Partial<RecurringIncome>) =>
+    executarOtimista({
+      chave: `recorrente:${id}`,
+      snapshot: snapshot(),
+      aplicar: () =>
+        mutar((d) => ({
+          ...d,
+          entradasRecorrentes: d.entradasRecorrentes.map((r) => (r.id === id ? { ...r, ...mudancas } : r)),
+        })),
+      restaurar: (s) => definirDados(s),
+      acao: () => recorrentesSvc.atualizarEntradaRecorrente(id, mudancas),
+      mensagemErro: 'Não foi possível salvar a entrada recorrente',
+    })
+
+  const removerEntradaRecorrente = async (id: string) =>
+    executarOtimista({
+      snapshot: snapshot(),
+      aplicar: () =>
+        mutar((d) => ({
+          ...d,
+          entradasRecorrentes: d.entradasRecorrentes.filter((r) => r.id !== id),
+        })),
+      restaurar: (s) => definirDados(s),
+      acao: () => recorrentesSvc.excluirEntradaRecorrente(id),
+      mensagemErro: 'Não foi possível excluir a entrada recorrente',
+    })
+
+  // ------------------------------------------------------------------
   // Fatura de cartão
   // ------------------------------------------------------------------
   const alternarFaturaPaga = async (payment_method_id: string, paga: boolean) => {
@@ -457,6 +532,9 @@ export function useControleMensal(ano: number, mes: number) {
    */
   const fixosDoMes = (dados?.gastosFixos ?? []).filter((f) => estaVigente(f, ano, mes))
 
+  /** Mesma regra dos fixos, do outro lado do sinal (ver migration 0012). */
+  const recorrentesDoMes = (dados?.entradasRecorrentes ?? []).filter((r) => estaVigente(r, ano, mes))
+
   /**
    * O que sai da conta neste mês. Difere de `resumo.totalSaidas` só quando
    * existe cartão com fatura ligada — sem isso os dois números são iguais e a
@@ -472,6 +550,7 @@ export function useControleMensal(ano: number, mes: number) {
   const resumo = calcularResumoMensal({
     entradasAvulsas: dados?.entradas ?? [],
     entradasLancamentos: entradasAvulsas,
+    entradasRecorrentes: recorrentesDoMes,
     gastos,
     gastosFixos: fixosDoMes,
     investimentos: [...(dados?.aportes ?? []), ...(dados?.investimentos ?? [])],
@@ -483,6 +562,7 @@ export function useControleMensal(ano: number, mes: number) {
     gastos,
     entradasAvulsas,
     fixosDoMes,
+    recorrentesDoMes,
     resumo,
     caixa,
     faturas: dados?.faturas ?? [],
@@ -501,6 +581,9 @@ export function useControleMensal(ano: number, mes: number) {
       adicionarInvestimentoAvulso,
       editarInvestimentoAvulso,
       removerInvestimentoAvulso,
+      adicionarEntradaRecorrente,
+      editarEntradaRecorrente,
+      removerEntradaRecorrente,
       alternarFaturaPaga,
       adicionarParcelamento,
       removerSerie,

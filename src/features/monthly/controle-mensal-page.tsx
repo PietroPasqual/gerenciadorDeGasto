@@ -16,6 +16,7 @@ import { Fab } from '@/components/common/fab'
 import { SheetGasto, type DadosGasto } from './components/sheet-gasto'
 import { SecaoMes, useAbaMes } from './components/abas-mes'
 import { PainelFaturas } from './components/painel-faturas'
+import { TabelaEntradasRecorrentes } from './components/tabela-entradas-recorrentes'
 import { DialogoSerie } from './components/dialogo-serie'
 import { BarraMesCelular } from './components/barra-mes-celular'
 import type { Transaction } from '@/lib/database.types'
@@ -383,6 +384,27 @@ export function ControleMensalPage() {
                     entradas={dados.entradas}
                     entradasComData={entradasAvulsas}
                     onAdicionar={acoes.adicionarEntrada}
+                    recorrentes={
+                      <TabelaEntradasRecorrentes
+                        ano={ano}
+                        mes={mes}
+                        recorrentes={dados.entradasRecorrentes}
+                        entradasAvulsas={dados.entradas}
+                        onAdicionar={(descricao, valor) =>
+                          void acoes.adicionarEntradaRecorrente({
+                            descricao,
+                            valor_centavos: valor,
+                            // Começa a valer no mês aberto: sem isso, criar o
+                            // salário em agosto o somaria também em janeiro,
+                            // inventando entrada em mês que já passou.
+                            inicio_ano: ano,
+                            inicio_mes: mes,
+                          })
+                        }
+                        onEditar={(id, m) => void acoes.editarEntradaRecorrente(id, m)}
+                        onRemover={(id) => void acoes.removerEntradaRecorrente(id)}
+                      />
+                    }
                     onEditar={acoes.editarEntrada}
                     onRemover={acoes.removerEntrada}
                     onEditarComData={acoes.editarLancamento}

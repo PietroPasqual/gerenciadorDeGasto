@@ -80,6 +80,7 @@ vi.mock('@/services/mes', () => ({
       { id: 'a1', user_id: 'u', goal_id: 'g1', ano: 2026, mes: 8, valor_centavos: 20_000, created_at: '' },
     ],
     faturas: [],
+    saldosMetas: { g1: 20_000 },
   })),
 }))
 
@@ -89,7 +90,12 @@ vi.mock('@/services/recurring-incomes', () => ({
   atualizarEntradaRecorrente: vi.fn(),
   excluirEntradaRecorrente: vi.fn(),
 }))
-vi.mock('@/services/goals', () => ({ MAX_METAS: 10, salvarAporte: vi.fn() }))
+vi.mock('@/services/goals', () => ({
+  MAX_METAS: 10,
+  salvarAporte: vi.fn(),
+  resgatarDaMeta: vi.fn(),
+  transferirEntreMetas: vi.fn(),
+}))
 vi.mock('@/services/incomes', () => ({
   criarEntrada: vi.fn(),
   atualizarEntrada: vi.fn(),

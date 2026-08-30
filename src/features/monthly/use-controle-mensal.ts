@@ -39,6 +39,8 @@ export interface DadosMes {
   faturas: FaturaDoMes[]
   /** Entradas que se repetem todo mês; a vigência decide se contam neste. */
   entradasRecorrentes: RecurringIncome[]
+  /** Acumulado de cada meta desde sempre, por id. */
+  saldosMetas: Record<string, number>
 }
 
 /**
@@ -498,6 +500,40 @@ export function useControleMensal(ano: number, mes: number) {
     })
 
   // ------------------------------------------------------------------
+  // Resgate e transferência de meta
+  // ------------------------------------------------------------------
+  /**
+   * Sem escrita otimista, ao contrário dos aportes: as duas operações mexem no
+   * acumulado de meses que não estão nesta tela, e simular só o mês aberto
+   * mostraria um saldo errado até a resposta chegar. O banco também recusa
+   * resgate maior que o saldo (trigger da 0013), e a mensagem dele é a que
+   * interessa.
+   */
+  const resgatarDeMeta = async (goalId: string, centavos: number) => {
+    try {
+      await metasSvc.resgatarDaMeta(goalId, ano, mes, centavos)
+      await recurso.recarregar()
+      toast.success('Resgate registrado')
+    } catch (erro) {
+      toast.error('Não foi possível resgatar', {
+        description: erro instanceof Error ? erro.message : undefined,
+      })
+    }
+  }
+
+  const transferirEntreMetas = async (origem: string, destino: string, centavos: number) => {
+    try {
+      await metasSvc.transferirEntreMetas(origem, destino, ano, mes, centavos)
+      await recurso.recarregar()
+      toast.success('Transferência feita')
+    } catch (erro) {
+      toast.error('Não foi possível transferir', {
+        description: erro instanceof Error ? erro.message : undefined,
+      })
+    }
+  }
+
+  // ------------------------------------------------------------------
   // Fatura de cartão
   // ------------------------------------------------------------------
   const alternarFaturaPaga = async (payment_method_id: string, paga: boolean) => {
@@ -584,6 +620,8 @@ export function useControleMensal(ano: number, mes: number) {
       adicionarEntradaRecorrente,
       editarEntradaRecorrente,
       removerEntradaRecorrente,
+      resgatarDeMeta,
+      transferirEntreMetas,
       alternarFaturaPaga,
       adicionarParcelamento,
       removerSerie,

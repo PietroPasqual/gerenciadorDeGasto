@@ -434,6 +434,20 @@ export interface Database {
         /** JSON com as dez listas da tela do mês — ver src/services/mes.ts. */
         Returns: Json
       }
+      resgatar_de_meta: {
+        Args: { p_goal_id: string; p_ano: number; p_mes: number; p_centavos: number }
+        Returns: undefined
+      }
+      transferir_entre_metas: {
+        Args: {
+          p_origem: string
+          p_destino: string
+          p_ano: number
+          p_mes: number
+          p_centavos: number
+        }
+        Returns: undefined
+      }
       faturas_do_mes: {
         Args: { p_ano: number; p_mes: number }
         Returns: {

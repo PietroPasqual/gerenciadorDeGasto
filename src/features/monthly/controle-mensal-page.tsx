@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Download, Upload, Wand2 } from 'lucide-react'
+import { ArrowRightLeft, Download, Upload, Wand2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -18,6 +18,7 @@ import { SecaoMes, useAbaMes } from './components/abas-mes'
 import { PainelFaturas } from './components/painel-faturas'
 import { TabelaEntradasRecorrentes } from './components/tabela-entradas-recorrentes'
 import { FiltroLancamentos } from './components/filtro-lancamentos'
+import { SheetMovimentoMeta } from './components/sheet-movimento-meta'
 import {
   aplicarFiltro,
   filtroDeParams,
@@ -162,6 +163,7 @@ export function ControleMensalPage() {
 
   const [serie, setSerie] = useState<{ acao: 'excluir' | 'editar'; gasto: Transaction } | null>(null)
   const [editandoSerie, setEditandoSerie] = useState<Transaction | null>(null)
+  const [movimentoAberto, setMovimentoAberto] = useState(false)
 
   /**
    * `?novo=1` abre a folha de lançamento direto — é o atalho "Lançar gasto" da
@@ -485,6 +487,28 @@ export function ControleMensalPage() {
                     onAdicionarAvulso={acoes.adicionarInvestimentoAvulso}
                     onEditarAvulso={acoes.editarInvestimentoAvulso}
                     onRemoverAvulso={acoes.removerInvestimentoAvulso}
+                    acaoMovimento={
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="min-h-11 shrink-0 md:min-h-0"
+                        onClick={() => setMovimentoAberto(true)}
+                      >
+                        <ArrowRightLeft className="mr-1.5 h-4 w-4" aria-hidden />
+                        Resgatar ou transferir
+                      </Button>
+                    }
+                  />
+
+                  <SheetMovimentoMeta
+                    aberta={movimentoAberto}
+                    onOpenChange={setMovimentoAberto}
+                    metas={dados.metas}
+                    saldos={dados.saldosMetas}
+                    ano={ano}
+                    mes={mes}
+                    onResgatar={(id, centavos) => void acoes.resgatarDeMeta(id, centavos)}
+                    onTransferir={(o, d, centavos) => void acoes.transferirEntreMetas(o, d, centavos)}
                   />
                 </SecaoMes>
 

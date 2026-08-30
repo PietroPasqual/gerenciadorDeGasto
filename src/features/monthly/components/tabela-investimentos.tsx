@@ -28,7 +28,10 @@ export function TabelaInvestimentos({
   onAdicionarAvulso,
   onEditarAvulso,
   onRemoverAvulso,
+  acaoMovimento,
 }: {
+  /** Botão de resgatar/transferir, montado pela página. */
+  acaoMovimento?: React.ReactNode
   metas: Goal[]
   aportes: GoalContribution[]
   investimentos: Investment[]
@@ -53,8 +56,15 @@ export function TabelaInvestimentos({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle>Investimentos do mês</CardTitle>
-        <CardDescription>Quanto você guardou em cada meta neste mês.</CardDescription>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <CardTitle>Investimentos do mês</CardTitle>
+            <CardDescription>Quanto você guardou em cada meta neste mês.</CardDescription>
+          </div>
+          {/* No cabeçalho e não no fim da lista: resgatar é uma ação sobre o
+              bloco inteiro, não sobre a última linha dele. */}
+          {metas.length > 0 && acaoMovimento}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {metas.length === 0 ? (

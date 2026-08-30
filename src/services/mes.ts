@@ -26,6 +26,8 @@ export interface DadosDoMes {
   investimentos: Investment[]
   aportes: GoalContribution[]
   faturas: FaturaDoMes[]
+  /** Acumulado de cada meta desde sempre, por id — o teto do resgate. */
+  saldosMetas: Record<string, number>
 }
 
 /**

@@ -67,3 +67,59 @@ export async function salvarAporte(dados: {
     'Não foi possível salvar o aporte.',
   )
 }
+
+/**
+ * Tira dinheiro de uma meta.
+ *
+ * O valor entra como movimento NEGATIVO na célula do mês, somado ao que já
+ * estiver lá — guardar R$ 500 e resgatar R$ 200 no mesmo mês termina em
+ * R$ 300, não em -R$ 200. Por isso é uma função no banco e não um update
+ * daqui: ler o valor atual, subtrair e gravar deixaria duas abas abertas
+ * sobrescrevendo uma à outra.
+ *
+ * O banco recusa resgate maior do que a meta tem guardado (trigger da 0013).
+ */
+export async function resgatarDaMeta(
+  goal_id: string,
+  ano: number,
+  mes: number,
+  centavos: number,
+): Promise<void> {
+  unwrap(
+    await supabase.rpc('resgatar_de_meta', {
+      p_goal_id: goal_id,
+      p_ano: ano,
+      p_mes: mes,
+      p_centavos: centavos,
+    }),
+    'Não foi possível resgatar da meta.',
+  )
+}
+
+/**
+ * Move dinheiro de uma meta para outra, no mesmo mês.
+ *
+ * Uma chamada só porque os dois lados precisam ser uma transação: feito em
+ * duas, uma falha no meio tira da origem e não põe no destino — dinheiro que
+ * some sem nada na tela dizendo o que houve.
+ *
+ * O total investido do mês não muda: sai de uma e entra na outra.
+ */
+export async function transferirEntreMetas(
+  origem: string,
+  destino: string,
+  ano: number,
+  mes: number,
+  centavos: number,
+): Promise<void> {
+  unwrap(
+    await supabase.rpc('transferir_entre_metas', {
+      p_origem: origem,
+      p_destino: destino,
+      p_ano: ano,
+      p_mes: mes,
+      p_centavos: centavos,
+    }),
+    'Não foi possível transferir entre as metas.',
+  )
+}

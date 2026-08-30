@@ -24,6 +24,12 @@ export interface SituacaoOrcamento {
   /** Dias que ainda contam, incluindo hoje. Nunca menor que 1. */
   diasRestantes: number
   /**
+   * O mês já acabou? Aí não existe "por dia" para mostrar — a validação pegou
+   * um mês passado exibindo "R$ 436,66 por dia · para 1 dia", que é uma frase
+   * sem sentido para quem só quer conferir quanto gastou em agosto.
+   */
+  mesEncerrado: boolean
+  /**
    * Quanto dá para gastar por dia daqui até o fim. `null` quando o teto já
    * estourou — dizer "R$ -12,00 por dia" seria pior do que não dizer nada.
    */
@@ -68,7 +74,9 @@ export function situacaoDoOrcamento(params: {
   const percentualBruto = tetoCentavos > 0 ? (gastoCentavos / tetoCentavos) * 100 : 0
   // Máximo de 1: distribuir o que sobra por "zero dias" seria divisão por zero,
   // e num mês já encerrado o número certo a mostrar é o total, não o diário.
-  const diasRestantes = Math.max(1, diasRestantesDoMes(ano, mes, params.hoje))
+  const diasBrutos = diasRestantesDoMes(ano, mes, params.hoje)
+  const mesEncerrado = diasBrutos === 0
+  const diasRestantes = Math.max(1, diasBrutos)
   const estourou = restanteCentavos < 0
 
   return {
@@ -78,9 +86,11 @@ export function situacaoDoOrcamento(params: {
     percentual: Math.min(Math.max(percentualBruto, 0), 100),
     percentualBruto: Math.round(percentualBruto * 100) / 100,
     diasRestantes,
+    mesEncerrado,
     // Trunca para baixo: arredondar para cima daria um teto diário que, seguido
-    // à risca, estoura o mês por alguns centavos.
-    porDiaCentavos: estourou ? null : Math.floor(restanteCentavos / diasRestantes),
+    // à risca, estoura o mês por alguns centavos. E some de vez num mês que já
+    // acabou — ali a pergunta não é mais "quanto por dia".
+    porDiaCentavos: estourou || mesEncerrado ? null : Math.floor(restanteCentavos / diasRestantes),
     estourou,
   }
 }

@@ -77,6 +77,15 @@ export function PainelOrcamento({
                   {formatCentavos(s.tetoCentavos)}.
                 </span>
               </p>
+            ) : s.mesEncerrado ? (
+              // Mês que já acabou não tem "por dia": a pergunta ali é só quanto
+              // sobrou, e mostrar um teto diário para um mês fechado é ruído.
+              <div>
+                <p className="text-2xl font-semibold tabular-nums">
+                  {formatCentavos(s.restanteCentavos)}
+                  <span className="ml-1.5 text-sm font-normal text-muted-foreground">sobraram no mês</span>
+                </p>
+              </div>
             ) : (
               <div>
                 {/* O "por dia" é o número grande: é o que responde a pergunta

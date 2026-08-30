@@ -76,7 +76,9 @@ describe('situacaoDoOrcamento', () => {
     expect(s.estourou).toBe(true)
   })
 
-  it('num mês já encerrado o por-dia não divide por zero', () => {
+  it('num mês já encerrado o por-dia não divide por zero — e nem aparece', () => {
+    // `diasRestantes` continua em 1 para nenhuma conta dividir por zero, mas o
+    // por-dia some: num mês fechado ele seria uma frase sem sentido.
     const s = situacaoDoOrcamento({
       ano: 2026,
       mes: 2,
@@ -85,7 +87,8 @@ describe('situacaoDoOrcamento', () => {
       gastoCentavos: 40_000,
     })
     expect(s.diasRestantes).toBe(1)
-    expect(s.porDiaCentavos).toBe(60_000)
+    expect(s.porDiaCentavos).toBeNull()
+    expect(s.restanteCentavos).toBe(60_000)
   })
 
   it('gasto zerado devolve o teto inteiro distribuído', () => {
@@ -100,5 +103,37 @@ describe('situacaoDoOrcamento', () => {
       expect(Number.isInteger(s.restanteCentavos)).toBe(true)
       if (s.porDiaCentavos !== null) expect(Number.isInteger(s.porDiaCentavos)).toBe(true)
     }
+  })
+})
+
+describe('mês já encerrado', () => {
+  const passado = { ano: 2026, mes: 2, hoje: HOJE }
+
+  it('não mostra "por dia" num mês que já acabou', () => {
+    // A validação em navegador pegou "R$ 436,66 por dia · para 1 dia" num mês
+    // passado: frase sem sentido para quem só quer conferir o que gastou.
+    const s = situacaoDoOrcamento({ ...passado, tetoCentavos: 300_000, gastoCentavos: 256_334 })
+    expect(s.mesEncerrado).toBe(true)
+    expect(s.porDiaCentavos).toBeNull()
+    // O restante continua verdadeiro: é ele que a tela mostra no lugar.
+    expect(s.restanteCentavos).toBe(43_666)
+  })
+
+  it('o mês corrente continua com "por dia"', () => {
+    const s = situacaoDoOrcamento({
+      ano: 2026,
+      mes: 8,
+      hoje: HOJE,
+      tetoCentavos: 300_000,
+      gastoCentavos: 160_000,
+    })
+    expect(s.mesEncerrado).toBe(false)
+    expect(s.porDiaCentavos).toBe(10_000)
+  })
+
+  it('mês futuro também tem "por dia" — ele ainda vai acontecer', () => {
+    const s = situacaoDoOrcamento({ ano: 2026, mes: 12, hoje: HOJE, tetoCentavos: 310_000, gastoCentavos: 0 })
+    expect(s.mesEncerrado).toBe(false)
+    expect(s.porDiaCentavos).toBe(10_000)
   })
 })

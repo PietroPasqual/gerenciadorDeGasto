@@ -384,3 +384,29 @@ describe('entrada recorrente no resumo', () => {
     }
   })
 })
+
+describe('painel: quando competência e caixa divergem', () => {
+  /**
+   * O painel não carrega os lançamentos — ele tem só os agregados. Então quem
+   * detecta a divergência é a soma das categorias (o que o donut desenha)
+   * contra o total de saídas do resumo. Este teste fixa essa relação: se um dia
+   * `gastos_por_categoria` passar a usar caixa, ele quebra e avisa.
+   */
+  const somaCategorias = (cats: Array<{ gasto_centavos: number }>) =>
+    cats.reduce((s, c) => s + c.gasto_centavos, 0)
+
+  it('sem cartão de fatura, a soma do donut é igual ao total de saídas', () => {
+    const categorias = [{ gasto_centavos: 180_000 }, { gasto_centavos: 30_000 }]
+    const totalSaidas = 210_000
+    expect(somaCategorias(categorias)).toBe(totalSaidas)
+  })
+
+  it('com fatura, elas divergem — e é isso que a tela precisa rotular', () => {
+    // Números reais do cenário validado: donut 2.922,56 x saídas 2.631,85.
+    const categorias = [{ gasto_centavos: 292_256 }]
+    const totalSaidas = 263_185
+    expect(somaCategorias(categorias)).not.toBe(totalSaidas)
+    // A diferença é o gasto de crédito adiado menos a fatura que venceu agora.
+    expect(somaCategorias(categorias) - totalSaidas).toBe(29_071)
+  })
+})

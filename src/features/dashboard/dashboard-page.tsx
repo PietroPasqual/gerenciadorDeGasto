@@ -84,6 +84,25 @@ export function DashboardPage() {
   // função que o comparativo usa, então não é consulta nova para o banco.
   const { dados: meses } = useConsulta(['comparativo-anual', hoje.ano], () => obterComparativoAnual(hoje.ano))
 
+  /**
+   * Com cartão de fatura, o donut de categorias (competência: o mês da compra)
+   * e o total de saídas (caixa: o mês em que sai da conta) deixam de bater.
+   *
+   * A tela do mês já mostra os dois com nomes diferentes; o painel não mostrava,
+   * e ficava com um donut somando R$ 2.922,56 embaixo de um card dizendo
+   * R$ 2.631,85, sem nada explicando a diferença — o mesmo defeito que a 0006
+   * consertou. Sem cartão configurado os dois são iguais, `temFatura` é falso e
+   * o painel fica idêntico ao de antes.
+   *
+   * A soma vem das categorias porque o painel não carrega os lançamentos: ela é
+   * exatamente o que o donut desenha, então o número explicado é o número visto.
+   */
+  const gastoCompetencia = useMemo(
+    () => (gastosCategoria ?? []).reduce((s, c) => s + c.gasto_centavos, 0),
+    [gastosCategoria],
+  )
+  const temFatura = Boolean(resumo) && gastoCompetencia !== resumo?.total_saidas
+
   const observacoes = useMemo(
     () =>
       resumo
@@ -119,7 +138,17 @@ export function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Gastos por categoria</CardTitle>
-            <CardDescription>Como as saídas de {nomeDoMes(hoje.mes)} se dividem.</CardDescription>
+            <CardDescription>
+              {temFatura ? (
+                <>
+                  Os <strong>{formatCentavos(gastoCompetencia)}</strong> que você gastou em{' '}
+                  {nomeDoMes(hoje.mes)}, pela data da compra. O card &ldquo;sai da conta&rdquo; abaixo é outro
+                  número: ele conta a fatura no mês em que ela vence.
+                </>
+              ) : (
+                <>Como as saídas de {nomeDoMes(hoje.mes)} se dividem.</>
+              )}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Donut
@@ -150,7 +179,7 @@ export function DashboardPage() {
             className="text-success"
           />
           <CardResumo
-            rotulo="Saídas"
+            rotulo={temFatura ? 'Sai da conta' : 'Saídas'}
             valor={resumo.total_saidas}
             Icone={TrendingDown}
             className="text-destructive"

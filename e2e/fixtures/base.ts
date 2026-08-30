@@ -259,6 +259,19 @@ export function relatoriosPadrao() {
       },
     ],
     'category-rules.listarRegrasAprendidas': [],
+    'profiles.obterPerfil': {
+      id: 'u',
+      nome: 'Teste',
+      tema: 'rosa',
+      orcamento_centavos: 0,
+      preferencias_lembrete: {
+        fatura_fechando: true,
+        fatura_vencendo: true,
+        fixo_vencendo: true,
+        dias_antes: 3,
+      },
+      created_at: '',
+    },
     'transactions.listarLancamentosPorIntervalo': [],
   }
 }

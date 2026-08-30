@@ -1,4 +1,12 @@
-import { test, expect, appCompleto, mesPadrao, prepararApp, relatoriosPadrao } from './fixtures/base'
+import {
+  test,
+  expect,
+  appCompleto,
+  escritas,
+  mesPadrao,
+  prepararApp,
+  relatoriosPadrao,
+} from './fixtures/base'
 
 /**
  * Cada bloco aqui é uma linha de docs/paridade.md.
@@ -157,8 +165,11 @@ test.describe('controle mensal', () => {
 
 test.describe('alvos de toque e layout', () => {
   test('nenhum alvo abaixo de 44px no celular, e nada rola de lado', async ({ page, isMobile }) => {
+    // 03/08 põe o painel de lembretes na tela: o alvo que só aparece perto de
+    // um vencimento é justamente o que passaria despercebido nesta varredura.
+    await fixarHoje(page, '2025-08-03T10:00:00')
     await prepararApp(page, fixtureMes())
-    for (const rota of ['/painel', '/mes?aba=resumo', '/mes?aba=gastos', '/metas']) {
+    for (const rota of ['/painel', '/mes?aba=resumo', '/mes?aba=gastos', '/metas', '/configuracoes']) {
       await page.goto(rota)
       await expect(page.getByRole('heading').first()).toBeVisible()
       await page.waitForTimeout(300)
@@ -198,5 +209,105 @@ test.describe('estados obrigatórios', () => {
     await prepararApp(page, { ...relatoriosPadrao(), 'mes.carregarMes': vazio })
     await page.goto('/mes?aba=gastos')
     await expect(page.getByText(/nenhum gasto lançado/i)).toBeVisible()
+  })
+})
+
+/**
+ * Os lembretes dependem de "hoje", que num teste não pode ser o relógio real.
+ *
+ * `setFixedTime` em vez de `clock.install`: congelar os timers junto quebraria
+ * as animações do Radix e as sheets nunca terminariam de abrir. Aqui basta que
+ * `new Date()` responda agosto de 2025, o mesmo mês que a fixture fixa.
+ */
+async function fixarHoje(page: import('@playwright/test').Page, iso: string) {
+  await page.clock.setFixedTime(new Date(iso))
+}
+
+test.describe('lembretes de vencimento', () => {
+  test('o painel aparece no topo do resumo e leva à tela do vencimento', async ({ page }) => {
+    // Aluguel vence dia 5; em 03/08 faltam 2 dias, dentro da antecedência de 3.
+    await fixarHoje(page, '2025-08-03T10:00:00')
+    await prepararApp(page, fixtureMes())
+    await page.goto('/mes?aba=resumo')
+
+    const painel = page.getByRole('button', { name: /aluguel vence/i })
+    await expect(painel).toBeVisible()
+    await expect(page.getByText(/vence por aqui/i)).toBeVisible()
+
+    await painel.click()
+    await expect(page).toHaveURL(/aba=fixos/)
+  })
+
+  test('sem nada por perto o painel some inteiro', async ({ page }) => {
+    // 22/08: o aluguel (dia 5) já passou o mês inteiro? não — venceu há 17
+    // dias, e vencido não caduca. Marcar como pago é o que faz sumir.
+    await fixarHoje(page, '2025-08-22T10:00:00')
+    const mes = mesPadrao()
+    await prepararApp(page, {
+      ...relatoriosPadrao(),
+      'mes.carregarMes': {
+        ...mes,
+        pagamentos: [
+          { id: 'pg1', user_id: 'u', fixed_expense_id: 'f1', ano: 2025, mes: 8, pago: true, created_at: '' },
+        ],
+        faturas: [{ ...mes.faturas[0], paga: true }],
+      },
+    })
+    await page.goto('/mes?aba=resumo')
+
+    await expect(page.getByText(/vence por aqui|tem coisa vencida/i)).toHaveCount(0)
+  })
+
+  test('o que venceu se anuncia como vencido', async ({ page }) => {
+    await fixarHoje(page, '2025-08-22T10:00:00')
+    await prepararApp(page, fixtureMes())
+    await page.goto('/mes?aba=resumo')
+
+    await expect(page.getByText(/tem coisa vencida/i)).toBeVisible()
+    await expect(page.getByRole('button', { name: /aluguel venceu/i })).toBeVisible()
+  })
+
+  test('cada tipo de lembrete pode ser desligado nas configurações', async ({ page, isMobile }) => {
+    await prepararApp(page, fixtureMes())
+    await page.goto('/configuracoes')
+
+    if (isMobile) await page.getByRole('tab', { name: 'Lembretes' }).click()
+
+    const interruptor = page.getByRole('switch', { name: /gasto fixo vencendo/i })
+    await expect(interruptor).toBeVisible()
+    await expect(interruptor).toHaveAttribute('aria-checked', 'true')
+
+    // A varredura de alvos de toque abre /configuracoes na aba Aparência e
+    // nunca chega aqui, então a altura desta linha se mede no lugar.
+    expect((await interruptor.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44)
+
+    await interruptor.click()
+    await expect(interruptor).toHaveAttribute('aria-checked', 'false')
+
+    const gravadas = await escritas(page)
+    const salva = gravadas.find((e) => e.chave === 'profiles.atualizarPerfil')
+    expect(salva).toBeTruthy()
+    expect(
+      (salva?.args[0] as { preferencias_lembrete: { fixo_vencendo: boolean } }).preferencias_lembrete
+        .fixo_vencendo,
+    ).toBe(false)
+  })
+
+  test('a antecedência aceita de 0 a 15 e recusa o resto', async ({ page, isMobile }) => {
+    await prepararApp(page, fixtureMes())
+    await page.goto('/configuracoes')
+    if (isMobile) await page.getByRole('tab', { name: 'Lembretes' }).click()
+
+    const campo = page.getByLabel(/antecedência/i)
+    await expect(campo).toBeVisible()
+    // 44px no celular: é um campo numérico, e teclado no telefone erra alvo
+    // pequeno com facilidade.
+    const caixa = await campo.boundingBox()
+    expect(caixa?.height ?? 0).toBeGreaterThanOrEqual(isMobile ? 44 : 36)
+
+    await campo.fill('90')
+    await campo.blur()
+    // Volta ao valor anterior, não a zero: zero desligaria o aviso calado.
+    await expect(campo).toHaveValue('3')
   })
 })

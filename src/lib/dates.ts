@@ -47,9 +47,9 @@ export interface Periodo {
   mes: number
 }
 
-export function periodoAtual(): Periodo {
-  const agora = new Date()
-  return { ano: agora.getFullYear(), mes: agora.getMonth() + 1 }
+/** `referencia` existe para o teste poder fixar "hoje" sem mexer no relógio. */
+export function periodoAtual(referencia = new Date()): Periodo {
+  return { ano: referencia.getFullYear(), mes: referencia.getMonth() + 1 }
 }
 
 export function ehFuturo({ ano, mes }: Periodo, referencia = periodoAtual()): boolean {

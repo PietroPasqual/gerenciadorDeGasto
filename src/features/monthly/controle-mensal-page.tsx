@@ -20,6 +20,8 @@ import { TabelaEntradasRecorrentes } from './components/tabela-entradas-recorren
 import { FiltroLancamentos } from './components/filtro-lancamentos'
 import { SheetMovimentoMeta } from './components/sheet-movimento-meta'
 import { PainelOrcamento } from './components/painel-orcamento'
+import { PainelLembretes } from './components/painel-lembretes'
+import { lembretesDoMes, lerPreferencias } from '@/lib/lembretes'
 import {
   aplicarFiltro,
   filtroDeParams,
@@ -211,6 +213,23 @@ export function ControleMensalPage() {
    * digitar no campo de busca.
    */
   const gastosFiltrados = useMemo(() => aplicarFiltro(gastos, filtro), [gastos, filtro])
+
+  /**
+   * O que vence por aqui. Recalculado a cada render de propósito: é barato
+   * (dezenas de itens) e depende da data de hoje, que muda sem avisar ninguém
+   * num app que fica aberto o dia todo no celular.
+   */
+  const lembretes = useMemo(
+    () =>
+      lembretesDoMes({
+        periodo: { ano, mes },
+        faturas,
+        fixos: dados?.gastosFixos ?? [],
+        fixosPagos: new Set((dados?.pagamentos ?? []).filter((p) => p.pago).map((p) => p.fixed_expense_id)),
+        preferencias: lerPreferencias(perfil?.preferencias_lembrete),
+      }),
+    [ano, mes, faturas, dados?.gastosFixos, dados?.pagamentos, perfil?.preferencias_lembrete],
+  )
   useEffect(() => {
     if (params.get('novo') !== '1') return
     setSheetAberta(true)
@@ -418,6 +437,12 @@ export function ControleMensalPage() {
                 </SecaoMes>
                 {/* A fatura vive na aba Resumo e não na Análise: ela não é
                     análise do que passou, é dinheiro que vai sair. */}
+                {/* Antes de tudo na aba Resumo: aviso de vencimento embaixo
+                    de três gráficos não é aviso, é rodapé. */}
+                <SecaoMes id="resumo" aba={aba}>
+                  <PainelLembretes lembretes={lembretes} />
+                </SecaoMes>
+
                 <SecaoMes id="resumo" aba={aba}>
                   <PainelOrcamento
                     ano={ano}

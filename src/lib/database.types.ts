@@ -24,6 +24,8 @@ export interface Database {
           created_at: string
           /** Teto de gastos do mês. 0 = sem orçamento definido (ver 0015). */
           orcamento_centavos: number
+          /** Quais lembretes aparecem e com quanta antecedência (ver 0017). */
+          preferencias_lembrete: Json
         }
         Insert: {
           id: string
@@ -31,6 +33,7 @@ export interface Database {
           tema?: TemaCor
           created_at?: string
           orcamento_centavos?: number
+          preferencias_lembrete?: Json
         }
         Update: {
           id?: string
@@ -38,6 +41,7 @@ export interface Database {
           tema?: TemaCor
           created_at?: string
           orcamento_centavos?: number
+          preferencias_lembrete?: Json
         }
         Relationships: []
       }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   ArrowDown,
   ArrowUp,
+  BellRing,
   Check,
   CreditCard,
   Database,
@@ -32,15 +33,18 @@ import { SheetFatura, textoFatura } from './components/sheet-fatura'
 import { periodoAtual } from '@/lib/dates'
 import type { PaymentMethod } from '@/lib/database.types'
 import { ApagarDados } from './components/apagar-dados'
+import { PreferenciasLembreteConfig } from './components/preferencias-lembrete'
 import { PreviaTema } from './components/previa-tema'
 import { formatCentavos } from '@/lib/money'
 import { useEhMobile } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
-import type { TemaCor, TipoPagamento } from '@/lib/database.types'
+import type { Json, TemaCor, TipoPagamento } from '@/lib/database.types'
 import { useTemaStore } from '@/store/tema'
 import { useDensidadeStore, type Densidade } from '@/store/densidade'
 import { useAuthStore } from '@/store/auth'
 import { atualizarPerfil } from '@/services/profiles'
+import { executarOtimista } from '@/lib/otimista'
+import { lerPreferencias, type PreferenciasLembrete } from '@/lib/lembretes'
 import { MAX_METAS } from '@/services/goals'
 import { useConfiguracoes } from './use-configuracoes'
 
@@ -74,6 +78,7 @@ const TEMAS: Array<{ valor: TemaCor; rotulo: string }> = [
 
 const SECOES: SecaoConfig[] = [
   { id: 'aparencia', rotulo: 'Aparência', Icone: Palette },
+  { id: 'lembretes', rotulo: 'Lembretes', Icone: BellRing },
   { id: 'categorias', rotulo: 'Categorias', Icone: Tags },
   { id: 'pagamento', rotulo: 'Formas de pagamento', Icone: CreditCard },
   { id: 'metas', rotulo: 'Metas', Icone: Target },
@@ -95,6 +100,7 @@ export function ConfiguracoesPage() {
   const conteudo = (id: string) => {
     if (!dados) return null
     if (id === 'aparencia') return <AbaAparencia />
+    if (id === 'lembretes') return <AbaLembretes />
     if (id === 'categorias') return <AbaCategorias dados={dados} acoes={acoes} />
     if (id === 'pagamento') return <AbaFormasPagamento dados={dados} acoes={acoes} />
     if (id === 'dados') return <ApagarDados aoApagar={() => void recarregar()} />
@@ -281,6 +287,41 @@ function AbaAparencia() {
           </Button>
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+// --------------------------------------------------------------- Lembretes
+/**
+ * Os lembretes moram no perfil, não numa tabela própria: são quatro campos que
+ * só a própria pessoa lê, e uma linha por usuário não justifica uma tabela.
+ *
+ * A escrita é otimista porque um interruptor que espera a rede para virar dá a
+ * impressão de que o toque não pegou — e aqui o rollback é barato: o estado
+ * anterior é o objeto inteiro.
+ */
+function AbaLembretes() {
+  const perfil = useAuthStore((s) => s.profile)
+  const definirProfile = useAuthStore((s) => s.definirProfile)
+  const [preferencias, setPreferencias] = useState<PreferenciasLembrete>(() =>
+    lerPreferencias(perfil?.preferencias_lembrete),
+  )
+
+  const salvar = (novas: PreferenciasLembrete) => {
+    void executarOtimista({
+      chave: 'preferencias-lembrete',
+      snapshot: preferencias,
+      aplicar: () => setPreferencias(novas),
+      restaurar: (anterior) => setPreferencias(anterior),
+      acao: () => atualizarPerfil({ preferencias_lembrete: novas as unknown as Json }),
+      confirmar: (perfilAtualizado) => definirProfile(perfilAtualizado),
+      mensagemErro: 'Não foi possível salvar os lembretes.',
+    })
+  }
+
+  return (
+    <div className="max-w-xl">
+      <PreferenciasLembreteConfig preferencias={preferencias} onMudar={salvar} />
     </div>
   )
 }

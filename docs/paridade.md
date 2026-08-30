@@ -97,17 +97,19 @@ lembrar para quem for refazê-la:
 
 ## Configurações
 
-| No PC                                                             | No celular                                                                                   |
-| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Ver as quatro seções — coluna única com índice e scroll-spy (lg+) | Quatro abas                                                                                  |
-| Criar categoria / forma / meta — linha de adição                  | Botão de largura total → sheet                                                               |
-| Editar — células inline                                           | Tocar no card → sheet                                                                        |
-| Reordenar — setas ↑ ↓ na linha (aparecem no hover)                | **Subir** / **Descer** dentro da sheet                                                       |
-| Excluir — lixeira na linha                                        | **Excluir** dentro da sheet, com confirmação que diz o que acontece com o que já foi lançado |
-| Escolher a cor da categoria                                       | A mesma paleta de 16 tons (no PC atrás de um botão, no celular aberta na sheet)              |
-| Tema de cor, com miniatura de cada um                             | O mesmo                                                                                      |
-| Modo escuro                                                       | O mesmo                                                                                      |
-| Nome do perfil                                                    | O mesmo                                                                                      |
+| No PC                                                           | No celular                                                                                   |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Ver as seis seções — coluna única com índice e scroll-spy (lg+) | Seis abas numa tira rolável                                                                  |
+| Criar categoria / forma / meta — linha de adição                | Botão de largura total → sheet                                                               |
+| Editar — células inline                                         | Tocar no card → sheet                                                                        |
+| Reordenar — setas ↑ ↓ na linha (aparecem no hover)              | **Subir** / **Descer** dentro da sheet                                                       |
+| Excluir — lixeira na linha                                      | **Excluir** dentro da sheet, com confirmação que diz o que acontece com o que já foi lançado |
+| Escolher a cor da categoria                                     | A mesma paleta de 16 tons (no PC atrás de um botão, no celular aberta na sheet)              |
+| Tema de cor, com miniatura de cada um                           | O mesmo                                                                                      |
+| Modo escuro                                                     | O mesmo                                                                                      |
+| Nome do perfil                                                  | O mesmo                                                                                      |
+| Ligar e desligar cada tipo de lembrete — seção **Lembretes**    | O mesmo, com a linha inteira em 44px como alvo do interruptor                                |
+| Escolher a antecedência do aviso (0 a 15 dias)                  | O mesmo campo, com 44px de altura                                                            |
 
 ## Cartão de crédito
 
@@ -120,6 +122,22 @@ linhas simplesmente não aparecem, e a tela é a de antes da fase 2.
 | Escolher desde quando a fatura vale                                  | O mesmo, na mesma sheet                                        |
 | Ver o exemplo ("compra em 20/08 → fatura de set/25") antes de salvar | O mesmo                                                        |
 | Ver o aviso de que o app não conhece feriado                         | O mesmo                                                        |
+
+## Lembretes de vencimento
+
+O app já sabia o dia de vencimento do gasto fixo (0001) e o da fatura (0009), e
+guardava para si. Os lembretes são cálculo puro sobre a data de hoje no aparelho
+de quem está olhando — nada é agendado, nada é enviado. Só o mês corrente gera
+aviso, e o que foi marcado como pago some.
+
+| No PC                                                   | No celular                                             |
+| ------------------------------------------------------- | ------------------------------------------------------ |
+| Painel **Vence por aqui**, no topo da aba Resumo do mês | O mesmo painel, no mesmo lugar                         |
+| Cada linha leva à tela onde se resolve o vencimento     | O mesmo, com a linha inteira em 44px                   |
+| Fatura fechando, fatura vencendo e gasto fixo vencendo  | Os mesmos três tipos                                   |
+| O que venceu aparece em vermelho e não caduca           | O mesmo, com o cabeçalho virando **Tem coisa vencida** |
+| Nenhum vencimento por perto — o painel some inteiro     | O mesmo: some, não vira card dizendo que não há nada   |
+| Desligar cada tipo em Configurações → Lembretes         | O mesmo, na aba **Lembretes**                          |
 
 ## Offline e versão nova
 

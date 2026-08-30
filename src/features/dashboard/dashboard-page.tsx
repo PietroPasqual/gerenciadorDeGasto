@@ -202,7 +202,10 @@ export function DashboardPage() {
                 <p className="tabular text-lg font-semibold sm:text-xl">
                   {formatCentavos(resumo.total_investido)}
                 </p>
-                <Progress value={Math.min(resumo.percentual_investido, 100)} />
+                <Progress
+                  value={Math.min(resumo.percentual_investido, 100)}
+                  aria-label={`${resumo.percentual_investido}% do que entrou foi investido`}
+                />
                 <p className="text-xs text-muted-foreground">
                   {Number(resumo.percentual_investido).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}%
                   do que entrou

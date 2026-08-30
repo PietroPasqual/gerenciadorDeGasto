@@ -1,5 +1,5 @@
 import type { Goal, GoalContribution, ResumoMeta, WishlistItem } from '@/lib/database.types'
-import { useRecurso } from '@/lib/hooks'
+import { useConsulta } from '@/lib/cache'
 import { executarOtimista } from '@/lib/otimista'
 import { tempId } from '@/lib/utils'
 import * as metasSvc from '@/services/goals'
@@ -14,7 +14,7 @@ interface DadosMetas {
 }
 
 export function useMetas(ano: number) {
-  const recurso = useRecurso<DadosMetas>(async () => {
+  const recurso = useConsulta<DadosMetas>(['metas', ano], async () => {
     const [metas, aportes, resumo, wishlist] = await Promise.all([
       metasSvc.listarMetas(),
       metasSvc.listarAportesDoAno(ano),
@@ -22,7 +22,7 @@ export function useMetas(ano: number) {
       wishlistSvc.listarWishlist(),
     ])
     return { metas, aportes, resumo, wishlist }
-  }, [ano])
+  })
 
   const { dados, definirDados } = recurso
   const mutar = (transformar: (atual: DadosMetas) => DadosMetas) =>

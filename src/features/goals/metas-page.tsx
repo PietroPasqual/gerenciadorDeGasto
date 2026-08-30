@@ -134,7 +134,10 @@ function Wishlist({
               {progresso.percentual.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}%
             </span>
           </div>
-          <Progress value={progresso.percentual} />
+          <Progress
+            value={progresso.percentual}
+            aria-label={`Progresso da wishlist: ${Math.round(progresso.percentual)}%`}
+          />
         </div>
 
         {itens.length === 0 ? (
@@ -400,7 +403,7 @@ function GradeMetas({
                     {formatCentavos(guardadoTotal)} / {formatCentavos(alvo)}
                   </span>
                 </div>
-                <Progress value={percentual} />
+                <Progress value={percentual} aria-label={`${meta.nome}: ${Math.round(bruto)}% da meta`} />
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
                   {bruto.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}% da meta ·{' '}
                   {formatCentavos(guardadoAno)} em {ano}

@@ -1,5 +1,5 @@
 import type { Category, Goal, PaymentMethod, TipoPagamento } from '@/lib/database.types'
-import { useRecurso } from '@/lib/hooks'
+import { useConsulta } from '@/lib/cache'
 import { executarOtimista } from '@/lib/otimista'
 import { tempId } from '@/lib/utils'
 import * as formasSvc from '@/services/payment-methods'
@@ -14,14 +14,14 @@ interface DadosConfig {
 
 /** Catálogos editáveis da tela de Configurações, com update otimista. */
 export function useConfiguracoes() {
-  const recurso = useRecurso<DadosConfig>(async () => {
+  const recurso = useConsulta<DadosConfig>(['configuracoes'], async () => {
     const [formasPagamento, categorias, metas] = await Promise.all([
       formasSvc.listarFormasPagamento(true),
       categoriasSvc.listarCategorias(),
       metasSvc.listarMetas(),
     ])
     return { formasPagamento, categorias, metas }
-  }, [])
+  })
 
   const { dados, definirDados } = recurso
 

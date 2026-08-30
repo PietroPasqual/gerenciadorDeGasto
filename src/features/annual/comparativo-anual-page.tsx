@@ -22,7 +22,8 @@ import { useRegistrarAcoes } from '@/store/acoes-pagina'
 import { SeletorPeriodo } from '@/components/common/seletor-periodo'
 import { EstadoErro, EstadoVazio } from '@/components/common/estados'
 import { Cabecalho, Total } from '@/components/common/linha-planilha'
-import { useEhMobile, useRecurso } from '@/lib/hooks'
+import { useEhMobile } from '@/lib/hooks'
+import { useConsulta } from '@/lib/cache'
 import { obterComparativoAnual } from '@/services/reports'
 import { formatCentavos, formatCentavosCompacto } from '@/lib/money'
 import { ehFuturo, nomeCurtoDoMes, nomeDoMes } from '@/lib/dates'
@@ -50,9 +51,8 @@ export function ComparativoAnualPage() {
   }
 
   // Agregado calculado no banco (função SQL comparativo_anual)
-  const { dados, carregando, erro, recarregar } = useRecurso(
-    () => obterComparativoAnual(anoComparativo),
-    [anoComparativo],
+  const { dados, carregando, erro, recarregar } = useConsulta(['comparativo-anual', anoComparativo], () =>
+    obterComparativoAnual(anoComparativo),
   )
 
   // O `?? []` precisa ficar memoizado: sem isso ele cria um array novo a cada

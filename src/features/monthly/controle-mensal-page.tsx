@@ -19,6 +19,7 @@ import { PainelFaturas } from './components/painel-faturas'
 import { TabelaEntradasRecorrentes } from './components/tabela-entradas-recorrentes'
 import { FiltroLancamentos } from './components/filtro-lancamentos'
 import { SheetMovimentoMeta } from './components/sheet-movimento-meta'
+import { PainelOrcamento } from './components/painel-orcamento'
 import {
   aplicarFiltro,
   filtroDeParams,
@@ -46,9 +47,32 @@ import { agruparPorChave } from '@/lib/calculations'
 import { nomeDoMes } from '@/lib/dates'
 import { useSwipeMes, mesVizinho, type Direcao } from '@/lib/swipe-mes'
 import { useEhMobile } from '@/lib/hooks'
+import { useAuthStore } from '@/store/auth'
+import { atualizarPerfil } from '@/services/profiles'
 
 export function ControleMensalPage() {
   const { ano, mes, definirPeriodo } = usePeriodoStore()
+  const perfil = useAuthStore((s) => s.profile)
+  const definirProfile = useAuthStore((s) => s.definirProfile)
+
+  /**
+   * O teto vive no perfil, então salvá-lo não passa pelo hook do mês. O store
+   * é atualizado na hora para o bloco não piscar o valor antigo, e o servidor
+   * confirma depois — se falhar, o valor volta ao que era.
+   */
+  const definirOrcamento = async (centavos: number) => {
+    const anterior = perfil
+    if (perfil) definirProfile({ ...perfil, orcamento_centavos: centavos })
+    try {
+      const salvo = await atualizarPerfil({ orcamento_centavos: centavos })
+      definirProfile(salvo)
+    } catch (erro) {
+      if (anterior) definirProfile(anterior)
+      toast.error('Não foi possível salvar o orçamento', {
+        description: erro instanceof Error ? erro.message : undefined,
+      })
+    }
+  }
   const {
     dados,
     gastos,
@@ -394,6 +418,19 @@ export function ControleMensalPage() {
                 </SecaoMes>
                 {/* A fatura vive na aba Resumo e não na Análise: ela não é
                     análise do que passou, é dinheiro que vai sair. */}
+                <SecaoMes id="resumo" aba={aba}>
+                  <PainelOrcamento
+                    ano={ano}
+                    mes={mes}
+                    tetoCentavos={perfil?.orcamento_centavos ?? 0}
+                    // Gasto de CAIXA: o que já foi para uma fatura futura não
+                    // pesa neste mês, e contá-lo faria o app pedir para
+                    // economizar um dinheiro que ainda não precisa existir.
+                    gastoCentavos={caixa.totalSaidasCaixa}
+                    onSalvarTeto={(centavos) => void definirOrcamento(centavos)}
+                  />
+                </SecaoMes>
+
                 <SecaoMes id="resumo" aba={aba}>
                   <PainelFaturas
                     ano={ano}

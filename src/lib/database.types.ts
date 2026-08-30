@@ -17,9 +17,28 @@ export interface Database {
   public: {
     Tables: {
       profiles: {
-        Row: { id: string; nome: string; tema: TemaCor; created_at: string }
-        Insert: { id: string; nome?: string; tema?: TemaCor; created_at?: string }
-        Update: { id?: string; nome?: string; tema?: TemaCor; created_at?: string }
+        Row: {
+          id: string
+          nome: string
+          tema: TemaCor
+          created_at: string
+          /** Teto de gastos do mês. 0 = sem orçamento definido (ver 0015). */
+          orcamento_centavos: number
+        }
+        Insert: {
+          id: string
+          nome?: string
+          tema?: TemaCor
+          created_at?: string
+          orcamento_centavos?: number
+        }
+        Update: {
+          id?: string
+          nome?: string
+          tema?: TemaCor
+          created_at?: string
+          orcamento_centavos?: number
+        }
         Relationships: []
       }
       payment_methods: {

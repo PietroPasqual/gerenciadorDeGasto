@@ -85,6 +85,10 @@ vi.mock('@/services/mes', () => ({
 }))
 
 vi.mock('@/services/invoices', () => ({ definirFaturaPaga: vi.fn(async () => {}) }))
+// O store de sessão importa o cliente Supabase no topo do módulo, e ele exige
+// variáveis de ambiente. Um dublê vazio basta: a tela só lê o perfil daqui.
+vi.mock('@/lib/supabase', () => ({ supabase: {} }))
+vi.mock('@/services/profiles', () => ({ atualizarPerfil: vi.fn() }))
 vi.mock('@/services/category-rules', () => ({
   listarRegrasAprendidas: vi.fn(async () => []),
   aprenderRegra: vi.fn(async () => true),

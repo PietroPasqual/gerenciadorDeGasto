@@ -13,7 +13,11 @@ export async function obterPerfil(): Promise<Profile | null> {
   return unwrap(await supabase.from('profiles').select('*').eq('id', userId).maybeSingle())
 }
 
-export async function atualizarPerfil(mudancas: { nome?: string; tema?: TemaCor }): Promise<Profile> {
+export async function atualizarPerfil(mudancas: {
+  nome?: string
+  tema?: TemaCor
+  orcamento_centavos?: number
+}): Promise<Profile> {
   const userId = await userIdAtual()
   return unwrap(
     await supabase.from('profiles').update(mudancas).eq('id', userId).select().single(),

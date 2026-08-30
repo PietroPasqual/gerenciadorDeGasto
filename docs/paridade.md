@@ -29,38 +29,40 @@ lembrar para quem for refazê-la:
 
 ## Controle mensal
 
-| No PC                                                         | No celular                                                                                     |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Trocar de mês — setas ‹ › e combo                             | Faixa de pílulas dos 12 meses **e** swipe horizontal no conteúdo                               |
-| Trocar de ano — combo                                         | Combo no início da faixa de meses                                                              |
-| Ver os sete blocos do mês                                     | Seis abas roláveis (Resumo · Entradas · Fixos · Gastos · Investir · Análise), com a aba na URL |
-| Ver entradas/saídas/saldo — card lateral                      | Faixa fixa abaixo das abas, sempre à vista                                                     |
-| Importar CSV — botão no cabeçalho                             | Menu **⋯** do topo                                                                             |
-| Preencher em bloco (categoria + forma) — botão no cabeçalho   | Menu **⋯** do topo                                                                             |
-| Exportar CSV — botão no cabeçalho                             | Menu **⋯** do topo                                                                             |
-| Lançar gasto — linha de adição da tabela                      | Botão flutuante **+** → sheet, com o valor já em foco                                          |
-| Conferir o CSV antes de gravar — diálogo central              | A mesma conferência em sheet de baixo para cima                                                |
-| Editar gasto — células da linha                               | Tocar no card → mesma sheet                                                                    |
-| Excluir gasto — lixeira da linha (aparece no hover)           | Botão **Excluir** dentro da sheet                                                              |
-| Marcar gasto fixo como pago — caixa na linha                  | Botão "pago" no card (alvo de 44px)                                                            |
-| Desde/até quando o fixo é pago — chip embaixo do nome → sheet | O mesmo chip e a mesma sheet                                                                   |
-| Entradas, aportes por meta e aportes avulsos — linha inline   | A mesma linha em duas faixas: nome em cima, valor + ação embaixo                               |
-| Gastos por categoria e por forma de pagamento                 | Aba **Análise**                                                                                |
-| Entrada recorrente (salário) — bloco na aba Entradas          | O mesmo bloco, na aba **Entradas**                                                             |
-| Desde/até quando a entrada é recebida — chip → sheet          | O mesmo chip e a mesma sheet, com 44px de alvo                                                 |
-| Aviso de recorrente e avulsa com a mesma descrição no mês     | O mesmo aviso                                                                                  |
-| Ver "X novos · Y já existiam" antes de gravar a importação    | A mesma contagem no topo da sheet de conferência                                               |
-| Corrigir a categoria e guardar a regra — toast com "Lembrar"  | O mesmo toast, na faixa de baixo perto do polegar                                              |
-| Buscar lançamento por descrição — campo acima da tabela       | O mesmo campo, com 44px de altura                                                              |
-| Filtrar por tipo, categoria, forma e faixa de valor           | A mesma sheet, aberta pelo botão de filtros                                                    |
-| Ver "Mostrando N de M" e limpar filtros                       | O mesmo                                                                                        |
-| Filtro na URL, para o voltar desfazer a busca                 | O mesmo                                                                                        |
-| Ver as faturas que vencem no mês — cartão na aba Resumo       | O mesmo cartão, na aba **Resumo**                                                              |
-| Marcar fatura como paga — botão no cartão da fatura           | O mesmo botão, com 44px de altura                                                              |
-| Ver "Gastei" e "Sai da conta" separados                       | Os dois na faixa fixa: a faixa mostra "Sai da conta", e o cartão de Resumo mostra os dois      |
-| Lançar compra parcelada — campo "Parcelas" na linha de adição | O mesmo campo na sheet do FAB, com − e + de 44px                                               |
-| Ver "3/12" na linha do gasto                                  | A mesma etiqueta no card                                                                       |
-| Editar/excluir parcela — pergunta "só esta ou as N?"          | O mesmo diálogo, com os botões empilhados e 44px cada                                          |
+| No PC                                                            | No celular                                                                                     |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Trocar de mês — setas ‹ › e combo                                | Faixa de pílulas dos 12 meses **e** swipe horizontal no conteúdo                               |
+| Trocar de ano — combo                                            | Combo no início da faixa de meses                                                              |
+| Ver os sete blocos do mês                                        | Seis abas roláveis (Resumo · Entradas · Fixos · Gastos · Investir · Análise), com a aba na URL |
+| Ver entradas/saídas/saldo — card lateral                         | Faixa fixa abaixo das abas, sempre à vista                                                     |
+| Importar CSV — botão no cabeçalho                                | Menu **⋯** do topo                                                                             |
+| Preencher em bloco (categoria + forma) — botão no cabeçalho      | Menu **⋯** do topo                                                                             |
+| Exportar CSV — botão no cabeçalho                                | Menu **⋯** do topo                                                                             |
+| Lançar gasto — linha de adição da tabela                         | Botão flutuante **+** → sheet, com o valor já em foco                                          |
+| Conferir o CSV antes de gravar — diálogo central                 | A mesma conferência em sheet de baixo para cima                                                |
+| Editar gasto — células da linha                                  | Tocar no card → mesma sheet                                                                    |
+| Excluir gasto — lixeira da linha (aparece no hover)              | Botão **Excluir** dentro da sheet                                                              |
+| Marcar gasto fixo como pago — caixa na linha                     | Botão "pago" no card (alvo de 44px)                                                            |
+| Desde/até quando o fixo é pago — chip embaixo do nome → sheet    | O mesmo chip e a mesma sheet                                                                   |
+| Entradas, aportes por meta e aportes avulsos — linha inline      | A mesma linha em duas faixas: nome em cima, valor + ação embaixo                               |
+| Gastos por categoria e por forma de pagamento                    | Aba **Análise**                                                                                |
+| Entrada recorrente (salário) — bloco na aba Entradas             | O mesmo bloco, na aba **Entradas**                                                             |
+| Desde/até quando a entrada é recebida — chip → sheet             | O mesmo chip e a mesma sheet, com 44px de alvo                                                 |
+| Aviso de recorrente e avulsa com a mesma descrição no mês        | O mesmo aviso                                                                                  |
+| Ver "X novos · Y já existiam" antes de gravar a importação       | A mesma contagem no topo da sheet de conferência                                               |
+| Corrigir a categoria e guardar a regra — toast com "Lembrar"     | O mesmo toast, na faixa de baixo perto do polegar                                              |
+| Buscar lançamento por descrição — campo acima da tabela          | O mesmo campo, com 44px de altura                                                              |
+| Filtrar por tipo, categoria, forma e faixa de valor              | A mesma sheet, aberta pelo botão de filtros                                                    |
+| Ver "Mostrando N de M" e limpar filtros                          | O mesmo                                                                                        |
+| Filtro na URL, para o voltar desfazer a busca                    | O mesmo                                                                                        |
+| Orçamento do mês e "quanto sobra por dia" — cartão na aba Resumo | O mesmo cartão, na aba **Resumo**                                                              |
+| Definir/mudar o teto de gastos — botão no cartão                 | O mesmo botão, com 44px, abrindo a mesma sheet                                                 |
+| Ver as faturas que vencem no mês — cartão na aba Resumo          | O mesmo cartão, na aba **Resumo**                                                              |
+| Marcar fatura como paga — botão no cartão da fatura              | O mesmo botão, com 44px de altura                                                              |
+| Ver "Gastei" e "Sai da conta" separados                          | Os dois na faixa fixa: a faixa mostra "Sai da conta", e o cartão de Resumo mostra os dois      |
+| Lançar compra parcelada — campo "Parcelas" na linha de adição    | O mesmo campo na sheet do FAB, com − e + de 44px                                               |
+| Ver "3/12" na linha do gasto                                     | A mesma etiqueta no card                                                                       |
+| Editar/excluir parcela — pergunta "só esta ou as N?"             | O mesmo diálogo, com os botões empilhados e 44px cada                                          |
 
 ## Comparativo anual
 

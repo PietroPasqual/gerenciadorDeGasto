@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import type { Transaction, TipoLancamento } from '@/lib/database.types'
 import { primeiroDiaISO, ultimoDiaISO } from '@/lib/dates'
 import { montarParcelas } from '@/lib/parcelamento'
+import type { LancamentoParaAssinatura } from '@/lib/assinaturas'
 import { ErroServico, traduzErro, unwrap, userIdAtual } from './base'
 
 export async function listarLancamentos(
@@ -77,6 +78,32 @@ export async function listarLancamentosPorIntervalo(
       await supabase
         .from('transactions')
         .select('*')
+        .gte('data', inicioISO)
+        .lte('data', fimISO)
+        .order('data'),
+    ) ?? []
+  )
+}
+
+/**
+ * Só o que a detecção de assinatura precisa, na janela dela.
+ *
+ * Uma consulta própria em vez de reaproveitar `listarLancamentosPorIntervalo`
+ * porque a janela é de doze meses: com `select('*')` isso desce a descrição, o
+ * fingerprint e o created_at de milhares de linhas para responder uma pergunta
+ * que só olha oito campos. O `eq('tipo', 'gasto')` corta o resto no servidor,
+ * onde é barato.
+ */
+export async function listarParaAssinaturas(
+  inicioISO: string,
+  fimISO: string,
+): Promise<LancamentoParaAssinatura[]> {
+  return (
+    unwrap(
+      await supabase
+        .from('transactions')
+        .select('id, data, descricao, valor_centavos, tipo, category_id, payment_method_id, parcelamento_id')
+        .eq('tipo', 'gasto')
         .gte('data', inicioISO)
         .lte('data', fimISO)
         .order('data'),

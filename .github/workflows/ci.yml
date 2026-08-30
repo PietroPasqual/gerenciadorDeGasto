@@ -105,6 +105,14 @@ jobs:
       - name: Instalar o Chromium do Playwright
         run: npx playwright install --with-deps chromium
 
+      # Serviço novo sem dublê não quebra o build: o app importa a função de
+      # verdade e a spec vai falar com o Supabase. Regenerar e exigir árvore
+      # limpa é o que transforma esse silêncio num CI vermelho.
+      - name: Dublês em dia com os serviços
+        run: |
+          npm run dubles
+          git diff --exit-code e2e/dubles/
+
       - name: E2E (390px e 1280px)
         run: npm run test:e2e
 

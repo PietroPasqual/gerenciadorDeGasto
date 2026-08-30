@@ -26,6 +26,8 @@ export interface Database {
           orcamento_centavos: number
           /** Quais lembretes aparecem e com quanta antecedência (ver 0017). */
           preferencias_lembrete: Json
+          /** Chaves de destinatário dispensadas na sugestão de assinatura (ver 0018). */
+          assinaturas_ignoradas: Json
         }
         Insert: {
           id: string
@@ -34,6 +36,7 @@ export interface Database {
           created_at?: string
           orcamento_centavos?: number
           preferencias_lembrete?: Json
+          assinaturas_ignoradas?: Json
         }
         Update: {
           id?: string
@@ -42,6 +45,7 @@ export interface Database {
           created_at?: string
           orcamento_centavos?: number
           preferencias_lembrete?: Json
+          assinaturas_ignoradas?: Json
         }
         Relationships: []
       }

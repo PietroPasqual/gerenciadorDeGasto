@@ -2,6 +2,7 @@ import {
   test,
   expect,
   appCompleto,
+  assinaturasPadrao,
   escritas,
   mesPadrao,
   prepararApp,
@@ -309,5 +310,76 @@ test.describe('lembretes de vencimento', () => {
     await campo.blur()
     // Volta ao valor anterior, não a zero: zero desligaria o aviso calado.
     await expect(campo).toHaveValue('3')
+  })
+})
+
+test.describe('sugestão de assinatura', () => {
+  const comAssinatura = () => ({ ...appCompleto(), ...assinaturasPadrao() })
+
+  test('o que sai todo mês é oferecido como gasto fixo, com a vigência certa', async ({ page }) => {
+    await fixarHoje(page, '2025-08-15T10:00:00')
+    await prepararApp(page, comAssinatura())
+    await page.goto('/mes?aba=fixos')
+
+    await expect(page.getByText(/isto parece uma assinatura/i)).toBeVisible()
+    await expect(page.getByText('NETFLIX.COM')).toBeVisible()
+    await expect(page.getByText(/3 meses seguidos, sem categoria nenhuma/i)).toBeVisible()
+
+    await page.getByRole('button', { name: /virar gasto fixo/i }).click()
+
+    const gravadas = await escritas(page)
+    const criado = gravadas.find((e) => e.chave === 'fixed-expenses.criarGastoFixo')
+    expect(criado).toBeTruthy()
+    const dados = criado?.args[0] as {
+      nome: string
+      valor_centavos: number
+      dia_vencimento: number
+      inicio_ano: number
+      inicio_mes: number
+    }
+    expect(dados.nome).toBe('NETFLIX.COM')
+    expect(dados.valor_centavos).toBe(3990)
+    expect(dados.dia_vencimento).toBe(12)
+    // Junho, o primeiro mês em que apareceu — não agosto, o mês na tela.
+    expect(dados.inicio_ano).toBe(2025)
+    expect(dados.inicio_mes).toBe(6)
+  })
+
+  test('"agora não" some com a sugestão e grava a dispensa no perfil', async ({ page }) => {
+    await fixarHoje(page, '2025-08-15T10:00:00')
+    await prepararApp(page, {
+      ...comAssinatura(),
+      // O perfil que o servidor devolve depois de gravar. Sem isto a tela
+      // adotaria um perfil sem a dispensa e o cartão voltaria — que é
+      // exatamente o que a tela faria se o servidor mentisse.
+      'profiles.atualizarPerfil': {
+        id: 'u',
+        nome: 'Teste',
+        tema: 'rosa',
+        orcamento_centavos: 0,
+        preferencias_lembrete: {},
+        assinaturas_ignoradas: ['netflix com'],
+        created_at: '',
+      },
+    })
+    await page.goto('/mes?aba=fixos')
+
+    await page.getByRole('button', { name: /não sugerir NETFLIX/i }).click()
+    await expect(page.getByText(/isto parece uma assinatura/i)).toHaveCount(0)
+
+    const gravadas = await escritas(page)
+    const salva = gravadas.find((e) => e.chave === 'profiles.atualizarPerfil')
+    expect((salva?.args[0] as { assinaturas_ignoradas: string[] }).assinaturas_ignoradas).toEqual([
+      'netflix com',
+    ])
+  })
+
+  test('sem repetição não há sugestão nenhuma', async ({ page }) => {
+    await fixarHoje(page, '2025-08-15T10:00:00')
+    await prepararApp(page, appCompleto())
+    await page.goto('/mes?aba=fixos')
+
+    await expect(page.getByRole('heading', { name: /gastos fixos/i }).first()).toBeVisible()
+    await expect(page.getByText(/parece uma assinatura/i)).toHaveCount(0)
   })
 })

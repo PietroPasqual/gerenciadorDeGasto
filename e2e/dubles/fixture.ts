@@ -24,6 +24,22 @@ const EH_LEITURA = /\.(listar|obter|carregar)/
 
 export async function doFixture(chave: string, args: unknown[]): Promise<unknown> {
   const fixture = window.__FIXTURE__ ?? {}
+  const ehLeitura = EH_LEITURA.test(chave)
+
+  /**
+   * A escrita é registrada ANTES de a fixture poder ditar o retorno.
+   *
+   * Na primeira versão, fixturar o retorno de uma escrita a tirava de
+   * `__ESCRITAS__`: dava para observar a chamada OU controlar a resposta,
+   * nunca as duas. Isso quebrou um teste real — a tela grava a dispensa da
+   * sugestão de assinatura e depois adota a linha que o servidor devolve; com
+   * `{}` de resposta, a dispensa desaparecia e o cartão voltava. O defeito era
+   * do dublê, não da tela.
+   */
+  if (!ehLeitura) {
+    window.__ESCRITAS__ = window.__ESCRITAS__ ?? []
+    window.__ESCRITAS__.push({ chave, args })
+  }
 
   if (chave in fixture) {
     const valor = fixture[chave]
@@ -34,16 +50,13 @@ export async function doFixture(chave: string, args: unknown[]): Promise<unknown
     return valor
   }
 
-  if (EH_LEITURA.test(chave)) {
+  if (ehLeitura) {
     throw new Error(
       `Fixture faltando para "${chave}". Adicione-a em prepararApp() — o dublê ` +
         'não inventa dado, porque dado inventado vira bug fantasma na tela.',
     )
   }
 
-  // Escrita: registra e devolve algo inócuo.
-  window.__ESCRITAS__ = window.__ESCRITAS__ ?? []
-  window.__ESCRITAS__.push({ chave, args })
   return {}
 }
 

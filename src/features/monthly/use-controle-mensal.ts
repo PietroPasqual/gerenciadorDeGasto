@@ -128,6 +128,16 @@ export function useControleMensal(ano: number, mes: number) {
     category_id: string | null
     valor_centavos: number
     dia_vencimento: number | null
+    /**
+     * Vigência explícita, para quem já sabe desde quando o gasto existe.
+     *
+     * A sugestão de assinatura (6.2) sabe o primeiro mês em que a cobrança
+     * apareceu, e é esse que vale — datar a vigência de hoje apagaria os meses
+     * que a pessoa já pagou. O spread abaixo faz estes campos vencerem o
+     * padrão de "começa no mês aberto na tela".
+     */
+    inicio_ano?: number
+    inicio_mes?: number
   }) => {
     const provisorio: FixedExpense = {
       id: tempId(),

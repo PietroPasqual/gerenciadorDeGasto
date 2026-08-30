@@ -21,6 +21,8 @@ import { FiltroLancamentos } from './components/filtro-lancamentos'
 import { SheetMovimentoMeta } from './components/sheet-movimento-meta'
 import { PainelOrcamento } from './components/painel-orcamento'
 import { PainelLembretes } from './components/painel-lembretes'
+import { PainelAssinaturas } from './components/painel-assinaturas'
+import { useAssinaturas } from './use-assinaturas'
 import { lembretesDoMes, lerPreferencias } from '@/lib/lembretes'
 import {
   aplicarFiltro,
@@ -31,7 +33,7 @@ import {
 } from '@/lib/filtro-lancamentos'
 import { DialogoSerie } from './components/dialogo-serie'
 import { BarraMesCelular } from './components/barra-mes-celular'
-import type { Transaction } from '@/lib/database.types'
+import type { FixedExpense, Transaction } from '@/lib/database.types'
 import { usePeriodoStore } from '@/store/periodo'
 import { useControleMensal } from './use-controle-mensal'
 import { exportarMesCSV } from './exportar'
@@ -51,6 +53,8 @@ import { useSwipeMes, mesVizinho, type Direcao } from '@/lib/swipe-mes'
 import { useEhMobile } from '@/lib/hooks'
 import { useAuthStore } from '@/store/auth'
 import { atualizarPerfil } from '@/services/profiles'
+
+const SEM_FIXOS: FixedExpense[] = []
 
 export function ControleMensalPage() {
   const { ano, mes, definirPeriodo } = usePeriodoStore()
@@ -230,6 +234,13 @@ export function ControleMensalPage() {
       }),
     [ano, mes, faturas, dados?.gastosFixos, dados?.pagamentos, perfil?.preferencias_lembrete],
   )
+  /**
+   * A sugestão de assinatura lê doze meses, o que a RPC do mês não entrega.
+   * `SEM_FIXOS` é uma constante de módulo para a lista vazia não mudar de
+   * identidade a cada render e refazer a detecção à toa.
+   */
+  const { assinaturas, ignorar: ignorarAssinatura } = useAssinaturas(dados?.gastosFixos ?? SEM_FIXOS)
+
   useEffect(() => {
     if (params.get('novo') !== '1') return
     setSheetAberta(true)
@@ -501,18 +512,39 @@ export function ControleMensalPage() {
                 </SecaoMes>
 
                 <SecaoMes id="fixos" aba={aba}>
-                  <TabelaGastosFixos
-                    ano={ano}
-                    mes={mes}
-                    gastosFixos={dados.gastosFixos}
-                    pagamentos={dados.pagamentos}
-                    formasPagamento={dados.formasPagamento}
-                    categorias={dados.categorias}
-                    onAdicionar={acoes.adicionarGastoFixo}
-                    onEditar={acoes.editarGastoFixo}
-                    onRemover={acoes.removerGastoFixo}
-                    onAlternarPago={acoes.alternarPago}
-                  />
+                  <div className="space-y-4">
+                    {/* Acima da tabela porque a resposta ("virar gasto fixo") é
+                        uma linha nela. */}
+                    <PainelAssinaturas
+                      assinaturas={assinaturas}
+                      onVirarFixo={(a) =>
+                        acoes.adicionarGastoFixo({
+                          nome: a.rotulo,
+                          payment_method_id: a.formaSugerida,
+                          category_id: a.categoriaSugerida,
+                          valor_centavos: a.valorSugerido,
+                          dia_vencimento: a.diaSugerido,
+                          // O primeiro mês em que a cobrança apareceu, e não o
+                          // mês aberto na tela: a assinatura já existia.
+                          inicio_ano: a.inicioAno,
+                          inicio_mes: a.inicioMes,
+                        })
+                      }
+                      onIgnorar={ignorarAssinatura}
+                    />
+                    <TabelaGastosFixos
+                      ano={ano}
+                      mes={mes}
+                      gastosFixos={dados.gastosFixos}
+                      pagamentos={dados.pagamentos}
+                      formasPagamento={dados.formasPagamento}
+                      categorias={dados.categorias}
+                      onAdicionar={acoes.adicionarGastoFixo}
+                      onEditar={acoes.editarGastoFixo}
+                      onRemover={acoes.removerGastoFixo}
+                      onAlternarPago={acoes.alternarPago}
+                    />
+                  </div>
                 </SecaoMes>
 
                 <SecaoMes id="gastos" aba={aba}>

@@ -15,6 +15,7 @@
     "test:rls": "./scripts/pg-teste.sh && vitest run --config vitest.rls.config.ts",
     "test:rls:parar": "./scripts/pg-teste.sh parar",
     "bundle": "node scripts/orcamento-bundle.mjs",
+    "dubles": "node scripts/gerar-dubles.mjs",
     "test:e2e": "vite build --config vite.e2e.config.ts && playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

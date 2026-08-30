@@ -139,6 +139,22 @@ aviso, e o que foi marcado como pago some.
 | Nenhum vencimento por perto — o painel some inteiro     | O mesmo: some, não vira card dizendo que não há nada   |
 | Desligar cada tipo em Configurações → Lembretes         | O mesmo, na aba **Lembretes**                          |
 
+## Sugestão de assinatura
+
+Sai da aba **Fixos** do mês, acima da tabela — que é onde mora a resposta. A
+detecção olha doze meses e tem seis travas (ver `src/lib/assinaturas.ts`), todas
+inclinadas para o mesmo lado: **sugerir de menos**. Sugestão errada num app de
+dinheiro custa mais que sugestão ausente.
+
+| No PC                                                                | No celular                                                     |
+| -------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Cartão "Isto parece uma assinatura", acima dos gastos fixos          | O mesmo cartão, na aba **Fixos**                               |
+| **Virar gasto fixo** — nasce com nome, valor, dia, categoria e forma | O mesmo botão, com 44px de altura                              |
+| Vigência começa no primeiro mês em que a cobrança apareceu           | O mesmo — a vigência não depende do tamanho da tela            |
+| Aviso quando o valor oscilou ("Variou entre X e Y")                  | O mesmo                                                        |
+| **Agora não** — dispensa, e a dispensa fica no perfil                | O mesmo; dispensar no celular vale no PC, por isso não é local |
+| Nada repetido o bastante — o cartão não aparece                      | O mesmo: some, não vira card dizendo que não achou nada        |
+
 ## Offline e versão nova
 
 Ver `docs/offline.md` para o que funciona sem rede e por que gravar offline

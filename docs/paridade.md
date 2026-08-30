@@ -7,6 +7,17 @@ mas não some.
 Esta tabela é a prova disso. Cada linha diz onde a mesma coisa está nos dois
 tamanhos. **Célula vazia é bug, não decisão de design.**
 
+Cada linha desta tabela agora é **teste automático** (`e2e/paridade.spec.ts`),
+rodando em 390px e 1280px no CI. A conferência à mão que originou a tabela está
+registrada abaixo, mas quem garante que ela continua verdadeira é o `npm run
+test:e2e` — uma tabela conferida à mão apodrece na terceira feature.
+
+O E2E já pegou uma célula que era falsa: a linha de "compra parcelada" afirmava
+um campo de parcelas na linha de adição do PC, e ele nunca existiu — o campo só
+vivia na sheet, que no desktop só abria para EDITAR. Lançar uma compra parcelada
+era impossível no PC. Hoje há um botão "Lançar gasto" no cabeçalho da tabela,
+que abre a mesma sheet.
+
 Os caminhos do celular foram verificados no navegador a 390px, um a um, e não
 de memória (22 de 22). A verificação pegou dois falsos negativos que valem
 lembrar para quem for refazê-la:

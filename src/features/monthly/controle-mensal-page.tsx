@@ -506,6 +506,7 @@ export function ControleMensalPage() {
                       />
                     }
                     temFiltroAtivo={!filtroEstaVazio(filtro)}
+                    onAbrirNovo={abrirNovo}
                     formasPagamento={dados.formasPagamento}
                     categorias={dados.categorias}
                     onAdicionar={acoes.adicionarLancamento}

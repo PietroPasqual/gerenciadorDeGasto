@@ -39,7 +39,10 @@ export function TabelaGastos({
   onAbrirEdicao,
   filtro,
   temFiltroAtivo = false,
+  onAbrirNovo,
 }: {
+  /** Abre a folha de lançamento no PC — no celular esse papel é do FAB. */
+  onAbrirNovo?: () => void
   ano: number
   mes: number
   /** JÁ FILTRADOS. Os totais do mês continuam vindo da lista inteira. */
@@ -143,11 +146,31 @@ export function TabelaGastos({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle>Gastos do mês</CardTitle>
-        <CardDescription className="hidden md:block">
-          Digite na última linha e pressione Enter. Use Tab/Enter para andar entre as células.
-        </CardDescription>
-        <CardDescription className="md:hidden">Toque num gasto para editar.</CardDescription>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <CardTitle>Gastos do mês</CardTitle>
+            <CardDescription className="hidden md:block">
+              Digite na última linha e pressione Enter. Use Tab/Enter para andar entre as células.
+            </CardDescription>
+            <CardDescription className="md:hidden">Toque num gasto para editar.</CardDescription>
+          </div>
+          {/* Só no PC: no celular este caminho é o FAB, que é `sm:hidden` ao
+              contrário deste botão. Ele existe porque a linha de adição da
+              tabela não tem campo de parcelas — sem ele, lançar uma compra
+              parcelada era impossível no desktop, e a tabela de paridade
+              afirmava um caminho que não existia. O E2E desta fase é que pegou. */}
+          {onAbrirNovo && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden shrink-0 sm:inline-flex"
+              onClick={onAbrirNovo}
+            >
+              <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+              Lançar gasto
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-2">
         {filtro}

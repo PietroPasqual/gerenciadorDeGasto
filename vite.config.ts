@@ -78,9 +78,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    // A suíte de RLS precisa de um Postgres no ar e tem config própria
-    // (vitest.rls.config.ts). Fora daqui para `npm run test` continuar rodando
-    // em qualquer máquina sem preparo nenhum.
-    exclude: ['**/node_modules/**', '**/dist/**', 'src/test/rls/**'],
+    // A suíte de RLS precisa de Postgres; a de E2E é do Playwright e explode
+    // se o Vitest tentar coletá-la. Cada uma tem seu próprio comando.
+    exclude: ['**/node_modules/**', '**/dist/**', 'src/test/rls/**', 'e2e/**'],
   },
 })

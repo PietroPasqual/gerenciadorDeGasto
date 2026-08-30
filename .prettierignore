@@ -3,3 +3,6 @@ coverage
 node_modules
 src/lib/database.types.ts
 supabase/migrations
+dist-e2e
+test-results
+playwright-report

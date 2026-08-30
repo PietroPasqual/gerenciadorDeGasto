@@ -211,3 +211,58 @@ describe('ordem e segurança', () => {
     expect(ids(o)).not.toContain('limite-estourado')
   })
 })
+
+describe('a comparação com a média usa a mesma medida dos dois lados', () => {
+  /**
+   * O `total_saidas` do resumo vem de `resumo_mensal` (caixa) e a média vem de
+   * `comparativo_anual`. Enquanto o comparativo estava em competência, a frase
+   * "23% a menos que a sua média" comparava duas medidas diferentes — parecia
+   * informação e era ruído. A 0016 pôs os dois em caixa.
+   *
+   * Este teste não consegue checar o SQL, mas trava o contrato: com o mês igual
+   * à média dos outros, nenhuma observação de comparação pode aparecer.
+   */
+  const base = {
+    categorias: [],
+    mes: 8,
+    ano: 2025,
+  }
+
+  it('mês igual à média não gera observação de comparação', () => {
+    const obs = observacoesDoMes({
+      ...base,
+      resumo: {
+        total_entradas: 500_000,
+        total_saidas: 200_000,
+        saldo: 300_000,
+        total_investido: 0,
+      },
+      meses: [
+        { mes: 6, entradas: 500_000, saidas: 200_000 },
+        { mes: 7, entradas: 500_000, saidas: 200_000 },
+        { mes: 8, entradas: 500_000, saidas: 200_000 },
+      ],
+    })
+    expect(obs.find((o) => o.id === 'contra-media')).toBeUndefined()
+  })
+
+  it('diferença real de 50% aparece, e no tom certo', () => {
+    const obs = observacoesDoMes({
+      ...base,
+      resumo: {
+        total_entradas: 500_000,
+        total_saidas: 300_000,
+        saldo: 200_000,
+        total_investido: 0,
+      },
+      meses: [
+        { mes: 6, entradas: 500_000, saidas: 200_000 },
+        { mes: 7, entradas: 500_000, saidas: 200_000 },
+      ],
+    })
+    const media = obs.find((o) => o.id === 'contra-media')
+    expect(media).toBeDefined()
+    expect(media?.tom).toBe('atencao')
+    expect(media?.destaque).toBe('50% a mais')
+  })
+})

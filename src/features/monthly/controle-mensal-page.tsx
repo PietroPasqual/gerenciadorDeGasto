@@ -472,7 +472,15 @@ export function ControleMensalPage() {
                     formasPagamento={dados.formasPagamento}
                     categorias={dados.categorias}
                     onAdicionar={acoes.adicionarLancamento}
-                    onEditar={acoes.editarLancamento}
+                    onEditar={(id, mudancas) => {
+                      void acoes.editarLancamento(id, mudancas)
+                      // Só a troca de CATEGORIA ensina: mudar valor ou data não
+                      // diz nada sobre onde o gasto se encaixa.
+                      if ('category_id' in mudancas) {
+                        const gasto = gastos.find((g) => g.id === id)
+                        if (gasto) acoes.oferecerAprendizado(gasto, mudancas.category_id ?? null)
+                      }
+                    }}
                     onRemover={pedirExclusao}
                     onAbrirEdicao={pedirEdicao}
                   />

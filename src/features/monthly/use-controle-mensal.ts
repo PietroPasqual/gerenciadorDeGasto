@@ -24,6 +24,8 @@ import * as fixosSvc from '@/services/fixed-expenses'
 import * as lancamentosSvc from '@/services/transactions'
 import * as investimentosSvc from '@/services/investments'
 import * as recorrentesSvc from '@/services/recurring-incomes'
+import * as regrasSvc from '@/services/category-rules'
+import { alcanceDaRegra, podeVirarRegra, termoDaDescricao } from '@/lib/regras-aprendidas'
 
 export interface DadosMes {
   formasPagamento: PaymentMethod[]
@@ -315,6 +317,47 @@ export function useControleMensal(ano: number, mes: number) {
       confirmar: (salvo) =>
         mutar((d) => ({ ...d, lancamentos: d.lancamentos.map((l) => (l.id === provisorio.id ? salvo : l)) })),
       mensagemErro: 'Não foi possível adicionar o lançamento',
+    })
+  }
+
+  /**
+   * Corrigir a categoria de um gasto oferece ensinar a regra.
+   *
+   * O toast é a superfície certa: perguntar antes de salvar transformaria uma
+   * correção de um clique em duas decisões, e a maioria das correções não vira
+   * regra (um gasto avulso não se repete). Aqui a correção acontece na hora e o
+   * "lembrar disso" fica disponível por alguns segundos, sem exigir nada.
+   *
+   * Só aparece quando a descrição PODE virar regra: chave curta ou genérica
+   * classificaria meio extrato errado de uma vez.
+   */
+  const oferecerAprendizado = (gasto: Transaction, category_id: string | null) => {
+    if (!category_id || !podeVirarRegra(gasto.descricao)) return
+    const termo = termoDaDescricao(gasto.descricao)
+    const alcance = alcanceDaRegra(
+      termo,
+      (dados?.lancamentos ?? []).filter((l) => l.id !== gasto.id).map((l) => l.descricao),
+    )
+    toast('Categoria alterada', {
+      description:
+        alcance > 0
+          ? `Lembrar disso vale também para outros ${alcance} deste mês.`
+          : 'Posso lembrar disso na próxima importação.',
+      action: {
+        label: 'Lembrar',
+        onClick: () => {
+          void regrasSvc
+            .aprenderRegra(gasto.descricao, category_id)
+            .then((guardou) => {
+              if (guardou) toast.success('Combinado — vou usar isso na próxima importação')
+            })
+            .catch(() =>
+              toast.error('Não foi possível guardar a regra', {
+                description: 'A categoria do lançamento continua alterada.',
+              }),
+            )
+        },
+      },
     })
   }
 
@@ -620,6 +663,7 @@ export function useControleMensal(ano: number, mes: number) {
       adicionarEntradaRecorrente,
       editarEntradaRecorrente,
       removerEntradaRecorrente,
+      oferecerAprendizado,
       resgatarDeMeta,
       transferirEntreMetas,
       alternarFaturaPaga,

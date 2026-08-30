@@ -85,6 +85,11 @@ vi.mock('@/services/mes', () => ({
 }))
 
 vi.mock('@/services/invoices', () => ({ definirFaturaPaga: vi.fn(async () => {}) }))
+vi.mock('@/services/category-rules', () => ({
+  listarRegrasAprendidas: vi.fn(async () => []),
+  aprenderRegra: vi.fn(async () => true),
+  esquecerRegra: vi.fn(),
+}))
 vi.mock('@/services/recurring-incomes', () => ({
   criarEntradaRecorrente: vi.fn(),
   atualizarEntradaRecorrente: vi.fn(),

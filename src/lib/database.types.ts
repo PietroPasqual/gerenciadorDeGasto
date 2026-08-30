@@ -238,6 +238,27 @@ export interface Database {
         }
         Relationships: []
       }
+      category_rules: {
+        Row: {
+          id: string
+          user_id: string
+          /** Chave do destinatário, já normalizada (ver src/lib/regras-aprendidas.ts). */
+          termo: string
+          category_id: string
+          exemplo: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          termo: string
+          category_id: string
+          exemplo?: string
+          created_at?: string
+        }
+        Update: { termo?: string; category_id?: string; exemplo?: string }
+        Relationships: []
+      }
       recurring_incomes: {
         Row: {
           id: string

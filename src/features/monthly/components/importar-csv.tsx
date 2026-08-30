@@ -27,6 +27,8 @@ import {
   type ResultadoImportacao,
 } from '@/services/transactions'
 import { impressoesDigitais } from '@/lib/impressao-digital'
+import { listarRegrasAprendidas } from '@/services/category-rules'
+import type { RegraAprendida } from '@/lib/regras-aprendidas'
 import type { Category, PaymentMethod } from '@/lib/database.types'
 
 const SEM_COLUNA = '__nenhuma__'
@@ -97,6 +99,18 @@ export function ImportarCSV({
   const [regraSugerida, setRegraSugerida] = React.useState<RegraSinal>('pelo-sinal')
   const [trazerJaExistentes, setTrazerJaExistentes] = React.useState(false)
   const [autoCategorizar, setAutoCategorizar] = React.useState(true)
+  // As regras que o usuário ensinou. Carregadas ao abrir: elas mudam a sugestão
+  // de cada linha, então precisam chegar antes da prévia ser montada.
+  const [regrasAprendidas, setRegrasAprendidas] = React.useState<RegraAprendida[]>([])
+
+  React.useEffect(() => {
+    if (!aberto) return
+    listarRegrasAprendidas()
+      .then(setRegrasAprendidas)
+      // Falhar aqui não pode impedir a importação: sem as regras aprendidas as
+      // fixas ainda funcionam, e o usuário corrige na tela como sempre corrigiu.
+      .catch(() => setRegrasAprendidas([]))
+  }, [aberto])
   const [erroLeitura, setErroLeitura] = React.useState('')
   const [existentes, setExistentes] = React.useState<Existente[] | null>(null)
   const [gravando, setGravando] = React.useState(false)
@@ -156,8 +170,9 @@ export function ImportarCSV({
       formas,
       existentes: existentes ?? [],
       autoCategorizar,
+      regrasAprendidas,
     })
-  }, [arquivo, mapa, regraSinal, categorias, formas, existentes, autoCategorizar])
+  }, [arquivo, mapa, regraSinal, categorias, formas, existentes, autoCategorizar, regrasAprendidas])
 
   React.useEffect(() => {
     if (!previa || previa.prontos.length === 0 || existentes !== null) return

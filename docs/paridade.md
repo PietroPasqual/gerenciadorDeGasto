@@ -50,6 +50,7 @@ lembrar para quem for refazê-la:
 | Desde/até quando a entrada é recebida — chip → sheet          | O mesmo chip e a mesma sheet, com 44px de alvo                                                 |
 | Aviso de recorrente e avulsa com a mesma descrição no mês     | O mesmo aviso                                                                                  |
 | Ver "X novos · Y já existiam" antes de gravar a importação    | A mesma contagem no topo da sheet de conferência                                               |
+| Corrigir a categoria e guardar a regra — toast com "Lembrar"  | O mesmo toast, na faixa de baixo perto do polegar                                              |
 | Buscar lançamento por descrição — campo acima da tabela       | O mesmo campo, com 44px de altura                                                              |
 | Filtrar por tipo, categoria, forma e faixa de valor           | A mesma sheet, aberta pelo botão de filtros                                                    |
 | Ver "Mostrando N de M" e limpar filtros                       | O mesmo                                                                                        |

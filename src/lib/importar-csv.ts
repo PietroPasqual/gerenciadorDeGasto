@@ -7,7 +7,7 @@
  */
 
 import { parseParaCentavos } from './money'
-import { sugerirCategoria } from './categorizar'
+import { sugerirCategoriaComAprendizado, type RegraAprendida } from './regras-aprendidas'
 import type { TipoLancamento } from './database.types'
 
 /** Tira acento e caixa, para comparar nome de categoria com o do arquivo. */
@@ -444,6 +444,7 @@ export function prepararImportacao({
   existentes,
   ordemData,
   autoCategorizar = false,
+  regrasAprendidas = [],
 }: {
   arquivo: ArquivoCSV
   mapa: Mapa
@@ -459,6 +460,11 @@ export function prepararImportacao({
    * entra inteiro sem classificar.
    */
   autoCategorizar?: boolean
+  /**
+   * As regras que o usuário ensinou corrigindo sugestões. Vêm antes das fixas:
+   * ele corrigiu de propósito, e o código não tem por que discordar depois.
+   */
+  regrasAprendidas?: RegraAprendida[]
 }): Resultado {
   const colunaData = mapa.data
   const ordem =
@@ -557,7 +563,7 @@ export function prepararImportacao({
       // existe ou não casa com nenhuma categoria do usuário.
       category_id:
         mapaCategorias.get(normalizar(pegar(mapa.categoria))) ??
-        (autoCategorizar ? sugerirCategoria(descricao, categorias) : null),
+        (autoCategorizar ? sugerirCategoriaComAprendizado(descricao, categorias, regrasAprendidas) : null),
       payment_method_id: mapaFormas.get(normalizar(pegar(mapa.forma))) ?? null,
       jaNoBanco,
       repetidoNoArquivo,

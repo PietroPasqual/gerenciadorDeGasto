@@ -50,6 +50,10 @@ lembrar para quem for refazê-la:
 | Desde/até quando a entrada é recebida — chip → sheet          | O mesmo chip e a mesma sheet, com 44px de alvo                                                 |
 | Aviso de recorrente e avulsa com a mesma descrição no mês     | O mesmo aviso                                                                                  |
 | Ver "X novos · Y já existiam" antes de gravar a importação    | A mesma contagem no topo da sheet de conferência                                               |
+| Buscar lançamento por descrição — campo acima da tabela       | O mesmo campo, com 44px de altura                                                              |
+| Filtrar por tipo, categoria, forma e faixa de valor           | A mesma sheet, aberta pelo botão de filtros                                                    |
+| Ver "Mostrando N de M" e limpar filtros                       | O mesmo                                                                                        |
+| Filtro na URL, para o voltar desfazer a busca                 | O mesmo                                                                                        |
 | Ver as faturas que vencem no mês — cartão na aba Resumo       | O mesmo cartão, na aba **Resumo**                                                              |
 | Marcar fatura como paga — botão no cartão da fatura           | O mesmo botão, com 44px de altura                                                              |
 | Ver "Gastei" e "Sai da conta" separados                       | Os dois na faixa fixa: a faixa mostra "Sai da conta", e o cartão de Resumo mostra os dois      |

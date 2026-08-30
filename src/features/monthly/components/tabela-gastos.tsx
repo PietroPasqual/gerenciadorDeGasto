@@ -9,6 +9,7 @@ import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { SelectSimples } from '@/components/common/select-simples'
 import { EstadoVazio } from '@/components/common/estados'
+import { LIMITE_VIRTUALIZACAO, ListaVirtual } from '@/components/common/lista-virtual'
 import { formatCentavos } from '@/lib/money'
 import { formatDataISO } from '@/lib/dates'
 import { totalDeItens } from '@/lib/calculations'
@@ -36,9 +37,12 @@ export function TabelaGastos({
   onEditar,
   onRemover,
   onAbrirEdicao,
+  filtro,
+  temFiltroAtivo = false,
 }: {
   ano: number
   mes: number
+  /** JÁ FILTRADOS. Os totais do mês continuam vindo da lista inteira. */
   gastos: Transaction[]
   formasPagamento: PaymentMethod[]
   categorias: Category[]
@@ -58,6 +62,10 @@ export function TabelaGastos({
   onRemover: (gasto: Transaction) => void
   /** Só no celular: tocar no card abre a sheet de edição (M4). */
   onAbrirEdicao?: (gasto: Transaction) => void
+  /** O bloco de busca e filtro, montado pela página. */
+  filtro?: React.ReactNode
+  /** Muda o estado vazio: "nada encontrado" não é "nada lançado". */
+  temFiltroAtivo?: boolean
 }) {
   const [descricao, setDescricao] = useState('')
   const [data, setData] = useState(() => dataPadrao(ano, mes))
@@ -80,6 +88,58 @@ export function TabelaGastos({
     // forma/categoria/data continuam preenchidas: lançar vários seguidos é o caso comum
   }
 
+  /**
+   * O card do celular, extraído para servir aos dois caminhos: a lista comum e
+   * a virtualizada. Duplicar o markup significaria corrigir bugs duas vezes, e
+   * o de cima só apareceria com mais de 200 lançamentos — ou seja, tarde.
+   */
+  const cardDoGasto = (gasto: Transaction) => {
+    const categoria = categorias.find((c) => c.id === gasto.category_id)
+    const forma = formasPagamento.find((f) => f.id === gasto.payment_method_id)
+    return (
+      <button
+        type="button"
+        onClick={() => onAbrirEdicao?.(gasto)}
+        className="flex w-full flex-col gap-1 rounded-xl border border-border px-3 py-2.5 text-left transition-colors active:bg-accent/60"
+      >
+        <span className="flex items-baseline justify-between gap-3">
+          <span className="min-w-0 flex-1 truncate text-corpo font-medium">{gasto.descricao}</span>
+          <span className="tabular shrink-0 text-corpo font-semibold">
+            {formatCentavos(gasto.valor_centavos)}
+          </span>
+        </span>
+        <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+          <span className="tabular">{formatDataISO(gasto.data)}</span>
+          {gasto.parcelas_total !== null && gasto.parcela !== null && (
+            <>
+              <span aria-hidden>·</span>
+              <EtiquetaParcela parcela={gasto.parcela} total={gasto.parcelas_total} />
+            </>
+          )}
+          {forma && (
+            <>
+              <span aria-hidden>·</span>
+              <span>{forma.nome}</span>
+            </>
+          )}
+          {categoria && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="flex items-center gap-1">
+                <span
+                  aria-hidden
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: categoria.cor }}
+                />
+                {categoria.nome}
+              </span>
+            </>
+          )}
+        </span>
+      </button>
+    )
+  }
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -90,18 +150,31 @@ export function TabelaGastos({
         <CardDescription className="md:hidden">Toque num gasto para editar.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
+        {filtro}
+
         {gastos.length === 0 ? (
-          <EstadoVazio
-            titulo="Nenhum gasto lançado"
-            descricao={
-              // No celular a linha de adição não existe (é o FAB), então a
-              // frase antiga mandava a pessoa procurar algo que não está lá.
-              <>
-                <span className="md:hidden">Toque no + para lançar o primeiro gasto.</span>
-                <span className="hidden md:inline">Comece pelo primeiro gasto do mês na linha abaixo.</span>
-              </>
-            }
-          />
+          temFiltroAtivo ? (
+            // Nada ENCONTRADO é diferente de nada LANÇADO: mandar a pessoa
+            // lançar o primeiro gasto quando ela tem 300 e só filtrou errado
+            // é dizer que os gastos sumiram.
+            <EstadoVazio
+              titulo="Nenhum lançamento com esses filtros"
+              descricao="Tente uma busca mais curta, ou limpe os filtros para ver o mês inteiro."
+              ilustracao="lista"
+            />
+          ) : (
+            <EstadoVazio
+              titulo="Nenhum gasto lançado"
+              descricao={
+                // No celular a linha de adição não existe (é o FAB), então a
+                // frase antiga mandava a pessoa procurar algo que não está lá.
+                <>
+                  <span className="md:hidden">Toque no + para lançar o primeiro gasto.</span>
+                  <span className="hidden md:inline">Comece pelo primeiro gasto do mês na linha abaixo.</span>
+                </>
+              }
+            />
+          )
         ) : (
           <>
             {/* CELULAR: card em modo leitura. Editar seis campos minúsculos
@@ -109,58 +182,20 @@ export function TabelaGastos({
                 aqui o card só mostra, e tocar abre a sheet (mesma do FAB),
                 onde os campos têm tamanho de dedo. Inline segue valendo de
                 md para cima. */}
-            <ul className="space-y-2 md:hidden">
-              {gastos.map((gasto) => {
-                const categoria = categorias.find((c) => c.id === gasto.category_id)
-                const forma = formasPagamento.find((f) => f.id === gasto.payment_method_id)
-                return (
-                  <li key={gasto.id}>
-                    <button
-                      type="button"
-                      onClick={() => onAbrirEdicao?.(gasto)}
-                      className="flex w-full flex-col gap-1 rounded-xl border border-border px-3 py-2.5 text-left transition-colors active:bg-accent/60"
-                    >
-                      <span className="flex items-baseline justify-between gap-3">
-                        <span className="min-w-0 flex-1 truncate text-corpo font-medium">
-                          {gasto.descricao}
-                        </span>
-                        <span className="tabular shrink-0 text-corpo font-semibold">
-                          {formatCentavos(gasto.valor_centavos)}
-                        </span>
-                      </span>
-                      <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
-                        <span className="tabular">{formatDataISO(gasto.data)}</span>
-                        {gasto.parcelas_total !== null && gasto.parcela !== null && (
-                          <>
-                            <span aria-hidden>·</span>
-                            <EtiquetaParcela parcela={gasto.parcela} total={gasto.parcelas_total} />
-                          </>
-                        )}
-                        {forma && (
-                          <>
-                            <span aria-hidden>·</span>
-                            <span>{forma.nome}</span>
-                          </>
-                        )}
-                        {categoria && (
-                          <>
-                            <span aria-hidden>·</span>
-                            <span className="flex items-center gap-1">
-                              <span
-                                aria-hidden
-                                className="h-2 w-2 shrink-0 rounded-full"
-                                style={{ backgroundColor: categoria.cor }}
-                              />
-                              {categoria.nome}
-                            </span>
-                          </>
-                        )}
-                      </span>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
+            {/* Acima de algumas centenas de linhas o DOM inteiro trava a
+                rolagem no celular; abaixo disso virtualizar só atrapalharia
+                (quebra o Ctrl+F e a navegação por Tab). */}
+            {gastos.length > LIMITE_VIRTUALIZACAO ? (
+              <ListaVirtual className="md:hidden" itens={gastos} alturaEstimada={76} chave={(g) => g.id}>
+                {(gasto) => <div className="pb-2">{cardDoGasto(gasto)}</div>}
+              </ListaVirtual>
+            ) : (
+              <ul className="space-y-2 md:hidden">
+                {gastos.map((gasto) => (
+                  <li key={gasto.id}>{cardDoGasto(gasto)}</li>
+                ))}
+              </ul>
+            )}
 
             <GradeEditavel className="space-y-2 md:space-y-0">
               <Cabecalho template={TEMPLATE}>

@@ -17,6 +17,14 @@ import { SheetGasto, type DadosGasto } from './components/sheet-gasto'
 import { SecaoMes, useAbaMes } from './components/abas-mes'
 import { PainelFaturas } from './components/painel-faturas'
 import { TabelaEntradasRecorrentes } from './components/tabela-entradas-recorrentes'
+import { FiltroLancamentos } from './components/filtro-lancamentos'
+import {
+  aplicarFiltro,
+  filtroDeParams,
+  filtroEstaVazio,
+  filtroParaParams,
+  type Filtro,
+} from '@/lib/filtro-lancamentos'
 import { DialogoSerie } from './components/dialogo-serie'
 import { BarraMesCelular } from './components/barra-mes-celular'
 import type { Transaction } from '@/lib/database.types'
@@ -161,6 +169,22 @@ export function ControleMensalPage() {
    * O parâmetro é consumido na hora para o botão voltar não reabrir a folha.
    */
   const [params, setParams] = useSearchParams()
+
+  /**
+   * O filtro vive na URL: o botão voltar desfaz a busca em vez de sair da tela,
+   * e um link leva alguém direto ao mesmo recorte. `replace` para o histórico
+   * não guardar uma entrada por tecla digitada.
+   */
+  const filtro = useMemo(() => filtroDeParams(params), [params])
+  const definirFiltro = (novo: Filtro) =>
+    setParams((atuais) => filtroParaParams(novo, new URLSearchParams(atuais)), { replace: true })
+
+  /**
+   * Só a LISTA é filtrada; os totais do mês continuam sendo do mês inteiro.
+   * Um filtro que mudasse o saldo faria a pessoa achar que perdeu dinheiro ao
+   * digitar no campo de busca.
+   */
+  const gastosFiltrados = useMemo(() => aplicarFiltro(gastos, filtro), [gastos, filtro])
   useEffect(() => {
     if (params.get('novo') !== '1') return
     setSheetAberta(true)
@@ -431,7 +455,18 @@ export function ControleMensalPage() {
                   <TabelaGastos
                     ano={ano}
                     mes={mes}
-                    gastos={gastos}
+                    gastos={gastosFiltrados}
+                    filtro={
+                      <FiltroLancamentos
+                        filtro={filtro}
+                        onMudar={definirFiltro}
+                        categorias={dados.categorias}
+                        formasPagamento={dados.formasPagamento}
+                        totalFiltrado={gastosFiltrados.length}
+                        totalGeral={gastos.length}
+                      />
+                    }
+                    temFiltroAtivo={!filtroEstaVazio(filtro)}
                     formasPagamento={dados.formasPagamento}
                     categorias={dados.categorias}
                     onAdicionar={acoes.adicionarLancamento}

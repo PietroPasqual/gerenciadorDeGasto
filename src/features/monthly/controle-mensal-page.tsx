@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Download, Upload, Wand2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -152,6 +153,26 @@ export function ControleMensalPage() {
 
   const [serie, setSerie] = useState<{ acao: 'excluir' | 'editar'; gasto: Transaction } | null>(null)
   const [editandoSerie, setEditandoSerie] = useState<Transaction | null>(null)
+
+  /**
+   * `?novo=1` abre a folha de lançamento direto — é o atalho "Lançar gasto" da
+   * tela inicial (shortcuts do manifest), o caminho mais curto do app inteiro.
+   * O parâmetro é consumido na hora para o botão voltar não reabrir a folha.
+   */
+  const [params, setParams] = useSearchParams()
+  useEffect(() => {
+    if (params.get('novo') !== '1') return
+    setSheetAberta(true)
+    setGastoEditando(null)
+    setParams(
+      (atuais) => {
+        const proximos = new URLSearchParams(atuais)
+        proximos.delete('novo')
+        return proximos
+      },
+      { replace: true },
+    )
+  }, [params, setParams])
 
   const abrirNovo = () => {
     setGastoEditando(null)

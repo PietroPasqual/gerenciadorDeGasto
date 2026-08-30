@@ -89,7 +89,9 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['"Fraunces"', '"Playfair Display"', 'Georgia', 'serif'],
+        // 'Fraunces Variable' é o nome que o @fontsource dá à versão variável;
+        // 'Fraunces' fica logo atrás para quem já tiver a estática instalada.
+        display: ['"Fraunces Variable"', '"Fraunces"', '"Playfair Display"', 'Georgia', 'serif'],
       },
       keyframes: {
         'fade-up': {

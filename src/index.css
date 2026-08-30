@@ -1,4 +1,20 @@
 /* O @import precisa vir antes de qualquer outra regra (inclusive @tailwind). */
+
+/* Fontes hospedadas AQUI, e não no Google.
+   Vindo por <link> externo elas bloqueavam o primeiro render (o navegador
+   precisa buscar o CSS num outro domínio antes de pintar texto) e o app não
+   abria offline com a tipografia certa. Servidas do mesmo domínio, entram no
+   cache do service worker junto com o resto da casca.
+   Só o subconjunto latino: pt-BR não usa cirílico nem grego, e cada
+   subconjunto a mais é um arquivo a mais para o navegador considerar. */
+@import '@fontsource/inter/latin-400.css';
+@import '@fontsource/inter/latin-500.css';
+@import '@fontsource/inter/latin-600.css';
+/* A Fraunces variável cobre 100–900 num arquivo só — mais leve do que os três
+   pesos estáticos que o app usa. `opsz` é o eixo de tamanho óptico, que é o que
+   dá a ela o desenho certo em número grande. */
+@import '@fontsource-variable/fraunces/opsz.css';
+
 @import './styles/themes.css';
 
 @tailwind base;

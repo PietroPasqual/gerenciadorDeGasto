@@ -386,6 +386,11 @@ export interface Database {
           gasto_centavos: number
         }[]
       }
+      carregar_mes: {
+        Args: { p_ano: number; p_mes: number }
+        /** JSON com as dez listas da tela do mês — ver src/services/mes.ts. */
+        Returns: Json
+      }
       faturas_do_mes: {
         Args: { p_ano: number; p_mes: number }
         Returns: {

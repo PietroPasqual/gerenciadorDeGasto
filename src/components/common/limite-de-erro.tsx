@@ -2,6 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { reportarErro } from '@/lib/monitoramento'
 
 interface Props {
   children: ReactNode
@@ -36,6 +37,9 @@ export class LimiteDeErro extends Component<Props, Estado> {
 
   componentDidCatch(erro: Error, info: ErrorInfo) {
     console.error('[finZ] erro de render não tratado:', erro, info.componentStack)
+    // Em produção, com DSN configurado, o erro também vai para o
+    // monitoramento — senão ele existe só no console de quem quebrou.
+    reportarErro(erro, { rota: this.props.chave ?? 'desconhecida' })
   }
 
   componentDidUpdate(anterior: Props) {

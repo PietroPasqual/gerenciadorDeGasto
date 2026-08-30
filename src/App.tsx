@@ -5,6 +5,7 @@ import { Toaster } from 'sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { LayoutApp } from '@/components/layout/layout-app'
 import { LimiteDeErro } from '@/components/common/limite-de-erro'
+import { AvisoNovaVersao } from '@/components/common/aviso-nova-versao'
 import { RotaProtegida } from '@/features/auth/rota-protegida'
 import { LandingPage } from '@/features/landing/landing-page'
 import { LoginPage } from '@/features/auth/login-page'
@@ -80,6 +81,8 @@ export default function App() {
 
           {/* No celular o toast vai para baixo, perto do polegar — mas acima da
           barra de navegação, senão ele cobriria as abas. */}
+          <AvisoNovaVersao />
+
           <Toaster
             position={ehMobile ? 'bottom-center' : 'top-right'}
             offset={ehMobile ? 88 : 16}

@@ -11,13 +11,12 @@ import type {
   PaymentMethod,
   Transaction,
 } from '@/lib/database.types'
-import { useRecurso } from '@/lib/hooks'
+import { useConsulta } from '@/lib/cache'
 import { executarOtimista } from '@/lib/otimista'
 import { tempId } from '@/lib/utils'
 import { calcularCaixaDoMes, calcularResumoMensal, estaVigente } from '@/lib/calculations'
-import { definirFaturaPaga, listarFaturasDoMes, type FaturaDoMes } from '@/services/invoices'
-import { listarCategorias } from '@/services/categories'
-import { listarFormasPagamento } from '@/services/payment-methods'
+import { definirFaturaPaga, type FaturaDoMes } from '@/services/invoices'
+import { carregarMes } from '@/services/mes'
 import * as metasSvc from '@/services/goals'
 import * as entradasSvc from '@/services/incomes'
 import * as fixosSvc from '@/services/fixed-expenses'
@@ -48,43 +47,7 @@ export interface DadosMes {
  * NÃO carregam as linhas (painel, comparativo anual, metas).
  */
 export function useControleMensal(ano: number, mes: number) {
-  const recurso = useRecurso<DadosMes>(async () => {
-    const [
-      formasPagamento,
-      categorias,
-      metas,
-      entradas,
-      gastosFixos,
-      pagamentos,
-      lancamentos,
-      investimentos,
-      aportes,
-      faturas,
-    ] = await Promise.all([
-      listarFormasPagamento(),
-      listarCategorias(),
-      metasSvc.listarMetas(),
-      entradasSvc.listarEntradas(ano, mes),
-      fixosSvc.listarGastosFixos(),
-      fixosSvc.listarPagamentosDoMes(ano, mes),
-      lancamentosSvc.listarLancamentos(ano, mes),
-      investimentosSvc.listarInvestimentos(ano, mes),
-      metasSvc.listarAportesDoMes(ano, mes),
-      listarFaturasDoMes(ano, mes),
-    ])
-    return {
-      formasPagamento,
-      categorias,
-      metas,
-      entradas,
-      gastosFixos,
-      pagamentos,
-      lancamentos,
-      investimentos: investimentos.filter((i) => i.goal_id === null),
-      aportes,
-      faturas,
-    }
-  }, [ano, mes])
+  const recurso = useConsulta<DadosMes>(['mes', ano, mes], () => carregarMes(ano, mes))
 
   const dados = recurso.dados
   const { definirDados } = recurso

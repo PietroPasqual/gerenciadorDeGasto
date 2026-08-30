@@ -30,12 +30,9 @@
          tema, que reescreve este content ao aplicar (src/store/tema.ts). -->
     <meta id="theme-color" name="theme-color" content="#FEFBFB" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <!-- As fontes agora vêm do próprio domínio, via @fontsource em
+         src/index.css. Buscá-las no Google bloqueava o primeiro render e
+         deixava o app sem tipografia offline. -->
   </head>
   <body>
     <div id="root"></div>

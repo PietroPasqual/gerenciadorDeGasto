@@ -20,7 +20,7 @@ import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
 import { NumeroAnimado } from '@/components/common/numero-animado'
 import { EstadoErro } from '@/components/common/estados'
 import { Donut } from '@/components/common/donut'
-import { useRecurso } from '@/lib/hooks'
+import { useConsulta } from '@/lib/cache'
 import { obterResumoMensal, obterGastosPorCategoria, obterComparativoAnual } from '@/services/reports'
 import { nomeDoMes, periodoAtual } from '@/lib/dates'
 import { formatCentavos } from '@/lib/money'
@@ -69,18 +69,20 @@ export function DashboardPage() {
     carregando,
     erro,
     recarregar,
-  } = useRecurso(() => obterResumoMensal(hoje.ano, hoje.mes), [hoje.ano, hoje.mes])
+  } = useConsulta(['resumo-mensal', hoje.ano, hoje.mes], () => obterResumoMensal(hoje.ano, hoje.mes))
 
   const {
     dados: gastosCategoria,
     carregando: carregandoCategorias,
     erro: erroCategorias,
     recarregar: recarregarCategorias,
-  } = useRecurso(() => obterGastosPorCategoria(hoje.ano, hoje.mes), [hoje.ano, hoje.mes])
+  } = useConsulta(['gastos-por-categoria', hoje.ano, hoje.mes], () =>
+    obterGastosPorCategoria(hoje.ano, hoje.mes),
+  )
 
   // O ano inteiro serve só para comparar o mês com a SUA média — é a mesma
   // função que o comparativo usa, então não é consulta nova para o banco.
-  const { dados: meses } = useRecurso(() => obterComparativoAnual(hoje.ano), [hoje.ano])
+  const { dados: meses } = useConsulta(['comparativo-anual', hoje.ano], () => obterComparativoAnual(hoje.ano))
 
   const observacoes = useMemo(
     () =>

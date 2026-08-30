@@ -29,5 +29,43 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Lançar gasto",
+      "short_name": "Gasto",
+      "description": "Abre direto a folha de novo gasto, com o valor em foco.",
+      "url": "/mes?aba=gastos&novo=1",
+      "icons": [
+        {
+          "src": "/icone-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Ver o mês",
+      "short_name": "Mês",
+      "description": "Abre o controle do mês corrente.",
+      "url": "/mes",
+      "icons": [
+        {
+          "src": "/icone-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Metas",
+      "short_name": "Metas",
+      "description": "Abre as metas e o quanto falta em cada uma.",
+      "url": "/metas",
+      "icons": [
+        {
+          "src": "/icone-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }

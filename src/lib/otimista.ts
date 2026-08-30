@@ -10,6 +10,26 @@ import { toast } from 'sonner'
 const versaoPorChave = new Map<string, number>()
 
 /**
+ * Quem quer saber que uma escrita deu certo.
+ *
+ * Existe para o cache de leitura (src/lib/cache.tsx) poder invalidar o que
+ * ficou velho sem que cada uma das dezenas de chamadas de `executarOtimista`
+ * precise lembrar de avisar. Toda escrita do app passa por aqui, então este é
+ * o único lugar onde a notificação não pode ser esquecida.
+ *
+ * Dispara só no SUCESSO: uma escrita que falhou já foi desfeita pelo rollback,
+ * e invalidar ali faria a tela buscar de novo o mesmo dado que ela acabou de
+ * restaurar — piscando sem motivo.
+ */
+type Ouvinte = () => void
+const ouvintes = new Set<Ouvinte>()
+
+export function aoGravar(ouvinte: Ouvinte): () => void {
+  ouvintes.add(ouvinte)
+  return () => ouvintes.delete(ouvinte)
+}
+
+/**
  * Update otimista com rollback.
  *
  * 1. aplica a mudança na UI na hora (`aplicar`)
@@ -43,6 +63,7 @@ export async function executarOtimista<Estado, Resultado>(opcoes: {
   try {
     const resultado = await acao()
     if (aindaEhAUltima()) confirmar?.(resultado)
+    for (const ouvinte of ouvintes) ouvinte()
     return resultado
   } catch (erro) {
     if (aindaEhAUltima()) {

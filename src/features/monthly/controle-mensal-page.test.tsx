@@ -8,104 +8,102 @@ import { MemoryRouter } from 'react-router-dom'
  * Os mocks substituem os módulos de serviço, então o cliente Supabase
  * (que exige variáveis de ambiente) nunca é carregado.
  */
-vi.mock('@/services/payment-methods', () => ({
-  listarFormasPagamento: vi.fn(async () => [
-    { id: 'pm1', user_id: 'u', nome: 'Pix', tipo: 'pix', ativo: true, ordem: 1, created_at: '' },
-  ]),
+/**
+ * O mês inteiro vem de uma chamada só (`carregar_mes`, migration 0011), então
+ * há um mock de dados e não dez. Os serviços de escrita continuam mockados
+ * separadamente: eles não passam pela RPC.
+ *
+ * Sem cartão de fatura configurado, de propósito: é o estado de quem não usa a
+ * função, e é onde a tela tem que continuar idêntica à de antes da fase 2.
+ */
+vi.mock('@/services/mes', () => ({
+  carregarMes: vi.fn(async () => ({
+    formasPagamento: [
+      { id: 'pm1', user_id: 'u', nome: 'Pix', tipo: 'pix', ativo: true, ordem: 1, created_at: '' },
+    ],
+    categorias: [
+      {
+        id: 'cat1',
+        user_id: 'u',
+        nome: 'Mercado',
+        limite_centavos: 50_000,
+        cor: '#a5f6d8',
+        ordem: 1,
+        created_at: '',
+      },
+    ],
+    metas: [
+      { id: 'g1', user_id: 'u', nome: 'Reserva', valor_meta_centavos: 1_000_000, ordem: 1, created_at: '' },
+    ],
+    entradas: [
+      {
+        id: 'i1',
+        user_id: 'u',
+        ano: 2026,
+        mes: 8,
+        descricao: 'Salário',
+        valor_centavos: 300_000,
+        created_at: '',
+      },
+    ],
+    gastosFixos: [
+      {
+        id: 'f1',
+        user_id: 'u',
+        nome: 'Aluguel',
+        payment_method_id: 'pm1',
+        category_id: 'cat1',
+        valor_centavos: 120_000,
+        dia_vencimento: 5,
+        ativo: true,
+        ordem: 1,
+        created_at: '',
+      },
+    ],
+    pagamentos: [],
+    lancamentos: [
+      {
+        id: 't1',
+        user_id: 'u',
+        data: '2026-08-10',
+        descricao: 'Feira',
+        payment_method_id: 'pm1',
+        category_id: 'cat1',
+        valor_centavos: 25_000,
+        tipo: 'gasto',
+        created_at: '',
+      },
+    ],
+    investimentos: [],
+    aportes: [
+      { id: 'a1', user_id: 'u', goal_id: 'g1', ano: 2026, mes: 8, valor_centavos: 20_000, created_at: '' },
+    ],
+    faturas: [],
+  })),
 }))
 
-vi.mock('@/services/categories', () => ({
-  listarCategorias: vi.fn(async () => [
-    {
-      id: 'cat1',
-      user_id: 'u',
-      nome: 'Mercado',
-      limite_centavos: 50_000,
-      cor: '#a5f6d8',
-      ordem: 1,
-      created_at: '',
-    },
-  ]),
-}))
-
-// Sem cartão de fatura configurado: é o estado de quem não usa a função, e é
-// justamente onde a tela tem que continuar idêntica à de antes da fase 2.
-vi.mock('@/services/invoices', () => ({
-  listarFaturasDoMes: vi.fn(async () => []),
-  definirFaturaPaga: vi.fn(async () => {}),
-}))
-
-vi.mock('@/services/goals', () => ({
-  MAX_METAS: 10,
-  listarMetas: vi.fn(async () => [
-    { id: 'g1', user_id: 'u', nome: 'Reserva', valor_meta_centavos: 1_000_000, ordem: 1, created_at: '' },
-  ]),
-  listarAportesDoMes: vi.fn(async () => [
-    { id: 'a1', user_id: 'u', goal_id: 'g1', ano: 2026, mes: 8, valor_centavos: 20_000, created_at: '' },
-  ]),
-  salvarAporte: vi.fn(),
-}))
-
+vi.mock('@/services/invoices', () => ({ definirFaturaPaga: vi.fn(async () => {}) }))
+vi.mock('@/services/goals', () => ({ MAX_METAS: 10, salvarAporte: vi.fn() }))
 vi.mock('@/services/incomes', () => ({
-  listarEntradas: vi.fn(async () => [
-    {
-      id: 'i1',
-      user_id: 'u',
-      ano: 2026,
-      mes: 8,
-      descricao: 'Salário',
-      valor_centavos: 300_000,
-      created_at: '',
-    },
-  ]),
   criarEntrada: vi.fn(),
   atualizarEntrada: vi.fn(),
   excluirEntrada: vi.fn(),
 }))
-
 vi.mock('@/services/fixed-expenses', () => ({
-  listarGastosFixos: vi.fn(async () => [
-    {
-      id: 'f1',
-      user_id: 'u',
-      nome: 'Aluguel',
-      payment_method_id: 'pm1',
-      category_id: 'cat1',
-      valor_centavos: 120_000,
-      dia_vencimento: 5,
-      ativo: true,
-      ordem: 1,
-      created_at: '',
-    },
-  ]),
-  listarPagamentosDoMes: vi.fn(async () => []),
   criarGastoFixo: vi.fn(),
   atualizarGastoFixo: vi.fn(),
   excluirGastoFixo: vi.fn(),
   marcarPagamento: vi.fn(),
 }))
-
 vi.mock('@/services/transactions', () => ({
-  listarLancamentos: vi.fn(async () => [
-    {
-      id: 't1',
-      user_id: 'u',
-      data: '2026-08-10',
-      descricao: 'Feira',
-      payment_method_id: 'pm1',
-      category_id: 'cat1',
-      valor_centavos: 25_000,
-      tipo: 'gasto',
-      created_at: '',
-    },
-  ]),
   criarLancamento: vi.fn(),
   atualizarLancamento: vi.fn(),
   excluirLancamento: vi.fn(),
+  criarParcelamento: vi.fn(),
+  excluirSerie: vi.fn(),
+  atualizarSerie: vi.fn(),
 }))
-
 vi.mock('@/services/investments', () => ({
-  listarInvestimentos: vi.fn(async () => []),
   criarInvestimento: vi.fn(),
   atualizarInvestimento: vi.fn(),
   excluirInvestimento: vi.fn(),
@@ -113,6 +111,18 @@ vi.mock('@/services/investments', () => ({
 
 import { ControleMensalPage } from './controle-mensal-page'
 import { usePeriodoStore } from '@/store/periodo'
+import { ProvedorCache, criarClienteCache } from '@/lib/cache'
+
+/** Cliente novo por teste: cache vazado entre testes esconde regressão. */
+function montar() {
+  return render(
+    <ProvedorCache cliente={criarClienteCache()}>
+      <MemoryRouter>
+        <ControleMensalPage />
+      </MemoryRouter>
+    </ProvedorCache>,
+  )
+}
 
 describe('ControleMensalPage', () => {
   beforeEach(() => {
@@ -123,11 +133,7 @@ describe('ControleMensalPage', () => {
   })
 
   it('mostra o mês selecionado e os lançamentos carregados', async () => {
-    render(
-      <MemoryRouter>
-        <ControleMensalPage />
-      </MemoryRouter>,
-    )
+    montar()
 
     expect(await screen.findByText('Agosto')).toBeInTheDocument()
     await waitFor(() => expect(screen.getByDisplayValue('Salário')).toBeInTheDocument())
@@ -136,11 +142,7 @@ describe('ControleMensalPage', () => {
   })
 
   it('soma entradas, saídas e saldo do mês no resumo', async () => {
-    render(
-      <MemoryRouter>
-        <ControleMensalPage />
-      </MemoryRouter>,
-    )
+    montar()
 
     // Entradas 3.000,00 | Saídas 120.000 + 25.000 centavos = 1.450,00 | Saldo 1.550,00
     const entradas = await screen.findByLabelText(/^R\$\s?3\.000,00$/)

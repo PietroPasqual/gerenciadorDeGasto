@@ -100,6 +100,18 @@ linhas simplesmente não aparecem, e a tela é a de antes da fase 2.
 | Ver o exemplo ("compra em 20/08 → fatura de set/25") antes de salvar | O mesmo                                                        |
 | Ver o aviso de que o app não conhece feriado                         | O mesmo                                                        |
 
+## Offline e versão nova
+
+Ver `docs/offline.md` para o que funciona sem rede e por que gravar offline
+ainda não entrou.
+
+| No PC                                                     | No celular                                                          |
+| --------------------------------------------------------- | ------------------------------------------------------------------- |
+| Abrir o app sem rede e ver o mês já visitado              | O mesmo                                                             |
+| Aviso de "sem internet" — canto inferior esquerdo         | O mesmo aviso, centralizado acima da barra inferior                 |
+| Aviso de versão nova, com botão "Atualizar"               | O mesmo, com o botão em 44px                                        |
+| Atalho para lançar gasto — paleta de comandos (⌘K) ou FAB | Atalho **Lançar gasto** ao segurar o ícone do app, que abre a folha |
+
 ## Quando alguma tela quebra
 
 O limite de erro (`src/components/common/limite-de-erro.tsx`) vive dentro do

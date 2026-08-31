@@ -175,6 +175,10 @@ export function useConfiguracoes() {
       valor_meta_centavos: valorMeta,
       ordem: (dados?.metas.length ?? 0) + 1,
       created_at: new Date().toISOString(),
+      // Meta nasce sem prazo: a projeção é opt-in, e o prazo se põe depois
+      // pelo chip (ver sheet-prazo-meta.tsx).
+      prazo_ano: null,
+      prazo_mes: null,
     }
     return executarOtimista({
       snapshot: snapshot(),

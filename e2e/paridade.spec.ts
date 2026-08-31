@@ -383,3 +383,98 @@ test.describe('sugestão de assinatura', () => {
     await expect(page.getByText(/parece uma assinatura/i)).toHaveCount(0)
   })
 })
+
+test.describe('meta com prazo', () => {
+  /**
+   * A meta "Reserva": R$ 10.000 de alvo, R$ 6.000 guardados, R$ 800 por mês de
+   * janeiro a agosto. Faltam R$ 4.000; o prazo é jun/26, dez meses à frente.
+   */
+  function metaComPrazo(prazo: { prazo_ano: number | null; prazo_mes: number | null }) {
+    const meta = {
+      id: 'g1',
+      user_id: 'u',
+      nome: 'Reserva',
+      valor_meta_centavos: 1000000,
+      ordem: 1,
+      created_at: '',
+      ...prazo,
+    }
+    return {
+      ...appCompleto(),
+      'goals.listarMetas': [meta],
+      'goals.listarAportesDoAno': Array.from({ length: 8 }, (_, i) => ({
+        id: `a${i}`,
+        user_id: 'u',
+        goal_id: 'g1',
+        ano: 2025,
+        mes: i + 1,
+        valor_centavos: 80000,
+        created_at: '',
+      })),
+      'reports.obterResumoMetas': [
+        {
+          goal_id: 'g1',
+          nome: 'Reserva',
+          valor_meta_centavos: 1000000,
+          guardado_ano: 640000,
+          guardado_total: 600000,
+          percentual: 60,
+        },
+      ],
+    }
+  }
+
+  test('com prazo, o card diz quanto falta por mês e em que ritmo está', async ({ page }) => {
+    await fixarHoje(page, '2025-08-15T10:00:00')
+    await prepararApp(page, metaComPrazo({ prazo_ano: 2026, prazo_mes: 6 }))
+    await page.goto('/metas')
+
+    await expect(page.getByText(/Faltam .* em 11 meses/)).toBeVisible()
+    await expect(page.getByText(/No ritmo deste ano .*, chega em/)).toBeVisible()
+  })
+
+  test('meta sem prazo continua sem projeção nenhuma', async ({ page }) => {
+    await fixarHoje(page, '2025-08-15T10:00:00')
+    await prepararApp(page, metaComPrazo({ prazo_ano: null, prazo_mes: null }))
+    await page.goto('/metas')
+
+    await expect(page.getByText('Reserva').first()).toBeVisible()
+    await expect(page.getByText(/Faltam .* meses/)).toHaveCount(0)
+    await expect(page.getByText(/No ritmo deste ano/)).toHaveCount(0)
+  })
+
+  test('nenhuma frase da projeção diz o que a pessoa deveria fazer', async ({ page }) => {
+    await fixarHoje(page, '2025-08-15T10:00:00')
+    // Prazo já vencido: é o caso em que uma cobrança escaparia, se fosse
+    // escapar em algum.
+    await prepararApp(page, metaComPrazo({ prazo_ano: 2025, prazo_mes: 3 }))
+    await page.goto('/metas')
+
+    await expect(page.getByText(/O prazo era mar\/25/)).toBeVisible()
+    const texto = (await page.locator('main').innerText()).toLowerCase()
+    expect(texto).not.toMatch(/você deveria|precisa guardar|está atrasado|tente guardar/)
+  })
+
+  test('o prazo se põe pelo mesmo chip nos dois tamanhos', async ({ page, isMobile }) => {
+    // appCompleto() já traz a meta "Reserva", e ela nasce sem prazo.
+    await prepararApp(page, appCompleto())
+    await page.goto('/configuracoes')
+    if (isMobile) await page.getByRole('tab', { name: 'Metas' }).click()
+
+    const chip = page.getByRole('button', { name: /sem prazo/i }).first()
+    await expect(chip).toBeVisible()
+    expect((await chip.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(isMobile ? 44 : 20)
+
+    await chip.click()
+    await expect(page.getByText(/quando você quer ter juntado/i)).toBeVisible()
+
+    await page.getByRole('switch', { name: /quero ter juntado até/i }).click()
+    await page.getByRole('button', { name: 'Salvar' }).click()
+
+    const gravadas = await escritas(page)
+    const salva = gravadas.find((e) => e.chave === 'goals.atualizarMeta')
+    const prazo = salva?.args[1] as { prazo_ano: number; prazo_mes: number }
+    expect(prazo.prazo_ano).toBeGreaterThan(2000)
+    expect(prazo.prazo_mes).toBeGreaterThanOrEqual(1)
+  })
+})

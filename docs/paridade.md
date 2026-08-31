@@ -88,12 +88,16 @@ lembrar para quem for refazê-la:
 
 ## Metas
 
-| No PC                                                                  | No celular                                                                   |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Editar os 12 meses de cada meta — grade meta × mês                     | Tocar no card da meta → sheet com os doze meses em campos de tamanho de dedo |
-| Total guardado por mês — rodapé da grade                               | Faixa deslizante com os doze meses                                           |
-| Progresso de cada meta                                                 | O mesmo card                                                                 |
-| Wishlist: nome, valor, prioridade e "conquistado" — linha de 5 colunas | Card de três faixas, com as estrelas em 44px                                 |
+| No PC                                                                     | No celular                                                                   |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Editar os 12 meses de cada meta — grade meta × mês                        | Tocar no card da meta → sheet com os doze meses em campos de tamanho de dedo |
+| Total guardado por mês — rodapé da grade                                  | Faixa deslizante com os doze meses                                           |
+| Progresso de cada meta                                                    | O mesmo card                                                                 |
+| Wishlist: nome, valor, prioridade e "conquistado" — linha de 5 colunas    | Card de três faixas, com as estrelas em 44px                                 |
+| Prazo da meta — chip **Sem prazo / Até dez/26** embaixo do nome (Config.) | O mesmo chip, com 44px, no card da meta                                      |
+| "Faltam R$ 4.200 em 7 meses — R$ 600 por mês" no card da meta             | O mesmo texto, no mesmo card                                                 |
+| "No ritmo deste ano (R$ 800 por mês), chega em dez/25"                    | O mesmo — e some nos dois quando a base é pequena demais                     |
+| Meta sem prazo: nenhuma projeção, tudo como antes da `0019`               | O mesmo                                                                      |
 
 ## Configurações
 

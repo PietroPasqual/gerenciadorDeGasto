@@ -129,6 +129,9 @@ export interface Database {
           valor_meta_centavos: number
           ordem: number
           created_at: string
+          /** Mês-alvo. Os dois andam juntos; null nos dois = sem prazo (ver 0019). */
+          prazo_ano: number | null
+          prazo_mes: number | null
         }
         Insert: {
           id?: string
@@ -137,8 +140,18 @@ export interface Database {
           valor_meta_centavos?: number
           ordem?: number
           created_at?: string
+          prazo_ano?: number | null
+          prazo_mes?: number | null
         }
-        Update: { id?: string; user_id?: string; nome?: string; valor_meta_centavos?: number; ordem?: number }
+        Update: {
+          id?: string
+          user_id?: string
+          nome?: string
+          valor_meta_centavos?: number
+          ordem?: number
+          prazo_ano?: number | null
+          prazo_mes?: number | null
+        }
         Relationships: []
       }
       goal_contributions: {

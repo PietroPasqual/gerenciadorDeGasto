@@ -3,6 +3,7 @@ import {
   ArrowDown,
   ArrowUp,
   BellRing,
+  CalendarClock,
   Check,
   CreditCard,
   Database,
@@ -30,8 +31,9 @@ import { CampoSheet, CartaoConfig, SheetConfig } from './components/sheet-config
 import { BotaoCor, COR_PADRAO, SeletorCor } from '@/components/common/seletor-cor'
 import { IndiceConfig, useSecaoVisivel, type SecaoConfig } from './components/indice-config'
 import { SheetFatura, textoFatura } from './components/sheet-fatura'
+import { SheetPrazoMeta, textoPrazo } from './components/sheet-prazo-meta'
 import { periodoAtual } from '@/lib/dates'
-import type { PaymentMethod } from '@/lib/database.types'
+import type { Goal, PaymentMethod } from '@/lib/database.types'
 import { ApagarDados } from './components/apagar-dados'
 import { PreferenciasLembreteConfig } from './components/preferencias-lembrete'
 import { PreviaTema } from './components/previa-tema'
@@ -835,6 +837,9 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
   const [valorCentavos, setValorCentavos] = useState(0)
   const ehCelular = useEhMobile(768)
   const [rascunho, setRascunho] = useState<Rascunho<{ nome: string; alvo: number }>>(null)
+  // Separado do rascunho de nome/valor, como o `faturaDe`: as duas sheets são
+  // abertas de lugares diferentes e não podem competir pelo mesmo estado.
+  const [prazoDe, setPrazoDe] = useState<Goal | null>(null)
   const noLimite = dados.metas.length >= MAX_METAS
 
   const adicionar = () => {
@@ -886,6 +891,7 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
                   titulo={meta.nome}
                   detalhe={<span className="tabular">{formatCentavos(meta.valor_meta_centavos)}</span>}
                 />
+                <ChipPrazo meta={meta} onAbrir={() => setPrazoDe(meta)} />
               </li>
             ))}
           </ul>
@@ -898,15 +904,19 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
             </Cabecalho>
             {dados.metas.map((meta) => (
               <Linha key={meta.id} template={TEMPLATE_META}>
-                <Input
-                  data-celula
-                  aria-label="Nome da meta"
-                  defaultValue={meta.nome}
-                  onBlur={(e) => {
-                    if (e.target.value !== meta.nome) void acoes.editarMeta(meta.id, { nome: e.target.value })
-                  }}
-                  className="min-w-0 border-transparent bg-transparent hover:border-input focus:bg-card"
-                />
+                <div className="min-w-0">
+                  <Input
+                    data-celula
+                    aria-label="Nome da meta"
+                    defaultValue={meta.nome}
+                    onBlur={(e) => {
+                      if (e.target.value !== meta.nome)
+                        void acoes.editarMeta(meta.id, { nome: e.target.value })
+                    }}
+                    className="min-w-0 border-transparent bg-transparent hover:border-input focus:bg-card"
+                  />
+                  <ChipPrazo meta={meta} onAbrir={() => setPrazoDe(meta)} />
+                </div>
                 <MoneyInput
                   data-celula
                   aria-label="Valor-alvo da meta"
@@ -960,6 +970,16 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
           </div>
         )}
 
+        {prazoDe && (
+          <SheetPrazoMeta
+            aberta
+            onOpenChange={(aberta) => !aberta && setPrazoDe(null)}
+            nome={prazoDe.nome}
+            prazo={{ prazo_ano: prazoDe.prazo_ano, prazo_mes: prazoDe.prazo_mes }}
+            onSalvar={(p) => void acoes.editarMeta(prazoDe.id, p)}
+          />
+        )}
+
         <SheetConfig
           aberta={rascunho !== null}
           onOpenChange={(aberta) => !aberta && setRascunho(null)}
@@ -998,5 +1018,24 @@ function AbaMetas({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
         </SheetConfig>
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * O atalho para o prazo, embaixo do nome da meta.
+ *
+ * Mesmo lugar e mesma forma do chip da fatura, de propósito: quem já achou um
+ * reconhece o outro. Alvo de 44px porque no celular ele é a única entrada.
+ */
+function ChipPrazo({ meta, onAbrir }: { meta: Goal; onAbrir: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onAbrir}
+      className="mt-1 inline-flex min-h-11 items-center gap-1.5 rounded-md px-1 text-xs text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground md:min-h-0 md:py-1"
+    >
+      <CalendarClock className="h-3.5 w-3.5" aria-hidden />
+      {textoPrazo(meta)}
+    </button>
   )
 }

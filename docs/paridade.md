@@ -38,6 +38,18 @@ lembrar para quem for refazê-la:
 | Trocar tema claro/escuro e sair — rodapé da barra lateral                | Sheet **Mais**, no fim da lista                                                                                                                               |
 | Paleta de comandos (⌘K)                                                  | Não existe — e não precisa: as três coisas que ela faz têm caminho próprio (navegar → barra inferior, ações da tela → menu ⋯, tema/densidade → Configurações) |
 
+## Painel — projeção de fechamento
+
+A única frase do app que fala do futuro, e por isso a única que precisa se
+apresentar como projeção. Cala antes do dia 10 (`dia 3 não tem média`), nos
+últimos dias do mês, e quando não há gasto do dia a dia para fazer ritmo.
+
+| No PC                                                         | No celular                            |
+| ------------------------------------------------------------- | ------------------------------------- |
+| "R$ 820,00 é o que deve sobrar no fim do mês" nas observações | A mesma frase, nas mesmas observações |
+| "É projeção, não fato — faltam 13 dias" na própria frase      | O mesmo                               |
+| Sem base para projetar — a frase simplesmente não aparece     | O mesmo                               |
+
 ## Controle mensal
 
 | No PC                                                            | No celular                                                                                     |

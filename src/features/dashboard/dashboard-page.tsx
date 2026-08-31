@@ -27,7 +27,9 @@ import { formatCentavos } from '@/lib/money'
 import { useAuthStore } from '@/store/auth'
 import { usePeriodoStore } from '@/store/periodo'
 import { cn } from '@/lib/utils'
-import { observacoesDoMes } from '@/lib/observacoes'
+import { observacoesDoMes, projecaoFimDoMes } from '@/lib/observacoes'
+import { estaVigente, vaiParaFatura } from '@/lib/calculations'
+import { carregarMes } from '@/services/mes'
 import { ObservacoesMes } from './components/observacoes-mes'
 
 const ATALHOS = [
@@ -103,6 +105,42 @@ export function DashboardPage() {
   )
   const temFatura = Boolean(resumo) && gastoCompetencia !== resumo?.total_saidas
 
+  /**
+   * O mês cru, só para a projeção de fechamento.
+   *
+   * Mesma chave de cache da tela do mês (`['mes', ano, mes]`), então num app em
+   * que a tela do mês é a mais visitada isto quase sempre já está em memória —
+   * e quando não está, é uma RPC só, que é para o que a 0011 existe.
+   *
+   * Não dá para projetar a partir do que o painel já tinha: `resumo_mensal`
+   * entrega um total de saídas onde aluguel, fatura e compra do dia estão
+   * somados, e a régua de três só vale para a última parte. Multiplicar o total
+   * pela média diária transformaria um aluguel lançado no dia 5 em seis vezes
+   * ele mesmo.
+   */
+  const { dados: mesCru } = useConsulta(['mes', hoje.ano, hoje.mes], () => carregarMes(hoje.ano, hoje.mes))
+
+  const projecao = useMemo(() => {
+    if (!resumo || !mesCru) return null
+    // `vaiParaFatura` é o mesmo filtro do `calcularCaixaDoMes` (regra 9): a
+    // compra que só sai numa fatura futura não pesa neste mês, e contá-la aqui
+    // E na fatura do mês em que ela vence é o defeito da família
+    // competência × caixa.
+    const gastosDoDia = mesCru.lancamentos.filter(
+      (l) => l.tipo === 'gasto' && !vaiParaFatura(l, mesCru.formasPagamento),
+    )
+    return projecaoFimDoMes({
+      ano: hoje.ano,
+      mes: hoje.mes,
+      totalEntradas: resumo.total_entradas,
+      fixosCentavos: mesCru.gastosFixos
+        .filter((f) => f.ativo && estaVigente(f, hoje.ano, hoje.mes))
+        .reduce((soma, f) => soma + f.valor_centavos, 0),
+      faturasCentavos: mesCru.faturas.reduce((soma, f) => soma + f.total_centavos, 0),
+      gastosDoDia,
+    })
+  }, [resumo, mesCru, hoje.ano, hoje.mes])
+
   const observacoes = useMemo(
     () =>
       resumo
@@ -112,9 +150,10 @@ export function DashboardPage() {
             meses: meses ?? [],
             mes: hoje.mes,
             ano: hoje.ano,
+            projecao,
           })
         : [],
-    [resumo, gastosCategoria, meses, hoje.mes, hoje.ano],
+    [resumo, gastosCategoria, meses, hoje.mes, hoje.ano, projecao],
   )
 
   const primeiroNome = (perfil?.nome ?? '').split(' ')[0]

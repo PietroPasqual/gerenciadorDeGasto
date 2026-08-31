@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { observacoesDoMes, type Observacao } from './observacoes'
+import { MIN_DIAS_DECORRIDOS, observacoesDoMes, projecaoFimDoMes, type Observacao } from './observacoes'
 import { formatCentavos } from './money'
 
 /**
@@ -264,5 +264,127 @@ describe('a comparação com a média usa a mesma medida dos dois lados', () => 
     expect(media).toBeDefined()
     expect(media?.tom).toBe('atencao')
     expect(media?.destaque).toBe('50% a mais')
+  })
+})
+
+describe('a projeção de fim de mês', () => {
+  /** 18 de agosto de 2026 — agosto tem 31 dias, restam 13. */
+  const HOJE = new Date('2026-08-18T12:00:00')
+
+  const gasto = (dia: number, valor: number) => ({
+    data: `2026-08-${String(dia).padStart(2, '0')}`,
+    valor_centavos: valor,
+  })
+
+  const projetar = (p: Partial<Parameters<typeof projecaoFimDoMes>[0]> = {}) =>
+    projecaoFimDoMes({
+      ano: 2026,
+      mes: 8,
+      totalEntradas: 500000,
+      fixosCentavos: 0,
+      faturasCentavos: 0,
+      gastosDoDia: Array.from({ length: 18 }, (_, i) => gasto(i + 1, 10000)),
+      hoje: HOJE,
+      ...p,
+    })
+
+  it('extrapola o gasto do dia a dia pela média diária', () => {
+    // R$ 100 por dia em 18 dias; restam 13, então mais R$ 1.300.
+    const p = projetar()
+    expect(p?.mediaDiaria).toBe(10000)
+    expect(p?.diasRestantes).toBe(13)
+    expect(p?.saidasProjetadas).toBe(310000)
+    expect(p?.saldoProjetado).toBe(190000)
+  })
+
+  it('NÃO extrapola gasto fixo — é a armadilha inteira desta conta', () => {
+    // Aluguel de R$ 1.800 é valor cheio conhecido desde o dia 1. Se entrasse
+    // na régua de três junto com o resto, viraria R$ 3.100 de projeção.
+    const p = projetar({ fixosCentavos: 180000 })
+    expect(p?.saidasProjetadas).toBe(310000 + 180000)
+  })
+
+  it('NÃO extrapola fatura que vence no mês', () => {
+    const p = projetar({ faturasCentavos: 240000 })
+    expect(p?.saidasProjetadas).toBe(310000 + 240000)
+  })
+
+  it('parcela já lançada para um dia futuro entra inteira, não pela média', () => {
+    // Fato agendado, não previsão: soma uma vez, sem multiplicador.
+    const p = projetar({
+      gastosDoDia: [...Array.from({ length: 18 }, (_, i) => gasto(i + 1, 10000)), gasto(25, 50000)],
+    })
+    expect(p?.mediaDiaria).toBe(10000)
+    expect(p?.saidasProjetadas).toBe(310000 + 50000)
+  })
+
+  it('entrada nunca é projetada', () => {
+    // Dobrar os dias decorridos não pode mexer no lado das entradas.
+    const a = projetar()!
+    const b = projetar({ totalEntradas: 500000, hoje: new Date('2026-08-20T12:00:00') })!
+    expect(a.saldoProjetado).toBe(500000 - a.saidasProjetadas)
+    expect(b.saldoProjetado).toBe(500000 - b.saidasProjetadas)
+    // Dois dias a mais mudam a saída projetada, nunca a entrada.
+    expect(a.saidasProjetadas).not.toBe(b.saidasProjetadas)
+  })
+
+  it('cala antes do dia 10 — "dia 3 não tem média"', () => {
+    expect(MIN_DIAS_DECORRIDOS).toBe(10)
+    expect(
+      projetar({ hoje: new Date('2026-08-03T12:00:00'), gastosDoDia: [gasto(1, 10000), gasto(2, 10000)] }),
+    ).toBeNull()
+  })
+
+  it('cala no fim do mês, quando a projeção já é quase o fato', () => {
+    expect(projetar({ hoje: new Date('2026-08-30T12:00:00') })).toBeNull()
+  })
+
+  it('cala sem gasto do dia a dia: sem variável não há ritmo', () => {
+    expect(projetar({ gastosDoDia: [], fixosCentavos: 180000 })).toBeNull()
+    // Só o que ainda vai acontecer também não faz ritmo.
+    expect(projetar({ gastosDoDia: [gasto(25, 50000)] })).toBeNull()
+  })
+
+  it('cala fora do mês corrente: projetar o passado é absurdo', () => {
+    expect(projetar({ mes: 7 })).toBeNull()
+    expect(projetar({ ano: 2027 })).toBeNull()
+  })
+
+  it('a frase se identifica como projeção, e não manda ninguém fazer nada', () => {
+    const p = projetar({ totalEntradas: 100000 })
+    const o = rodar({
+      resumo: { total_entradas: 100000, total_saidas: 180000, saldo: -80000, total_investido: 0 },
+      projecao: p,
+    })
+    const frase = texto(o, 'projecao-fechamento')
+    expect(frase).toContain(brl(Math.abs(p!.saldoProjetado)))
+    expect(frase).toContain('É projeção, não fato')
+    expect(frase).toMatch(/faltam 13 dias/)
+    expect(frase).not.toMatch(/deveria|precisa|corte|gaste menos|cuidado/i)
+  })
+
+  it('quando sobra, a frase diz que sobra — e continua se dizendo projeção', () => {
+    const o = rodar({
+      resumo: { total_entradas: 500000, total_saidas: 180000, saldo: 320000, total_investido: 0 },
+      projecao: projetar(),
+    })
+    const frase = texto(o, 'projecao-fechamento')
+    expect(frase).toContain('deve sobrar no fim do mês')
+    expect(frase).toContain('É projeção, não fato')
+  })
+
+  it('sem projeção, o painel fica exatamente como era', () => {
+    const base = {
+      resumo: { total_entradas: 500000, total_saidas: 180000, saldo: 320000, total_investido: 0 },
+    }
+    expect(ids(rodar(base))).toEqual(ids(rodar({ ...base, projecao: null })))
+  })
+
+  it('o mês que já está no vermelho mostra o fato antes da projeção', () => {
+    const o = rodar({
+      resumo: { total_entradas: 100000, total_saidas: 180000, saldo: -80000, total_investido: 0 },
+      projecao: projetar({ totalEntradas: 100000 }),
+    })
+    expect(ids(o).indexOf('saldo-negativo')).toBeLessThan(ids(o).indexOf('projecao-fechamento'))
   })
 })

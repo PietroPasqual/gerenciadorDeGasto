@@ -478,3 +478,62 @@ test.describe('meta com prazo', () => {
     expect(prazo.prazo_mes).toBeGreaterThanOrEqual(1)
   })
 })
+
+test.describe('projeção de fim de mês', () => {
+  /**
+   * O painel sempre mostra o mês corrente, então a fixture do mês precisa ser
+   * do mês em que o relógio está — por isso as datas aqui são geradas, e não
+   * fixas em agosto de 2025 como no resto do arquivo.
+   */
+  function mesDoRelogio(ano: number, mes: number, ateODia: number) {
+    const base = mesPadrao()
+    const mm = String(mes).padStart(2, '0')
+    return {
+      ...appCompleto(),
+      'mes.carregarMes': {
+        ...base,
+        // Um gasto por dia, sem cartão: é o que faz o ritmo.
+        lancamentos: Array.from({ length: ateODia }, (_, i) => ({
+          id: `d${i}`,
+          user_id: 'u',
+          data: `${ano}-${mm}-${String(i + 1).padStart(2, '0')}`,
+          descricao: 'Almoço',
+          payment_method_id: 'p1',
+          category_id: 'c1',
+          valor_centavos: 5000,
+          tipo: 'gasto',
+          created_at: '',
+          fingerprint: null,
+          parcelamento_id: null,
+          parcela: null,
+          parcelas_total: null,
+        })),
+        gastosFixos: [],
+        faturas: [],
+      },
+    }
+  }
+
+  test('no dia 18 o painel diz como o mês deve fechar, e que é projeção', async ({ page }) => {
+    await fixarHoje(page, '2026-08-18T10:00:00')
+    await prepararApp(page, mesDoRelogio(2026, 8, 18))
+    await page.goto('/painel')
+
+    await expect(page.getByText(/É projeção, não fato/)).toBeVisible()
+    await expect(page.getByText(/faltam 13 dias/)).toBeVisible()
+
+    // O número, e não só a frase: R$ 5.800 de entradas menos (18 dias × R$ 50
+    // já gastos + 13 dias × R$ 50 de média) = R$ 4.250. Uma asserção só na
+    // frase passaria mesmo com a conta errada.
+    await expect(page.getByText(/4\.250,00/)).toBeVisible()
+  })
+
+  test('no dia 3 não há média, e a frase não aparece', async ({ page }) => {
+    await fixarHoje(page, '2026-08-03T10:00:00')
+    await prepararApp(page, mesDoRelogio(2026, 8, 3))
+    await page.goto('/painel')
+
+    await expect(page.getByText(/Gastos por categoria/i)).toBeVisible()
+    await expect(page.getByText(/É projeção, não fato/)).toHaveCount(0)
+  })
+})

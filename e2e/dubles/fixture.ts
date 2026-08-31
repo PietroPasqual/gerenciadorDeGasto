@@ -22,6 +22,15 @@ declare global {
  */
 const EH_LEITURA = /\.(listar|obter|carregar)/
 
+/**
+ * O prefixo é CONTRATO, não palpite.
+ *
+ * Toda leitura de serviço começa com `listar`, `obter` ou `carregar`. Batizar
+ * uma leitura de outro jeito a faz cair no ramo de escrita e devolver `{}`, e
+ * a tela quebra num ponto que não tem nada a ver com a causa. Já aconteceu
+ * duas vezes; o conserto é o nome, não a regex.
+ */
+
 export async function doFixture(chave: string, args: unknown[]): Promise<unknown> {
   const fixture = window.__FIXTURE__ ?? {}
   const ehLeitura = EH_LEITURA.test(chave)

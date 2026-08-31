@@ -171,6 +171,23 @@ dinheiro custa mais que sugestão ausente.
 | **Agora não** — dispensa, e a dispensa fica no perfil                | O mesmo; dispensar no celular vale no PC, por isso não é local |
 | Nada repetido o bastante — o cartão não aparece                      | O mesmo: some, não vira card dizendo que não achou nada        |
 
+## Backup e restauração
+
+O arquivo é JSON versionado. Restaurar **nunca apaga nem altera** o que já
+existe — só entra o que falta, e o mesmo arquivo pode ser restaurado duas vezes
+sem duplicar. Duas defesas contra duplicata: o `id`, que viaja no arquivo, e a
+impressão digital da `0008`, recalculada pelo conteúdo dos dois lados para pegar
+a linha que existe aqui com outro id.
+
+| No PC                                                                | No celular                        |
+| -------------------------------------------------------------------- | --------------------------------- |
+| **Baixar backup** — Configurações → Dados                            | O mesmo botão, com 44px           |
+| **Restaurar de um arquivo** — seletor de arquivo do sistema          | O mesmo, com o seletor do celular |
+| Prévia do que vai entrar, tabela por tabela — diálogo                | A mesma prévia, em sheet          |
+| Arquivo que não é backup do finZ — frase dizendo o que fazer         | A mesma frase                     |
+| **Trocar também minhas configurações** — a única parte que substitui | O mesmo, desmarcado por padrão    |
+| Nada novo no arquivo — o botão diz "Nada para restaurar"             | O mesmo                           |
+
 ## Offline e versão nova
 
 Ver `docs/offline.md` para o que funciona sem rede e por que gravar offline

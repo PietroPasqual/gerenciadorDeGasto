@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { defineConfig } from 'vitest/config'
 
 /**
@@ -6,6 +7,9 @@ import { defineConfig } from 'vitest/config'
  * Rode `./scripts/pg-teste.sh` antes — ou use `npm run test:rls`, que faz isso.
  */
 export default defineConfig({
+  // O alias `@` não vem do vite.config.ts: esta config é independente, e sem
+  // ele o teste de backup não enxerga src/lib/backup.ts.
+  resolve: { alias: { '@': path.resolve(__dirname, './src') } },
   test: {
     include: ['src/test/rls/**/*.test.ts'],
     environment: 'node',

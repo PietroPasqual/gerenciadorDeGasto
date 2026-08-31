@@ -35,6 +35,7 @@ import { SheetPrazoMeta, textoPrazo } from './components/sheet-prazo-meta'
 import { periodoAtual } from '@/lib/dates'
 import type { Goal, PaymentMethod } from '@/lib/database.types'
 import { ApagarDados } from './components/apagar-dados'
+import { BackupRestauracao } from './components/backup-restauracao'
 import { PreferenciasLembreteConfig } from './components/preferencias-lembrete'
 import { PreviaTema } from './components/previa-tema'
 import { formatCentavos } from '@/lib/money'
@@ -105,7 +106,15 @@ export function ConfiguracoesPage() {
     if (id === 'lembretes') return <AbaLembretes />
     if (id === 'categorias') return <AbaCategorias dados={dados} acoes={acoes} />
     if (id === 'pagamento') return <AbaFormasPagamento dados={dados} acoes={acoes} />
-    if (id === 'dados') return <ApagarDados aoApagar={() => void recarregar()} />
+    if (id === 'dados')
+      return (
+        <div className="space-y-4">
+          {/* Backup antes de apagar, de propósito: quem chega nesta seção para
+              limpar tudo passa primeiro pela porta que salva. */}
+          <BackupRestauracao />
+          <ApagarDados aoApagar={() => void recarregar()} />
+        </div>
+      )
     return <AbaMetas dados={dados} acoes={acoes} />
   }
 

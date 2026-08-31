@@ -21,6 +21,10 @@ const sessao = () => (typeof window === 'undefined' ? null : (window.__SESSAO__ 
 export const supabase = {
   auth: {
     getSession: async () => ({ data: { session: sessao() }, error: null }),
+    // O `userIdAtual` do services/base chama isto. Faltava, e qualquer tela
+    // que o usasse morria com "getUser is not a function" — um erro que fala
+    // do dublê, não da tela.
+    getUser: async () => ({ data: { user: sessao()?.user ?? null }, error: null }),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
     signInWithPassword: async ({ password }: { password: string }) =>
       password === 'errada'

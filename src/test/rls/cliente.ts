@@ -1,4 +1,16 @@
-import { Client } from 'pg'
+import { Client, types } from 'pg'
+
+/**
+ * Fazer o `pg` devolver o que o PostgREST devolveria.
+ *
+ * Por padrão o driver converte `date` para um Date do JS e `bigint` para
+ * string; o app, que fala com o PostgREST, recebe `"2025-08-10"` e um número.
+ * Sem estes dois ajustes o teste exercita formas que o app nunca vê — e foi
+ * assim que a checagem de duplicata do backup passou a não achar duplicata
+ * nenhuma, por comparar um Date com uma string.
+ */
+types.setTypeParser(types.builtins.DATE, (v) => v)
+types.setTypeParser(types.builtins.INT8, (v) => Number(v))
 
 /**
  * Conexão com o Postgres de teste, no papel de um usuário logado.

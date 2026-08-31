@@ -537,3 +537,135 @@ test.describe('projeção de fim de mês', () => {
     await expect(page.getByText(/É projeção, não fato/)).toHaveCount(0)
   })
 })
+
+test.describe('backup e restauração', () => {
+  /** Um plano pronto, como o serviço devolveria depois de ler o arquivo. */
+  function planoDeExemplo(entram: number) {
+    return {
+      itens: [
+        {
+          tabela: 'categories',
+          rotulo: 'Categorias',
+          noArquivo: 3,
+          entram,
+          jaExistem: 3 - entram,
+          linhas: [],
+        },
+      ],
+      totalEntram: entram,
+      totalJaExistem: 3 - entram,
+      descartadas: 0,
+    }
+  }
+
+  const arquivo = { name: 'finz-backup-2026-08-31.json', mimeType: 'application/json' }
+
+  async function abrirDados(page: import('@playwright/test').Page, isMobile: boolean) {
+    await page.goto('/configuracoes')
+    if (isMobile) await page.getByRole('tab', { name: 'Dados' }).click()
+  }
+
+  test('baixar backup pede o arquivo completo ao serviço', async ({ page, isMobile }) => {
+    await prepararApp(page, {
+      ...appCompleto(),
+      'backup.obterBackupCompleto': {
+        formato: 'finz-backup',
+        versao: 1,
+        geradoEm: '2026-08-31T12:00:00.000Z',
+        dados: { categories: [{ id: 'c1' }] },
+      },
+    })
+    await abrirDados(page, isMobile)
+
+    const botao = page.getByRole('button', { name: /baixar backup/i })
+    await expect(botao).toBeVisible()
+    expect((await botao.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44)
+
+    await botao.click()
+    await expect(page.getByText(/Backup gerado com 1 linhas/)).toBeVisible()
+  })
+
+  test('a prévia diz o que entra antes de gravar, e só então libera o botão', async ({ page, isMobile }) => {
+    await prepararApp(page, {
+      ...appCompleto(),
+      'backup.obterPlanoDeRestauracao': planoDeExemplo(2),
+    })
+    await abrirDados(page, isMobile)
+
+    await page.getByLabel('Arquivo de backup').setInputFiles({
+      ...arquivo,
+      buffer: Buffer.from(JSON.stringify({ formato: 'finz-backup', versao: 1, dados: {} })),
+    })
+
+    // Escopo no diálogo: "Categorias" também é o nome de uma seção da própria
+    // tela de configurações, e sem isto o seletor casa quatro elementos.
+    const previa = page.getByRole('dialog')
+    await expect(previa.getByText('O que vai entrar')).toBeVisible()
+    await expect(previa.getByText(/Nada do que já está aqui será apagado ou alterado/)).toBeVisible()
+    await expect(previa.getByText('Categorias')).toBeVisible()
+    // O número, não só o rótulo: 2 entram e 1 já está aqui.
+    await expect(previa.getByText('+2')).toBeVisible()
+    await expect(previa.getByText(/1 já estão aqui/)).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Restaurar 2 linhas' })).toBeVisible()
+  })
+
+  test('arquivo que não é backup do finZ é recusado antes de qualquer escrita', async ({
+    page,
+    isMobile,
+  }) => {
+    await prepararApp(page, appCompleto())
+    await abrirDados(page, isMobile)
+
+    await page
+      .getByLabel('Arquivo de backup')
+      .setInputFiles({ ...arquivo, buffer: Buffer.from('{"qualquer":"coisa"}') })
+
+    await expect(page.getByRole('alert')).toContainText(/não é um backup do finZ/)
+    await expect(page.getByText('O que vai entrar')).toHaveCount(0)
+    const gravadas = await escritas(page)
+    expect(gravadas.find((e) => e.chave === 'backup.restaurar')).toBeUndefined()
+  })
+
+  test('nada novo no arquivo: o botão diz isso e não grava', async ({ page, isMobile }) => {
+    await prepararApp(page, {
+      ...appCompleto(),
+      'backup.obterPlanoDeRestauracao': planoDeExemplo(0),
+    })
+    await abrirDados(page, isMobile)
+
+    await page.getByLabel('Arquivo de backup').setInputFiles({
+      ...arquivo,
+      buffer: Buffer.from(JSON.stringify({ formato: 'finz-backup', versao: 1, dados: {} })),
+    })
+
+    const botao = page.getByRole('button', { name: /nada para restaurar/i })
+    await expect(botao).toBeVisible()
+    await expect(botao).toBeDisabled()
+  })
+
+  test('trocar as configurações é escolha à parte, e vem desmarcada', async ({ page, isMobile }) => {
+    await prepararApp(page, {
+      ...appCompleto(),
+      'backup.obterPlanoDeRestauracao': planoDeExemplo(2),
+      'backup.restaurar': { gravadas: 2, renomeadas: 0, perfilRestaurado: false },
+    })
+    await abrirDados(page, isMobile)
+
+    await page.getByLabel('Arquivo de backup').setInputFiles({
+      ...arquivo,
+      buffer: Buffer.from(
+        JSON.stringify({ formato: 'finz-backup', versao: 1, dados: {}, perfil: { nome: 'Pietro' } }),
+      ),
+    })
+
+    const caixa = page.getByRole('checkbox', { name: /trocar também minhas configurações/i })
+    await expect(caixa).toBeVisible()
+    await expect(caixa).not.toBeChecked()
+
+    // Sem marcar, o perfil não viaja para o serviço.
+    await page.getByRole('button', { name: 'Restaurar 2 linhas' }).click()
+    await expect(page.getByText(/linhas restauradas|Nada novo para restaurar/)).toBeVisible()
+    const chamada = (await escritas(page)).find((e) => e.chave === 'backup.restaurar')
+    expect((chamada?.args[1] as { perfil: unknown }).perfil).toBeNull()
+  })
+})

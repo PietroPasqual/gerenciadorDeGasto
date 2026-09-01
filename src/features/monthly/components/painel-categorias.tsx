@@ -76,9 +76,17 @@ export function PainelCategorias({ categorias }: { categorias: LinhaCategoria[] 
                     </span>
                   </div>
                   {categoria.limite_centavos ? (
-                    <Progress value={percentual} indicatorClassName={CORES_BARRA[nivel]} />
+                    <Progress
+                      value={percentual}
+                      indicatorClassName={CORES_BARRA[nivel]}
+                      aria-label={`${categoria.nome}: ${percentual}% do limite`}
+                    />
                   ) : (
-                    <Progress value={0} className="opacity-40" />
+                    <Progress
+                      value={0}
+                      className="opacity-40"
+                      aria-label={`${categoria.nome}: sem limite definido`}
+                    />
                   )}
                 </li>
               )

@@ -1,9 +1,8 @@
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
-import { SwitchTrack } from '@/components/ui/switch'
-import { MESES, anosDisponiveis, nomeCurtoDoMes } from '@/lib/dates'
+import { CampoMesAno } from '@/components/common/campo-mes-ano'
+import { nomeCurtoDoMes } from '@/lib/dates'
 import type { Vigencia } from '@/lib/calculations'
 
 /** "todo mês" · "desde ago/26" · "até jun/26" · "ago/26 – jun/26" */
@@ -80,7 +79,7 @@ export function SheetVigencia({
         </SheetDescription>
 
         <div className="space-y-4">
-          <LinhaPeriodo
+          <CampoMesAno
             rotulo={verbo === 'paga' ? 'Pago desde' : 'Recebo desde'}
             semData="Desde sempre"
             ativo={temInicio}
@@ -96,7 +95,7 @@ export function SheetVigencia({
             onChange={(ano, mes) => setRascunho((r) => ({ ...r, inicio_ano: ano, inicio_mes: mes }))}
           />
 
-          <LinhaPeriodo
+          <CampoMesAno
             rotulo={verbo === 'paga' ? 'Pago até' : 'Recebo até'}
             semData={verbo === 'paga' ? 'Ainda pago (sem data de fim)' : 'Ainda recebo (sem data de fim)'}
             ativo={temFim}
@@ -146,80 +145,4 @@ function resumoDoPeriodo(v: Vigencia) {
   const temFim = v.fim_ano !== null
   if (!temInicio && !temFim) return 'Conta em todos os meses, de qualquer ano.'
   return `Conta ${textoVigencia(v)}.`
-}
-
-function LinhaPeriodo({
-  rotulo,
-  semData,
-  ativo,
-  ano,
-  mes,
-  onAlternar,
-  onChange,
-}: {
-  rotulo: string
-  /** O que aparece quando não há data daquele lado. */
-  semData: string
-  ativo: boolean
-  ano: number | null
-  mes: number | null
-  onAlternar: (ligado: boolean) => void
-  onChange: (ano: number, mes: number) => void
-}) {
-  return (
-    <div className="space-y-2 rounded-xl border border-border p-3">
-      {/* Ligado = tem data. O rótulo não muda junto com o interruptor: um
-          switch que aparece desligado com o campo preenchido logo abaixo dele
-          é o tipo de coisa que faz a pessoa desconfiar do que salvou.
-          A linha inteira é o alvo, mesmo padrão do BotaoPago. */}
-      <button
-        type="button"
-        role="switch"
-        aria-checked={ativo}
-        onClick={() => onAlternar(!ativo)}
-        className="flex min-h-[2.75rem] w-full items-center justify-between gap-3 text-left"
-      >
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium">{rotulo}</span>
-          {!ativo && <span className="block text-xs text-muted-foreground">{semData}</span>}
-        </span>
-        <SwitchTrack checked={ativo} />
-      </button>
-
-      {ativo && (
-        <div className="flex gap-2">
-          <Select
-            value={String(mes ?? 1)}
-            onValueChange={(v) => onChange(ano ?? new Date().getFullYear(), Number(v))}
-          >
-            <SelectTrigger className="flex-1" aria-label={`Mês — ${rotulo}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MESES.map((nome, i) => (
-                <SelectItem key={nome} value={String(i + 1)}>
-                  {nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={String(ano ?? new Date().getFullYear())}
-            onValueChange={(v) => onChange(Number(v), mes ?? 1)}
-          >
-            <SelectTrigger className="w-[6.5rem]" aria-label={`Ano — ${rotulo}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {anosDisponiveis().map((a) => (
-                <SelectItem key={a} value={String(a)}>
-                  {a}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-    </div>
-  )
 }

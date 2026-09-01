@@ -16,6 +16,8 @@
  */
 
 import { formatCentavos } from './money'
+import { periodoAtual } from './dates'
+import { ultimoDiaDoMes } from './fatura'
 
 export type Tom = 'neutro' | 'atencao' | 'bom'
 
@@ -68,12 +70,106 @@ function porcento(parte: number, total: number): number {
   return Math.round((parte / total) * 100)
 }
 
+/**
+ * A ÚNICA observação deste arquivo que fala do futuro.
+ *
+ * No dia 18 a pergunta deixa de ser "quanto gastei" e vira "no meu ritmo,
+ * fecho no azul?". A conta existe, mas ela tem uma armadilha que precisa estar
+ * escrita: NEM TUDO SE PROJETA.
+ *
+ * Gasto fixo e fatura que vence no mês são valores CHEIOS, já conhecidos no
+ * dia 1. Multiplicá-los pela média diária seria transformar um aluguel de
+ * R$ 1.800 lançado no dia 5 em R$ 11.160 de projeção — um número
+ * confiantemente errado, que é pior do que número nenhum. Só o gasto do dia a
+ * dia (o que não vai para fatura futura) entra na régua de três; o resto entra
+ * pelo valor que já tem.
+ *
+ * Parcela já lançada para um dia futuro deste mês entra inteira também: ela é
+ * fato agendado, não previsão.
+ *
+ * Entrada não se projeta em hipótese nenhuma. Salário não pinga por dia, e
+ * extrapolar receita é a forma mais rápida de prometer um mês que não existe.
+ */
+export interface EntradaDaProjecao {
+  ano: number
+  mes: number
+  totalEntradas: number
+  /** Soma dos gastos fixos vigentes no mês. Valor cheio, não se projeta. */
+  fixosCentavos: number
+  /** Soma das faturas que vencem no mês. Valor cheio, não se projeta. */
+  faturasCentavos: number
+  /**
+   * Só os gastos que pesam NESTE mês pela data em que aconteceram — o que
+   * `calcularCaixaDoMes` chama de `noMes`. Compra que foi para fatura futura
+   * não entra aqui: ela vai sair noutro mês, e contá-la duas vezes (aqui e na
+   * fatura daquele mês) é o defeito da família competência × caixa.
+   */
+  gastosDoDia: Array<{ data: string; valor_centavos: number }>
+  hoje?: Date
+}
+
+export interface Projecao {
+  diasDecorridos: number
+  diasRestantes: number
+  mediaDiaria: number
+  saidasProjetadas: number
+  saldoProjetado: number
+}
+
+/** Menos de um terço do mês não faz média — "dia 3 não tem média". */
+export const MIN_DIAS_DECORRIDOS = 10
+
+/** Nos últimos dias a "projeção" já é quase o fato, e não acrescenta nada. */
+export const MIN_DIAS_RESTANTES = 3
+
+/**
+ * A projeção de fechamento, ou `null` quando não há base para ela.
+ *
+ * Cala em quatro casos, e cada um por um motivo: mês que não é o corrente
+ * (projetar o passado é absurdo, projetar o futuro é chute), poucos dias
+ * decorridos, poucos dias restantes, e nenhum gasto do dia a dia — sem
+ * variável não há ritmo, só os valores cheios que já se conhecem.
+ */
+export function projecaoFimDoMes(p: EntradaDaProjecao): Projecao | null {
+  const hoje = p.hoje ?? new Date()
+  const atual = periodoAtual(hoje)
+  if (p.ano !== atual.ano || p.mes !== atual.mes) return null
+
+  const diasDoMes = ultimoDiaDoMes(p.ano, p.mes)
+  const diasDecorridos = hoje.getDate()
+  const diasRestantes = diasDoMes - diasDecorridos
+  if (diasDecorridos < MIN_DIAS_DECORRIDOS) return null
+  if (diasRestantes < MIN_DIAS_RESTANTES) return null
+
+  let ateHoje = 0
+  let agendadoNoMes = 0
+  for (const g of p.gastosDoDia) {
+    const dia = Number(g.data.slice(8, 10))
+    if (dia <= diasDecorridos) ateHoje += g.valor_centavos
+    else agendadoNoMes += g.valor_centavos
+  }
+  if (ateHoje <= 0) return null
+
+  const mediaDiaria = Math.round(ateHoje / diasDecorridos)
+  const saidasProjetadas =
+    ateHoje + mediaDiaria * diasRestantes + agendadoNoMes + p.fixosCentavos + p.faturasCentavos
+
+  return {
+    diasDecorridos,
+    diasRestantes,
+    mediaDiaria,
+    saidasProjetadas,
+    saldoProjetado: p.totalEntradas - saidasProjetadas,
+  }
+}
+
 export function observacoesDoMes({
   resumo,
   categorias,
   meses,
   mes,
   ano,
+  projecao = null,
 }: {
   resumo: Resumo
   categorias: Categoria[]
@@ -81,6 +177,8 @@ export function observacoesDoMes({
   meses: MesDoAno[]
   mes: number
   ano: number
+  /** Já calculada pela tela, ou `null` quando não há base (ver projecaoFimDoMes). */
+  projecao?: Projecao | null
 }): Observacao[] {
   const obs: Array<Observacao & { peso: number }> = []
   const { total_entradas, total_saidas, saldo, total_investido } = resumo
@@ -192,6 +290,34 @@ export function observacoesDoMes({
       texto: `meses lançados de ${ano} fecharam no negativo.`,
       para: '/comparativo',
     })
+  }
+
+  // ------------------------------------------------ como o mês deve fechar
+  //
+  // Peso 2 quando fecha no vermelho: fica logo abaixo do saldo já negativo,
+  // porque é a única frase da tela sobre algo que ainda dá para mudar.
+  if (projecao) {
+    const { saldoProjetado, diasDecorridos, diasRestantes } = projecao
+    const restam = diasRestantes === 1 ? 'falta 1 dia' : `faltam ${diasRestantes} dias`
+    obs.push(
+      saldoProjetado < 0
+        ? {
+            peso: 2,
+            id: 'projecao-fechamento',
+            tom: 'atencao',
+            destaque: reais(saldoProjetado),
+            texto: `a mais do que entrou é o que o mês deve fechar, mantido o ritmo destes ${diasDecorridos} dias. É projeção, não fato — ${restam}.`,
+            para: '/mes',
+          }
+        : {
+            peso: 45,
+            id: 'projecao-fechamento',
+            tom: 'bom',
+            destaque: reais(saldoProjetado),
+            texto: `é o que deve sobrar no fim do mês, mantido o ritmo destes ${diasDecorridos} dias. É projeção, não fato — ${restam}.`,
+            para: '/mes',
+          },
+    )
   }
 
   // -------------------------------------------------------- o que guardou

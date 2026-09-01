@@ -17,6 +17,7 @@ import { NumeroAnimado } from '@/components/common/numero-animado'
 import { formatCentavos } from '@/lib/money'
 import { MESES_CURTOS, nomeDoMes } from '@/lib/dates'
 import { progressoDaMeta, progressoWishlist, totalDeItens } from '@/lib/calculations'
+import { projecaoDaMeta, textoDoPrazo, textoDoRitmo } from '@/lib/meta-prazo'
 import { usePeriodoStore } from '@/store/periodo'
 import { cn } from '@/lib/utils'
 import { SheetMeta } from './components/sheet-meta'
@@ -134,7 +135,10 @@ function Wishlist({
               {progresso.percentual.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}%
             </span>
           </div>
-          <Progress value={progresso.percentual} />
+          <Progress
+            value={progresso.percentual}
+            aria-label={`Progresso da wishlist: ${Math.round(progresso.percentual)}%`}
+          />
         </div>
 
         {itens.length === 0 ? (
@@ -334,6 +338,9 @@ function GradeMetas({
 
   const totalAno = aportes.reduce((s, a) => s + a.valor_centavos, 0)
 
+  /** Os doze meses da meta, de janeiro a dezembro, com zero onde não houve aporte. */
+  const aportesPorMes = (goalId: string) => Array.from({ length: 12 }, (_, i) => valorDe(goalId, i + 1))
+
   /**
    * A grade meta x mês precisa de ~900px para caber sem apertar as células.
    * Abaixo disso ela vira lista: cada meta abre uma sheet com os doze meses
@@ -385,6 +392,12 @@ function GradeMetas({
             const guardadoAno = linha?.guardado_ano ?? totalDaMeta(meta.id)
             const alvo = linha?.valor_meta_centavos ?? meta.valor_meta_centavos
             const { percentual, bruto } = progressoDaMeta(guardadoTotal, alvo)
+            const projecao = projecaoDaMeta({
+              meta: { ...meta, valor_meta_centavos: alvo },
+              guardadoTotal,
+              aportesDoAno: aportesPorMes(meta.id),
+              anoDosAportes: ano,
+            })
 
             const conteudo = (
               <>
@@ -400,12 +413,34 @@ function GradeMetas({
                     {formatCentavos(guardadoTotal)} / {formatCentavos(alvo)}
                   </span>
                 </div>
-                <Progress value={percentual} />
+                <Progress value={percentual} aria-label={`${meta.nome}: ${Math.round(bruto)}% da meta`} />
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
                   {bruto.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}% da meta ·{' '}
                   {formatCentavos(guardadoAno)} em {ano}
                   {ehEstreito && <ChevronRight className="ml-auto h-4 w-4 shrink-0" />}
                 </p>
+                {/* Só existe quando a meta tem prazo. Sem prazo, esta parte do
+                    card não aparece e nada muda em relação a antes da 0019. */}
+                {projecao && (
+                  <div className="space-y-0.5 border-t border-border/70 pt-1.5 text-xs">
+                    {/* A data que passou é fato e merece ser vista; não é
+                        veredito sobre a pessoa, por isso âmbar e não vermelho. */}
+                    <p
+                      className={cn(
+                        projecao.concluida && 'text-success',
+                        projecao.prazoVencido && !projecao.concluida && 'text-warning',
+                      )}
+                    >
+                      {textoDoPrazo(projecao, {
+                        ano: meta.prazo_ano as number,
+                        mes: meta.prazo_mes as number,
+                      })}
+                    </p>
+                    {textoDoRitmo(projecao) && (
+                      <p className="text-muted-foreground">{textoDoRitmo(projecao)}</p>
+                    )}
+                  </div>
+                )}
               </>
             )
 

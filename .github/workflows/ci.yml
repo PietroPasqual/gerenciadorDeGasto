@@ -5,25 +5,23 @@ on:
     branches: ['**']
   pull_request:
 
-# Um push logo em cima de outro cancela a execução anterior do mesmo branch:
-# só o último commit interessa, e a fila fica curta.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # ------------------------------------------------------------------
+  # Lint, testes de unidade e build. É o job rápido: se ele cai, os
+  # outros três não têm por que rodar.
+  # ------------------------------------------------------------------
   verificar:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
-      # `ci` e não `install`: respeita o package-lock à risca, então o CI roda
-      # com as mesmas versões da máquina de quem desenvolveu.
       - run: npm ci
 
       - name: Lint (eslint + prettier + tsc)
@@ -32,11 +30,95 @@ jobs:
       - name: Testes
         run: npm run test
 
-      # O build fica por último e é o único passo que precisa das variáveis do
-      # Supabase. São valores públicos (URL e chave anon, protegidas por RLS);
-      # a service_role nunca chega perto do cliente.
       - name: Build
         run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://exemplo.supabase.co' }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'chave-de-build' }}
+
+      # Falha se o JS inicial passar do teto. O peso do bundle é a regressão
+      # que ninguém percebe olhando o diff.
+      - name: Orçamento de bundle
+        run: npm run bundle
+
+  # ------------------------------------------------------------------
+  # RLS: a prova de que um usuário não enxerga o dado de outro.
+  #
+  # Postgres como service container em vez de `supabase start`: sobe em
+  # segundos, não precisa de Docker-in-Docker, e o que está sendo testado
+  # são as POLICIES, que rodam igual nos dois. Ver supabase/testes/auth-shim.sql.
+  # ------------------------------------------------------------------
+  rls:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: finz
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Aplicar schema no Postgres do CI
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -p 5433 -U postgres -d finz -v ON_ERROR_STOP=1 \
+            -f supabase/testes/auth-shim.sql
+          for f in supabase/migrations/*.sql; do
+            psql -h localhost -p 5433 -U postgres -d finz -v ON_ERROR_STOP=1 -f "$f"
+          done
+          psql -h localhost -p 5433 -U postgres -d finz -v ON_ERROR_STOP=1 \
+            -f supabase/testes/grants.sql
+
+      - name: Testes de RLS
+        env:
+          PGTESTE_HOST: localhost
+          PGTESTE_PORTA: 5433
+          PGPASSWORD: postgres
+        run: npx vitest run --config vitest.rls.config.ts
+
+  # ------------------------------------------------------------------
+  # E2E de paridade, nas duas larguras.
+  # ------------------------------------------------------------------
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Instalar o Chromium do Playwright
+        run: npx playwright install --with-deps chromium
+
+      # Serviço novo sem dublê não quebra o build: o app importa a função de
+      # verdade e a spec vai falar com o Supabase. Regenerar e exigir árvore
+      # limpa é o que transforma esse silêncio num CI vermelho.
+      - name: Dublês em dia com os serviços
+        run: |
+          npm run dubles
+          git diff --exit-code e2e/dubles/
+
+      - name: E2E (390px e 1280px)
+        run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

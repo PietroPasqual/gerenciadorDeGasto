@@ -47,9 +47,9 @@ export interface Periodo {
   mes: number
 }
 
-export function periodoAtual(): Periodo {
-  const agora = new Date()
-  return { ano: agora.getFullYear(), mes: agora.getMonth() + 1 }
+/** `referencia` existe para o teste poder fixar "hoje" sem mexer no relógio. */
+export function periodoAtual(referencia = new Date()): Periodo {
+  return { ano: referencia.getFullYear(), mes: referencia.getMonth() + 1 }
 }
 
 export function ehFuturo({ ano, mes }: Periodo, referencia = periodoAtual()): boolean {
@@ -86,6 +86,19 @@ export function formatDataISO(iso: string | null | undefined): string {
 export function formatTimestamp(iso: string | null | undefined): string {
   if (!iso) return ''
   return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+}
+
+/**
+ * Anos para o prazo de uma meta: do ano corrente até dez à frente.
+ *
+ * `anosDisponiveis` não serve aqui — ela abre cinco anos PARA TRÁS, e prazo no
+ * passado é coisa que se herda, não que se escolha. Dez à frente porque entrada
+ * de apartamento é meta de dez anos, e dois não dariam nem para digitar.
+ */
+export function anosDeMeta(referencia = new Date().getFullYear()): number[] {
+  const anos: number[] = []
+  for (let a = referencia; a <= referencia + 10; a++) anos.push(a)
+  return anos
 }
 
 /** Lista de anos para os seletores (5 anos atrás até 2 à frente). */

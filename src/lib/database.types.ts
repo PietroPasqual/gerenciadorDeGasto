@@ -24,6 +24,10 @@ export interface Database {
           created_at: string
           /** Teto de gastos do mês. 0 = sem orçamento definido (ver 0015). */
           orcamento_centavos: number
+          /** Quais lembretes aparecem e com quanta antecedência (ver 0017). */
+          preferencias_lembrete: Json
+          /** Chaves de destinatário dispensadas na sugestão de assinatura (ver 0018). */
+          assinaturas_ignoradas: Json
         }
         Insert: {
           id: string
@@ -31,6 +35,8 @@ export interface Database {
           tema?: TemaCor
           created_at?: string
           orcamento_centavos?: number
+          preferencias_lembrete?: Json
+          assinaturas_ignoradas?: Json
         }
         Update: {
           id?: string
@@ -38,6 +44,8 @@ export interface Database {
           tema?: TemaCor
           created_at?: string
           orcamento_centavos?: number
+          preferencias_lembrete?: Json
+          assinaturas_ignoradas?: Json
         }
         Relationships: []
       }
@@ -121,6 +129,9 @@ export interface Database {
           valor_meta_centavos: number
           ordem: number
           created_at: string
+          /** Mês-alvo. Os dois andam juntos; null nos dois = sem prazo (ver 0019). */
+          prazo_ano: number | null
+          prazo_mes: number | null
         }
         Insert: {
           id?: string
@@ -129,8 +140,18 @@ export interface Database {
           valor_meta_centavos?: number
           ordem?: number
           created_at?: string
+          prazo_ano?: number | null
+          prazo_mes?: number | null
         }
-        Update: { id?: string; user_id?: string; nome?: string; valor_meta_centavos?: number; ordem?: number }
+        Update: {
+          id?: string
+          user_id?: string
+          nome?: string
+          valor_meta_centavos?: number
+          ordem?: number
+          prazo_ano?: number | null
+          prazo_mes?: number | null
+        }
         Relationships: []
       }
       goal_contributions: {

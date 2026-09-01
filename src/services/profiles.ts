@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { Profile, TemaCor } from '@/lib/database.types'
+import type { Json, Profile, TemaCor } from '@/lib/database.types'
 import { unwrap, userIdAtual } from './base'
 
 export async function obterPerfil(): Promise<Profile | null> {
@@ -17,6 +17,8 @@ export async function atualizarPerfil(mudancas: {
   nome?: string
   tema?: TemaCor
   orcamento_centavos?: number
+  preferencias_lembrete?: Json
+  assinaturas_ignoradas?: Json
 }): Promise<Profile> {
   const userId = await userIdAtual()
   return unwrap(

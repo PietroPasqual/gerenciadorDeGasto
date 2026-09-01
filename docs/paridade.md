@@ -7,6 +7,17 @@ mas não some.
 Esta tabela é a prova disso. Cada linha diz onde a mesma coisa está nos dois
 tamanhos. **Célula vazia é bug, não decisão de design.**
 
+Cada linha desta tabela agora é **teste automático** (`e2e/paridade.spec.ts`),
+rodando em 390px e 1280px no CI. A conferência à mão que originou a tabela está
+registrada abaixo, mas quem garante que ela continua verdadeira é o `npm run
+test:e2e` — uma tabela conferida à mão apodrece na terceira feature.
+
+O E2E já pegou uma célula que era falsa: a linha de "compra parcelada" afirmava
+um campo de parcelas na linha de adição do PC, e ele nunca existiu — o campo só
+vivia na sheet, que no desktop só abria para EDITAR. Lançar uma compra parcelada
+era impossível no PC. Hoje há um botão "Lançar gasto" no cabeçalho da tabela,
+que abre a mesma sheet.
+
 Os caminhos do celular foram verificados no navegador a 390px, um a um, e não
 de memória (22 de 22). A verificação pegou dois falsos negativos que valem
 lembrar para quem for refazê-la:
@@ -26,6 +37,18 @@ lembrar para quem for refazê-la:
 | Abrir qualquer das 6 telas — abas no topo (sm–lg) ou barra lateral (lg+) | Barra inferior: Painel, Mês, Metas e **Mais** (Comparativo anual, Configurações, Ajuda)                                                                       |
 | Trocar tema claro/escuro e sair — rodapé da barra lateral                | Sheet **Mais**, no fim da lista                                                                                                                               |
 | Paleta de comandos (⌘K)                                                  | Não existe — e não precisa: as três coisas que ela faz têm caminho próprio (navegar → barra inferior, ações da tela → menu ⋯, tema/densidade → Configurações) |
+
+## Painel — projeção de fechamento
+
+A única frase do app que fala do futuro, e por isso a única que precisa se
+apresentar como projeção. Cala antes do dia 10 (`dia 3 não tem média`), nos
+últimos dias do mês, e quando não há gasto do dia a dia para fazer ritmo.
+
+| No PC                                                         | No celular                            |
+| ------------------------------------------------------------- | ------------------------------------- |
+| "R$ 820,00 é o que deve sobrar no fim do mês" nas observações | A mesma frase, nas mesmas observações |
+| "É projeção, não fato — faltam 13 dias" na própria frase      | O mesmo                               |
+| Sem base para projetar — a frase simplesmente não aparece     | O mesmo                               |
 
 ## Controle mensal
 
@@ -77,26 +100,32 @@ lembrar para quem for refazê-la:
 
 ## Metas
 
-| No PC                                                                  | No celular                                                                   |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Editar os 12 meses de cada meta — grade meta × mês                     | Tocar no card da meta → sheet com os doze meses em campos de tamanho de dedo |
-| Total guardado por mês — rodapé da grade                               | Faixa deslizante com os doze meses                                           |
-| Progresso de cada meta                                                 | O mesmo card                                                                 |
-| Wishlist: nome, valor, prioridade e "conquistado" — linha de 5 colunas | Card de três faixas, com as estrelas em 44px                                 |
+| No PC                                                                     | No celular                                                                   |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Editar os 12 meses de cada meta — grade meta × mês                        | Tocar no card da meta → sheet com os doze meses em campos de tamanho de dedo |
+| Total guardado por mês — rodapé da grade                                  | Faixa deslizante com os doze meses                                           |
+| Progresso de cada meta                                                    | O mesmo card                                                                 |
+| Wishlist: nome, valor, prioridade e "conquistado" — linha de 5 colunas    | Card de três faixas, com as estrelas em 44px                                 |
+| Prazo da meta — chip **Sem prazo / Até dez/26** embaixo do nome (Config.) | O mesmo chip, com 44px, no card da meta                                      |
+| "Faltam R$ 4.200 em 7 meses — R$ 600 por mês" no card da meta             | O mesmo texto, no mesmo card                                                 |
+| "No ritmo deste ano (R$ 800 por mês), chega em dez/25"                    | O mesmo — e some nos dois quando a base é pequena demais                     |
+| Meta sem prazo: nenhuma projeção, tudo como antes da `0019`               | O mesmo                                                                      |
 
 ## Configurações
 
-| No PC                                                             | No celular                                                                                   |
-| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Ver as quatro seções — coluna única com índice e scroll-spy (lg+) | Quatro abas                                                                                  |
-| Criar categoria / forma / meta — linha de adição                  | Botão de largura total → sheet                                                               |
-| Editar — células inline                                           | Tocar no card → sheet                                                                        |
-| Reordenar — setas ↑ ↓ na linha (aparecem no hover)                | **Subir** / **Descer** dentro da sheet                                                       |
-| Excluir — lixeira na linha                                        | **Excluir** dentro da sheet, com confirmação que diz o que acontece com o que já foi lançado |
-| Escolher a cor da categoria                                       | A mesma paleta de 16 tons (no PC atrás de um botão, no celular aberta na sheet)              |
-| Tema de cor, com miniatura de cada um                             | O mesmo                                                                                      |
-| Modo escuro                                                       | O mesmo                                                                                      |
-| Nome do perfil                                                    | O mesmo                                                                                      |
+| No PC                                                           | No celular                                                                                   |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Ver as seis seções — coluna única com índice e scroll-spy (lg+) | Seis abas numa tira rolável                                                                  |
+| Criar categoria / forma / meta — linha de adição                | Botão de largura total → sheet                                                               |
+| Editar — células inline                                         | Tocar no card → sheet                                                                        |
+| Reordenar — setas ↑ ↓ na linha (aparecem no hover)              | **Subir** / **Descer** dentro da sheet                                                       |
+| Excluir — lixeira na linha                                      | **Excluir** dentro da sheet, com confirmação que diz o que acontece com o que já foi lançado |
+| Escolher a cor da categoria                                     | A mesma paleta de 16 tons (no PC atrás de um botão, no celular aberta na sheet)              |
+| Tema de cor, com miniatura de cada um                           | O mesmo                                                                                      |
+| Modo escuro                                                     | O mesmo                                                                                      |
+| Nome do perfil                                                  | O mesmo                                                                                      |
+| Ligar e desligar cada tipo de lembrete — seção **Lembretes**    | O mesmo, com a linha inteira em 44px como alvo do interruptor                                |
+| Escolher a antecedência do aviso (0 a 15 dias)                  | O mesmo campo, com 44px de altura                                                            |
 
 ## Cartão de crédito
 
@@ -109,6 +138,55 @@ linhas simplesmente não aparecem, e a tela é a de antes da fase 2.
 | Escolher desde quando a fatura vale                                  | O mesmo, na mesma sheet                                        |
 | Ver o exemplo ("compra em 20/08 → fatura de set/25") antes de salvar | O mesmo                                                        |
 | Ver o aviso de que o app não conhece feriado                         | O mesmo                                                        |
+
+## Lembretes de vencimento
+
+O app já sabia o dia de vencimento do gasto fixo (0001) e o da fatura (0009), e
+guardava para si. Os lembretes são cálculo puro sobre a data de hoje no aparelho
+de quem está olhando — nada é agendado, nada é enviado. Só o mês corrente gera
+aviso, e o que foi marcado como pago some.
+
+| No PC                                                   | No celular                                             |
+| ------------------------------------------------------- | ------------------------------------------------------ |
+| Painel **Vence por aqui**, no topo da aba Resumo do mês | O mesmo painel, no mesmo lugar                         |
+| Cada linha leva à tela onde se resolve o vencimento     | O mesmo, com a linha inteira em 44px                   |
+| Fatura fechando, fatura vencendo e gasto fixo vencendo  | Os mesmos três tipos                                   |
+| O que venceu aparece em vermelho e não caduca           | O mesmo, com o cabeçalho virando **Tem coisa vencida** |
+| Nenhum vencimento por perto — o painel some inteiro     | O mesmo: some, não vira card dizendo que não há nada   |
+| Desligar cada tipo em Configurações → Lembretes         | O mesmo, na aba **Lembretes**                          |
+
+## Sugestão de assinatura
+
+Sai da aba **Fixos** do mês, acima da tabela — que é onde mora a resposta. A
+detecção olha doze meses e tem seis travas (ver `src/lib/assinaturas.ts`), todas
+inclinadas para o mesmo lado: **sugerir de menos**. Sugestão errada num app de
+dinheiro custa mais que sugestão ausente.
+
+| No PC                                                                | No celular                                                     |
+| -------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Cartão "Isto parece uma assinatura", acima dos gastos fixos          | O mesmo cartão, na aba **Fixos**                               |
+| **Virar gasto fixo** — nasce com nome, valor, dia, categoria e forma | O mesmo botão, com 44px de altura                              |
+| Vigência começa no primeiro mês em que a cobrança apareceu           | O mesmo — a vigência não depende do tamanho da tela            |
+| Aviso quando o valor oscilou ("Variou entre X e Y")                  | O mesmo                                                        |
+| **Agora não** — dispensa, e a dispensa fica no perfil                | O mesmo; dispensar no celular vale no PC, por isso não é local |
+| Nada repetido o bastante — o cartão não aparece                      | O mesmo: some, não vira card dizendo que não achou nada        |
+
+## Backup e restauração
+
+O arquivo é JSON versionado. Restaurar **nunca apaga nem altera** o que já
+existe — só entra o que falta, e o mesmo arquivo pode ser restaurado duas vezes
+sem duplicar. Duas defesas contra duplicata: o `id`, que viaja no arquivo, e a
+impressão digital da `0008`, recalculada pelo conteúdo dos dois lados para pegar
+a linha que existe aqui com outro id.
+
+| No PC                                                                | No celular                        |
+| -------------------------------------------------------------------- | --------------------------------- |
+| **Baixar backup** — Configurações → Dados                            | O mesmo botão, com 44px           |
+| **Restaurar de um arquivo** — seletor de arquivo do sistema          | O mesmo, com o seletor do celular |
+| Prévia do que vai entrar, tabela por tabela — diálogo                | A mesma prévia, em sheet          |
+| Arquivo que não é backup do finZ — frase dizendo o que fazer         | A mesma frase                     |
+| **Trocar também minhas configurações** — a única parte que substitui | O mesmo, desmarcado por padrão    |
+| Nada novo no arquivo — o botão diz "Nada para restaurar"             | O mesmo                           |
 
 ## Offline e versão nova
 

@@ -72,6 +72,37 @@ export function GradeEditavel({ children, className }: { children: React.ReactNo
       return
     }
 
+    if (evento.key === 'Escape') {
+      /**
+       * Cancela a edição, devolvendo o valor que a célula tinha ao ganhar foco.
+       *
+       * O README promete isso desde sempre e o código nunca implementou — o
+       * teste de contrato desta fase é que descobriu. Quem digita num campo de
+       * dinheiro e percebe o erro no meio não tinha saída a não ser lembrar o
+       * valor antigo e redigitar.
+       *
+       * O setter nativo é necessário porque o MoneyInput é controlado: mexer em
+       * `.value` direto seria desfeito no próximo render do React. Disparar o
+       * evento pelo setter do protótipo é o que faz o onChange do componente
+       * enxergar a mudança e atualizar o estado dele.
+       */
+      const antes = valorAoFocar.current.get(alvo)
+      if (antes === undefined) return
+      evento.preventDefault()
+
+      if (alvo instanceof HTMLInputElement || alvo instanceof HTMLTextAreaElement) {
+        const proto =
+          alvo instanceof HTMLInputElement ? HTMLInputElement.prototype : HTMLTextAreaElement.prototype
+        const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
+        setter?.call(alvo, antes)
+        alvo.dispatchEvent(new Event('input', { bubbles: true }))
+        alvo.select()
+      }
+      // O valor voltou ao original, então o onBlur não vai marcar como salvo:
+      // ele só anima quando o valor mudou de verdade.
+      return
+    }
+
     if (evento.key === 'ArrowDown' || evento.key === 'ArrowUp') {
       const linhaAtual = linhaDe(alvo)
       if (!linhaAtual) return

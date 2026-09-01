@@ -275,7 +275,7 @@ export function relatoriosPadrao() {
     'transactions.listarLancamentosPorIntervalo': [],
     // Vazio por padrão: a sugestão de assinatura é acréscimo, e nenhuma outra
     // spec deve ganhar um cartão extra na tela por causa dela.
-    'transactions.listarParaAssinaturas': [],
+    'transactions.listarGastosRecentes': [],
   }
 }
 
@@ -294,7 +294,7 @@ export { expect } from '@playwright/test'
  */
 export function assinaturasPadrao() {
   return {
-    'transactions.listarParaAssinaturas': [6, 7, 8].map((mes) => ({
+    'transactions.listarGastosRecentes': [6, 7, 8].map((mes) => ({
       id: `n${mes}`,
       data: `2025-0${mes}-12`,
       descricao: 'NETFLIX.COM',

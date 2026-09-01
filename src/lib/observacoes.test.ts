@@ -388,3 +388,47 @@ describe('a projeção de fim de mês', () => {
     expect(ids(o).indexOf('saldo-negativo')).toBeLessThan(ids(o).indexOf('projecao-fechamento'))
   })
 })
+
+describe('a compra fora do padrão', () => {
+  const RESUMO_COM_MOVIMENTO = {
+    total_entradas: 500000,
+    total_saidas: 180000,
+    saldo: 320000,
+    total_investido: 0,
+  }
+  const CATEGORIAS = [{ category_id: 'c1', nome: 'Mercado', gasto_centavos: 40000, limite_centavos: null }]
+
+  const gasto = { id: 't1', categoriaId: 'c1', valorCentavos: 40000, mediaCentavos: 10000, multiplicador: 4 }
+
+  it('aparece com o valor e a frase do gasto-atipico.ts', () => {
+    const o = rodar({ resumo: RESUMO_COM_MOVIMENTO, categorias: CATEGORIAS, gastoAtipico: gasto })
+    expect(texto(o, 'gasto-atipico')).toBe(
+      `${brl(40000)} é 4× a sua média em Mercado (normalmente ${brl(10000)}).`,
+    )
+  })
+
+  it('sem gastoAtipico, o painel fica exatamente como era', () => {
+    const base = { resumo: RESUMO_COM_MOVIMENTO, categorias: CATEGORIAS }
+    expect(ids(rodar(base))).toEqual(ids(rodar({ ...base, gastoAtipico: null })))
+  })
+
+  it('categoria que sumiu entre a compra e a tela não vira frase quebrada', () => {
+    const o = rodar({ resumo: RESUMO_COM_MOVIMENTO, categorias: [], gastoAtipico: gasto })
+    expect(ids(o)).not.toContain('gasto-atipico')
+  })
+
+  it('não diz o que fazer — mesma régua do resto do arquivo', () => {
+    const o = rodar({ resumo: RESUMO_COM_MOVIMENTO, categorias: CATEGORIAS, gastoAtipico: gasto })
+    const frase = texto(o, 'gasto-atipico')
+    expect(frase).not.toMatch(/deveria|precisa|corte|evite|cuidado|gaste menos/i)
+  })
+
+  it('o saldo negativo continua vindo antes: é o que ainda dá para decidir agora', () => {
+    const o = rodar({
+      resumo: { total_entradas: 100000, total_saidas: 180000, saldo: -80000, total_investido: 0 },
+      categorias: CATEGORIAS,
+      gastoAtipico: gasto,
+    })
+    expect(ids(o).indexOf('saldo-negativo')).toBeLessThan(ids(o).indexOf('gasto-atipico'))
+  })
+})

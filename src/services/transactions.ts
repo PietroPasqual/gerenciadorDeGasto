@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase'
 import type { Transaction, TipoLancamento } from '@/lib/database.types'
 import { primeiroDiaISO, ultimoDiaISO } from '@/lib/dates'
 import { montarParcelas } from '@/lib/parcelamento'
-import type { LancamentoParaAssinatura } from '@/lib/assinaturas'
+import type { GastoDaJanela } from '@/lib/assinaturas'
 import { ErroServico, traduzErro, unwrap, userIdAtual } from './base'
 
 export async function listarLancamentos(
@@ -86,18 +86,18 @@ export async function listarLancamentosPorIntervalo(
 }
 
 /**
- * Só o que a detecção de assinatura precisa, na janela dela.
+ * Só os gastos de uma janela larga (tipicamente doze meses) — usada pela
+ * detecção de assinatura (6.2) E pelo alerta de gasto atípico (6.6). As duas
+ * perguntam a mesma coisa ao banco: "o que foi gasto, em que categoria, nos
+ * últimos N meses" — então é a mesma consulta, não duas.
  *
  * Uma consulta própria em vez de reaproveitar `listarLancamentosPorIntervalo`
- * porque a janela é de doze meses: com `select('*')` isso desce a descrição, o
+ * porque a janela é larga: com `select('*')` isso desce a descrição, o
  * fingerprint e o created_at de milhares de linhas para responder uma pergunta
  * que só olha oito campos. O `eq('tipo', 'gasto')` corta o resto no servidor,
  * onde é barato.
  */
-export async function listarParaAssinaturas(
-  inicioISO: string,
-  fimISO: string,
-): Promise<LancamentoParaAssinatura[]> {
+export async function listarGastosRecentes(inicioISO: string, fimISO: string): Promise<GastoDaJanela[]> {
   return (
     unwrap(
       await supabase

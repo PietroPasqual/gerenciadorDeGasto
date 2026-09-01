@@ -20,8 +20,8 @@ export async function excluirLancamento(...args: unknown[]) {
 export async function listarLancamentosPorIntervalo(...args: unknown[]) {
   return doFixture('transactions.listarLancamentosPorIntervalo', args)
 }
-export async function listarParaAssinaturas(...args: unknown[]) {
-  return doFixture('transactions.listarParaAssinaturas', args)
+export async function listarGastosRecentes(...args: unknown[]) {
+  return doFixture('transactions.listarGastosRecentes', args)
 }
 export async function criarLancamentosEmLote(...args: unknown[]) {
   return doFixture('transactions.criarLancamentosEmLote', args)

@@ -1,36 +1,16 @@
 import { useCallback, useMemo } from 'react'
-import { useConsulta } from '@/lib/cache'
-import { paraDataISO } from '@/lib/dates'
 import { detectarAssinaturas, type Assinatura } from '@/lib/assinaturas'
-import { listarParaAssinaturas } from '@/services/transactions'
 import { atualizarPerfil } from '@/services/profiles'
 import { executarOtimista } from '@/lib/otimista'
 import { useAuthStore } from '@/store/auth'
 import type { FixedExpense } from '@/lib/database.types'
-
-/** Doze meses para trás: menos que isso não distingue assinatura de temporada. */
-export const MESES_DA_JANELA = 12
+import { useGastosRecentes } from '@/lib/use-gastos-recentes'
 
 /** Teto do que a 0018 aceita guardar. O cliente poda antes de o banco recusar. */
 export const MAX_IGNORADAS = 200
 
 export function lerIgnoradas(bruto: unknown): string[] {
   return Array.isArray(bruto) ? bruto.filter((c): c is string => typeof c === 'string') : []
-}
-
-/**
- * A janela de detecção, ancorada em HOJE e não no mês aberto na tela.
- *
- * É de propósito: a chave do cache não pode depender do mês navegado, senão
- * passear por doze meses no desktop dispararia doze leituras de doze meses
- * cada. Ancorada em hoje, a leitura acontece uma vez por sessão.
- */
-function janela(hoje = new Date()) {
-  const fim = new Date(hoje)
-  const inicio = new Date(hoje)
-  inicio.setMonth(inicio.getMonth() - (MESES_DA_JANELA - 1))
-  inicio.setDate(1)
-  return { inicioISO: paraDataISO(inicio), fimISO: paraDataISO(fim) }
 }
 
 /**
@@ -43,10 +23,7 @@ export function useAssinaturas(gastosFixos: FixedExpense[]) {
   const perfil = useAuthStore((s) => s.profile)
   const definirProfile = useAuthStore((s) => s.definirProfile)
 
-  const { inicioISO, fimISO } = useMemo(() => janela(), [])
-  const { dados, erro } = useConsulta(['assinaturas', inicioISO, fimISO], () =>
-    listarParaAssinaturas(inicioISO, fimISO),
-  )
+  const { dados, erro } = useGastosRecentes()
 
   const ignoradas = useMemo(() => lerIgnoradas(perfil?.assinaturas_ignoradas), [perfil])
 

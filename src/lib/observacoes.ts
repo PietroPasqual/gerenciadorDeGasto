@@ -18,6 +18,7 @@
 import { formatCentavos } from './money'
 import { periodoAtual } from './dates'
 import { ultimoDiaDoMes } from './fatura'
+import { textoDoGastoAtipico, type GastoAtipico } from './gasto-atipico'
 
 export type Tom = 'neutro' | 'atencao' | 'bom'
 
@@ -170,6 +171,7 @@ export function observacoesDoMes({
   mes,
   ano,
   projecao = null,
+  gastoAtipico = null,
 }: {
   resumo: Resumo
   categorias: Categoria[]
@@ -179,6 +181,8 @@ export function observacoesDoMes({
   ano: number
   /** Já calculada pela tela, ou `null` quando não há base (ver projecaoFimDoMes). */
   projecao?: Projecao | null
+  /** A compra mais atípica do mês, ou `null` (ver gastoMaisAtipico em gasto-atipico.ts). */
+  gastoAtipico?: GastoAtipico | null
 }): Observacao[] {
   const obs: Array<Observacao & { peso: number }> = []
   const { total_entradas, total_saidas, saldo, total_investido } = resumo
@@ -318,6 +322,27 @@ export function observacoesDoMes({
             para: '/mes',
           },
     )
+  }
+
+  // ------------------------------------------------- compra fora do padrão
+  //
+  // Peso 15: mais chamativo que "sem categoria" (10 é engano de cadastro,
+  // rotina), menos urgente que estar no vermelho ou ter estourado um limite
+  // que a própria pessoa definiu.
+  if (gastoAtipico) {
+    const nomeCategoria = categorias.find((c) => c.category_id === gastoAtipico.categoriaId)?.nome
+    // Categoria some da lista (excluída) entre a compra e a tela: sem nome
+    // para mostrar, a frase não tem como ficar honesta.
+    if (nomeCategoria) {
+      obs.push({
+        peso: 15,
+        id: 'gasto-atipico',
+        tom: 'atencao',
+        destaque: reais(gastoAtipico.valorCentavos),
+        texto: textoDoGastoAtipico(gastoAtipico, nomeCategoria),
+        para: '/mes',
+      })
+    }
   }
 
   // -------------------------------------------------------- o que guardou

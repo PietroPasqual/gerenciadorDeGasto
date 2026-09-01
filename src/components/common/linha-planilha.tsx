@@ -7,6 +7,22 @@ import { cn } from '@/lib/utils'
  *          (ex.: "md:grid-cols-[1fr,9rem,3rem]").
  * Mobile:  a mesma linha vira um card empilhado; o rótulo de cada campo
  *          aparece só no mobile (`Campo rotulo="..."`), sem scroll horizontal.
+ *
+ * SEM `role="row"`, DE PROPÓSITO.
+ *
+ * Estes divs já tiveram `role="row"`, e o axe marcava como CRITICAL em duas
+ * regras (`aria-required-parent` e `aria-required-children`): "row" exige uma
+ * `table`/`grid` em volta e células com papel próprio dentro, e não havia nem
+ * uma coisa nem outra. Um leitor de tela anunciava "linha" e não tinha tabela
+ * para navegar — pior do que não anunciar nada.
+ *
+ * Completar a semântica de tabela também não serve: no celular esta mesma
+ * marcação NÃO é uma linha, é um card empilhado, e chamá-la de linha ali seria
+ * outra mentira. Onde uma tabela é mesmo uma tabela, o app usa `<table>` de
+ * verdade (ver a grade meta × mês em metas-page.tsx).
+ *
+ * `data-linha` continua: é dele que a navegação por teclado da GradeEditavel
+ * depende, e ele não promete semântica nenhuma.
  */
 export function Cabecalho({
   template,
@@ -19,7 +35,6 @@ export function Cabecalho({
 }) {
   return (
     <div
-      role="row"
       className={cn(
         'hidden gap-2 border-b border-border px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid',
         template,
@@ -44,7 +59,6 @@ export function Linha({
 }) {
   return (
     <div
-      role="row"
       data-linha
       className={cn(
         // `group` para as ações que só aparecem no hover (D5, ver AcoesLinha

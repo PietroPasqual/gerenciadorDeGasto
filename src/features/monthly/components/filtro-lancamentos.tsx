@@ -95,7 +95,7 @@ export function FiltroLancamentos({
           <button
             type="button"
             onClick={() => onMudar(FILTRO_VAZIO)}
-            className="min-h-11 rounded-md px-1 underline decoration-dotted underline-offset-4 hover:text-foreground md:min-h-0"
+            className="alvo-toque rounded-md px-1 underline decoration-dotted underline-offset-4 hover:text-foreground"
           >
             limpar filtros
           </button>

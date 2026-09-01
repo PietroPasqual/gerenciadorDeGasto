@@ -31,6 +31,7 @@ import { mediaMensal } from '@/lib/calculations'
 import { baixarCSV, csvMoeda, gerarCSV } from '@/lib/csv'
 import { usePeriodoStore } from '@/store/periodo'
 import { cn } from '@/lib/utils'
+import { FaixaRolavel } from '@/components/common/faixa-rolavel'
 
 const TEMPLATE = 'md:grid-cols-[1fr,1fr,1fr,1fr]'
 
@@ -160,9 +161,10 @@ export function ComparativoAnualPage() {
               antes do primeiro dado do ano aparecer. Viram uma faixa que
               desliza, com snap para o card parar inteiro; de sm para cima
               voltam a ser as três colunas. */}
-          <div
+          <FaixaRolavel
+            rotulo="Totais do ano"
             className={cn(
-              'sem-barra-rolagem -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1',
+              '-mx-4 flex snap-x snap-mandatory gap-3 px-4 pb-1',
               'sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0',
             )}
           >
@@ -173,7 +175,7 @@ export function ComparativoAnualPage() {
               valor={totais.diferenca}
               className={totais.diferenca < 0 ? 'text-destructive' : 'text-success'}
             />
-          </div>
+          </FaixaRolavel>
 
           {/* 5+7 na grade de 12 (D2): a lista de doze meses é texto curto e
               cabe em 5; o gráfico de linhas precisa de largura para os meses
@@ -206,7 +208,15 @@ export function ComparativoAnualPage() {
                     'md:grid-cols-[1fr,1fr,1fr,1fr] md:items-center md:gap-2 md:rounded-none md:border-0 md:border-b md:py-1.5',
                     'hover:bg-accent/40',
                     negativo && !futuro && 'bg-destructive/5',
-                    futuro && 'opacity-60',
+                    // Fundo tingido, NUNCA opacidade: `opacity` multiplica o
+                    // texto junto com o resto e derrubava a linha inteira
+                    // abaixo de AA — o valor em text-success ia a 2,54:1 no
+                    // claro e 3,17:1 no escuro, contra o mínimo de 4,5:1. E
+                    // valia nos quatro temas, porque a opacidade age depois da
+                    // cor, contornando por fora a calibração do themes.css.
+                    // O que distingue o mês futuro é a etiqueta "previsto",
+                    // que é texto; o fundo só reforça.
+                    futuro && 'bg-muted/50',
                   )
 
                   const corpo = (
@@ -277,7 +287,7 @@ export function ComparativoAnualPage() {
                       {corpo}
                     </button>
                   ) : (
-                    <div key={linha.mes} role="row" className={classe}>
+                    <div key={linha.mes} className={classe}>
                       {corpo}
                     </div>
                   )

@@ -131,7 +131,7 @@ export function TabelaEntradasRecorrentes({
                         ? `Quando ${item.descricao} é recebido: ${textoVigencia(item)}`
                         : `${item.descricao} não é recebido em ${nomeDoMes(mes)} (${textoVigencia(item)})`
                     }
-                    className="mt-0.5 inline-flex min-h-11 items-center gap-1.5 rounded-md px-1 text-xs text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground md:min-h-0 md:py-1"
+                    className="alvo-toque mt-0.5 inline-flex items-center gap-1.5 rounded-md px-1 text-xs text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground md:py-1"
                   >
                     <CalendarClock className="h-3.5 w-3.5" aria-hidden />
                     {textoVigencia(item)}

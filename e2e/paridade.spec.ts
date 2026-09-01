@@ -170,7 +170,15 @@ test.describe('alvos de toque e layout', () => {
     // um vencimento é justamente o que passaria despercebido nesta varredura.
     await fixarHoje(page, '2025-08-03T10:00:00')
     await prepararApp(page, fixtureMes())
-    for (const rota of ['/painel', '/mes?aba=resumo', '/mes?aba=gastos', '/metas', '/configuracoes']) {
+    for (const rota of [
+      '/painel',
+      '/mes?aba=resumo',
+      '/mes?aba=gastos',
+      '/metas',
+      '/configuracoes',
+      '/ajuda',
+      '/comparativo',
+    ]) {
       await page.goto(rota)
       await expect(page.getByRole('heading').first()).toBeVisible()
       await page.waitForTimeout(300)

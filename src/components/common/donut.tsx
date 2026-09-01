@@ -77,7 +77,16 @@ export function Donut({
       {/* No celular o donut encolhe e a legenda desce para uma lista: a
           <Legend> do Recharts empilha os nomes em duas ou três linhas de 10px
           e ainda esconde o valor atrás de um tooltip que dedo nenhum abre. */}
-      <div style={{ height: ehCelular ? 150 : altura }} className="w-full">
+      {/* O desenho fica FORA da árvore de acessibilidade, de propósito.
+          A <Legenda> logo abaixo já entrega os mesmos dados em texto — nome,
+          valor e percentual, um item de lista por fatia —, e é uma forma
+          melhor de ler um gráfico do que caminho por caminho. Sem isto o axe
+          marcava `svg-img-alt` (serious) no painel e no resumo do mês: o
+          recharts emite <path> sem nome acessível, e o leitor de tela
+          anunciava um punhado de formas anônimas antes de chegar na lista que
+          de fato responde a pergunta. O tooltip do recharts é de ponteiro, e
+          não se perde nada com isto. */}
+      <div aria-hidden style={{ height: ehCelular ? 150 : altura }} className="w-full">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -90,6 +99,11 @@ export function Donut({
               stroke="hsl(var(--card))"
               strokeWidth={2}
               isAnimationActive
+              // O <g> raiz do Pie nasce com tabindex=0: uma parada de tabulação
+              // dentro de um container aria-hidden, que é armadilha de teclado
+              // (axe `aria-hidden-focus`). -1 tira do caminho sem mexer no
+              // desenho.
+              rootTabIndex={-1}
             >
               {fatias.map((fatia, i) => (
                 <Cell key={fatia.nome} fill={fatia.cor || PALETA[i % PALETA.length]} />
@@ -118,7 +132,7 @@ export function Donut({
         <button
           type="button"
           onClick={() => setExpandido((v) => !v)}
-          className="flex min-h-[2.75rem] w-full items-center justify-center gap-1 rounded-lg text-sm text-primary-strong md:min-h-0 md:py-1"
+          className="alvo-toque flex w-full items-center justify-center gap-1 rounded-lg text-sm text-primary-strong md:py-1"
         >
           {expandido ? 'Mostrar só as maiores' : `Mostrar as outras ${ordenado.length - TOPO}`}
           <ChevronDown className={cn('h-4 w-4 transition-transform', expandido && 'rotate-180')} />

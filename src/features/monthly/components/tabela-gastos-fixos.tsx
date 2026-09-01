@@ -137,7 +137,7 @@ export function TabelaGastosFixos({
                           'flex items-center gap-1 rounded-md px-3 text-xs text-muted-foreground hover:text-foreground',
                           // 44px de alvo no celular; no desktop o ponteiro é
                           // preciso e a linha da planilha não pode inchar.
-                          '-mt-1 min-h-[2.75rem] md:mt-0 md:min-h-0 md:py-0.5',
+                          'alvo-toque -mt-1 md:mt-0 md:py-0.5',
                         )}
                       >
                         <CalendarRange className="h-3 w-3 shrink-0" />
@@ -274,7 +274,7 @@ function BotaoPago({
       data-celula
       disabled={desabilitado}
       onClick={() => onAlternar(id, !pago)}
-      className="flex min-h-[2.75rem] shrink-0 items-center gap-1.5 rounded-lg px-1 md:min-h-0 md:justify-center md:px-0"
+      className="alvo-toque flex shrink-0 items-center gap-1.5 rounded-lg px-1 md:justify-center md:px-0"
     >
       <span className="text-[0.7rem] uppercase tracking-wide text-muted-foreground md:hidden">pago</span>
       <span

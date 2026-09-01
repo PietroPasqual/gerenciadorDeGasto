@@ -20,6 +20,7 @@ import { progressoDaMeta, progressoWishlist, totalDeItens } from '@/lib/calculat
 import { projecaoDaMeta, textoDoPrazo, textoDoRitmo } from '@/lib/meta-prazo'
 import { usePeriodoStore } from '@/store/periodo'
 import { cn } from '@/lib/utils'
+import { FaixaRolavel } from '@/components/common/faixa-rolavel'
 import { SheetMeta } from './components/sheet-meta'
 import { useEhMobile } from '@/lib/hooks'
 import { useMetas } from './use-metas'
@@ -109,9 +110,10 @@ function Wishlist({
         {/* Faixa que desliza no celular, três colunas de sm para cima — mesmo
             tratamento dos indicadores do comparativo anual. Empilhados eram
             200px antes do primeiro desejo aparecer. */}
-        <div
+        <FaixaRolavel
+          rotulo="Resumo da wishlist"
           className={cn(
-            'sem-barra-rolagem -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1',
+            '-mx-5 flex snap-x snap-mandatory gap-3 px-5 pb-1',
             'sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:overflow-visible sm:px-0',
           )}
         >
@@ -126,7 +128,7 @@ function Wishlist({
             <p className="text-sm text-muted-foreground">Falta juntar</p>
             <p className="tabular text-lg font-semibold">{formatCentavos(totalPendente)}</p>
           </div>
-        </div>
+        </FaixaRolavel>
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-sm">
@@ -551,7 +553,7 @@ function GradeMetas({
             <p className="mb-1.5 text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
               Total guardado por mês
             </p>
-            <div className="sem-barra-rolagem -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+            <FaixaRolavel rotulo="Total guardado por mês" className="-mx-1 flex gap-1.5 px-1 pb-1">
               {MESES_CURTOS.map((nome, indice) => (
                 <div key={nome} className="shrink-0 rounded-xl border border-border px-3 py-2 text-center">
                   <p className="text-[0.7rem] uppercase text-muted-foreground">{nome}</p>
@@ -560,7 +562,7 @@ function GradeMetas({
                   </p>
                 </div>
               ))}
-            </div>
+            </FaixaRolavel>
           </div>
         )}
 

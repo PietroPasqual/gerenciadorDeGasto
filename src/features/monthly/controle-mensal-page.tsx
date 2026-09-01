@@ -594,7 +594,7 @@ export function ControleMensalPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="min-h-11 shrink-0 md:min-h-0"
+                        className="alvo-toque shrink-0"
                         onClick={() => setMovimentoAberto(true)}
                       >
                         <ArrowRightLeft className="mr-1.5 h-4 w-4" aria-hidden />

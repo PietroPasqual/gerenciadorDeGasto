@@ -64,7 +64,11 @@ export function AjudaPage() {
                 <secao.Icone className="h-5 w-5" />
               </span>
               <CardTitle>
-                <Link to={secao.para} className="hover:underline">
+                {/* `alvo-toque`: o link media 23px de altura no celular, contra
+                    os 44px que o projeto exige. Passava despercebido porque a
+                    varredura de alvo de toque do E2E não incluía /ajuda — o
+                    vão foi fechado junto com esta correção. */}
+                <Link to={secao.para} className="alvo-toque inline-flex items-center hover:underline">
                   {secao.titulo}
                 </Link>
               </CardTitle>

@@ -109,7 +109,7 @@ export function TabelaEntradasRecorrentes({
         {recorrentes.map((item) => {
           const vale = estaVigente(item, ano, mes)
           return (
-            <Linha key={item.id} template={TEMPLATE} className={cn(!vale && 'opacity-55')}>
+            <Linha key={item.id} template={TEMPLATE} className={cn(!vale && 'bg-superficie')}>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 md:contents">
                 <div className="min-w-0 flex-1 basis-full md:basis-auto">
                   <Input

@@ -1,5 +1,13 @@
 import { readFileSync } from 'node:fs'
-import { test, expect, appCompleto, assinaturasPadrao, prepararApp } from './fixtures/base'
+import {
+  test,
+  expect,
+  appCompleto,
+  assinaturasPadrao,
+  mesPadrao,
+  prepararApp,
+  relatoriosPadrao,
+} from './fixtures/base'
 import type { Page } from '@playwright/test'
 
 /**
@@ -17,6 +25,14 @@ import type { Page } from '@playwright/test'
  */
 
 const AXE = readFileSync('node_modules/axe-core/axe.min.js', 'utf8')
+
+/**
+ * As telas PÚBLICAS — landing, login e cadastro. Ficam à parte porque não têm
+ * sessão, e por isso o `prepararApp` delas é diferente. Entraram junto com a
+ * fase 2: uma tela recém-reescrita fora da varredura é o mesmo vão que deixou
+ * /ajuda com alvos de 23px.
+ */
+const ROTAS_PUBLICAS = ['/', '/entrar', '/criar-conta']
 
 /** Todas as telas de dentro do app. A ajuda entra: era o vão de cobertura. */
 const ROTAS = [
@@ -51,9 +67,9 @@ interface Violacao {
  * produz número pior e FALSO. O app já tem a regra global de reduced motion,
  * então aqui o estado final aparece de imediato.
  */
-async function abrir(page: Page, rota: string, tema: string, escuro: boolean) {
+async function abrir(page: Page, rota: string, tema: string, escuro: boolean, logado = true) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await prepararApp(page, { ...appCompleto(), ...assinaturasPadrao() })
+  await prepararApp(page, { ...appCompleto(), ...assinaturasPadrao() }, { logado })
   await page.addInitScript(
     ([t, e]) =>
       localStorage.setItem('gdg-tema', JSON.stringify({ state: { tema: t, escuro: e }, version: 0 })),
@@ -131,6 +147,59 @@ test.describe('acessibilidade no navegador', () => {
       expect(problemas.join('\n'), 'axe encontrou violações').toBe('')
     })
   }
+
+  for (const rota of ROTAS_PUBLICAS) {
+    test(`sem violações de axe em ${rota} (pública)`, async ({ page }) => {
+      const problemas: string[] = []
+      for (const escuro of [false, true]) {
+        await abrir(page, rota, 'rosa', escuro, false)
+        const v = await rodarAxe(page)
+        if (v.length) problemas.push(relatar(rota, escuro ? 'escuro' : 'claro', v))
+      }
+      expect(problemas.join('\n'), 'axe encontrou violações').toBe('')
+    })
+  }
+
+  /**
+   * As linhas INATIVAS — gasto fixo fora de vigência, entrada recorrente
+   * encerrada.
+   *
+   * Estado próprio porque a fixture padrão não o produz, e foi nesse vão que
+   * três `opacity-55`/`opacity-70` sobreviveram: derrubavam o texto para
+   * 2,31:1 no claro e 2,95:1 no escuro, contra o mínimo de 4,5:1. Opacidade
+   * multiplica o texto junto com o fundo e passa por fora da calibração do
+   * themes.css — a mesma armadilha do comparativo anual.
+   */
+  test('contraste nas linhas inativas', async ({ page }) => {
+    const base = mesPadrao()
+    const fixture = {
+      ...relatoriosPadrao(),
+      'mes.carregarMes': {
+        ...base,
+        gastosFixos: [{ ...base.gastosFixos[0], inicio_ano: 2030, inicio_mes: 1 }],
+        entradasRecorrentes: [{ ...base.entradasRecorrentes[0], fim_ano: 2020, fim_mes: 1 }],
+      },
+    }
+    const problemas: string[] = []
+    for (const escuro of [false, true]) {
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await prepararApp(page, fixture)
+      await page.addInitScript(
+        (e) =>
+          localStorage.setItem(
+            'gdg-tema',
+            JSON.stringify({ state: { tema: 'rosa', escuro: e }, version: 0 }),
+          ),
+        escuro,
+      )
+      await page.goto('/mes?aba=fixos')
+      await page.getByRole('heading').first().waitFor()
+      await page.waitForTimeout(400)
+      const v = await rodarAxe(page, ['color-contrast'])
+      if (v.length) problemas.push(relatar('/mes?aba=fixos', escuro ? 'escuro' : 'claro', v))
+    }
+    expect(problemas.join('\n'), 'contraste abaixo de AA em linha inativa').toBe('')
+  })
 
   /**
    * O contraste dos QUATRO temas, nas telas mais densas.

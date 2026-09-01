@@ -179,7 +179,7 @@ function Wishlist({
                   }}
                   className={cn(
                     'order-2 min-w-0 flex-1 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:order-none md:font-normal',
-                    item.concluido && 'line-through opacity-70',
+                    item.concluido && 'line-through text-muted-foreground',
                   )}
                 />
                 <MoneyInput

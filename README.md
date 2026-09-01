@@ -54,10 +54,10 @@ No painel do Supabase, em **Authentication → Providers**:
 
 - **Email**: já vem ligado. Para testar sem confirmar e-mail, desligue _Confirm email_
   em _Authentication → Sign In / Providers → Email_.
-- **Google** (opcional): ative o provider e informe _Client ID_ e _Client Secret_ de um
-  OAuth Client do Google Cloud. Em **Authentication → URL Configuration**, defina
-  _Site URL_ como `http://localhost:5173` e adicione `http://localhost:5173/painel`
-  em _Redirect URLs_ (em produção, use o domínio real).
+  O finZ entra **só com e-mail e senha**. Não há login social: o componente e a
+  chamada de OAuth existiam no código sem nenhuma tela que os alcançasse — uma
+  função que o repositório aparentava ter e que nunca funcionou —, e foram
+  removidos em vez de ligados.
 
 ### 1.5 Variáveis de ambiente
 

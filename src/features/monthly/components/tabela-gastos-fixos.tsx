@@ -109,7 +109,13 @@ export function TabelaGastosFixos({
                   key={gasto.id}
                   template={TEMPLATE}
                   destacada={pago && vigente}
-                  className={cn('relative gap-1.5 md:static', !vigente && 'opacity-55')}
+                  className={cn(
+                    'relative gap-1.5 md:static',
+                    // Fundo tingido, nunca opacidade: ela multiplica o texto e
+                    // derrubava a linha para 2,31:1 (mín. 4,5:1). O que diz
+                    // "fora de vigência" é o chip riscado, que é texto.
+                    !vigente && 'bg-superficie',
+                  )}
                 >
                   {/* 1ª linha no celular: nome, valor e o "pago?" */}
                   <div className="flex items-center gap-2 pr-9 md:contents md:pr-0">

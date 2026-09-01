@@ -5,11 +5,35 @@
     <!-- viewport-fit=cover: sem isso o env(safe-area-inset-*) vale 0 no iOS e
          todo o cuidado com o notch e a barra de gestos vira enfeite. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>finZ — planner financeiro</title>
+    <title>finZ — planner financeiro pessoal em português</title>
     <meta
       name="description"
-      content="Planner financeiro pessoal: controle mensal, metas e comparativo anual."
+      content="Controle mensal, fatura de cartão, parcelas, metas com prazo e comparativo anual. Em reais, em português, com seus dados isolados por RLS no Supabase."
     />
+    <link rel="canonical" href="https://finz.app/" />
+
+    <!-- Open Graph e Twitter: sem eles, um link compartilhado no WhatsApp ou
+         no Slack aparece como URL crua. A imagem é a mesma marca do app, e não
+         uma foto de banco de imagens — não há o que prometer além do produto. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="finZ" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content="finZ — planner financeiro pessoal em português" />
+    <meta
+      property="og:description"
+      content="Controle mensal, fatura de cartão, parcelas, metas com prazo e comparativo anual. Seus dados só seus."
+    />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="finZ — planner financeiro pessoal" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="finZ — planner financeiro pessoal em português" />
+    <meta
+      name="twitter:description"
+      content="Controle mensal, fatura de cartão, parcelas, metas com prazo e comparativo anual."
+    />
+    <meta name="twitter:image" content="/og.png" />
 
     <!-- Ícones: SVG para navegadores modernos, PNG como reserva, e o
          apple-touch-icon que o iOS usa ao "Adicionar à Tela de Início". -->

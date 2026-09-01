@@ -14,7 +14,6 @@ interface EstadoAuth {
   inicializar: () => () => void
   entrar: (email: string, senha: string) => Promise<void>
   criarConta: (email: string, senha: string, nome: string) => Promise<{ precisaConfirmar: boolean }>
-  entrarComGoogle: () => Promise<void>
   recuperarSenha: (email: string) => Promise<void>
   sair: () => Promise<void>
   recarregarPerfil: () => Promise<void>
@@ -73,14 +72,6 @@ export const useAuthStore = create<EstadoAuth>((set, get) => ({
     } finally {
       set({ carregando: false })
     }
-  },
-
-  entrarComGoogle: async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/painel` },
-    })
-    if (error) throw new Error(traduzErroAuth(error.message))
   },
 
   recuperarSenha: async (email) => {

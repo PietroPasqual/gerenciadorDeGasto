@@ -50,6 +50,19 @@ apresentar como projeção. Cala antes do dia 10 (`dia 3 não tem média`), nos
 | "É projeção, não fato — faltam 13 dias" na própria frase      | O mesmo                               |
 | Sem base para projetar — a frase simplesmente não aparece     | O mesmo                               |
 
+## Painel — compra fora do padrão
+
+Fato, não conselho — a régua do `observacoes.ts`: mostra um número conferível
+e não diz o que fazer com ele. Cala sem cinco compras anteriores na categoria
+(sem base não há média), abaixo de R$ 50 (múltiplo de uma média pequena não
+vale o alerta) e para compra parcelada (o valor da parcela é uma fração do
+preço cheio, não o preço).
+
+| No PC                                                              | No celular                            |
+| ------------------------------------------------------------------ | ------------------------------------- |
+| "R$ 400,00 é 4× a sua média em Mercado (normalmente R$ 100,00)"    | A mesma frase, nas mesmas observações |
+| Nenhuma compra passa nas travas — a frase simplesmente não aparece | O mesmo                               |
+
 ## Controle mensal
 
 | No PC                                                            | No celular                                                                                     |

@@ -669,3 +669,73 @@ test.describe('backup e restauração', () => {
     expect((chamada?.args[1] as { perfil: unknown }).perfil).toBeNull()
   })
 })
+
+test.describe('compra fora do padrão', () => {
+  /**
+   * Cinco compras de R$ 100 em julho — o histórico — e uma de R$ 500 em
+   * agosto — a candidata, 5× a média e acima do piso de R$ 50.
+   */
+  function comCompraAtipica() {
+    const historico = Array.from({ length: 5 }, (_, i) => ({
+      id: `h${i}`,
+      data: '2026-07-10',
+      descricao: 'Mercado',
+      valor_centavos: 10000,
+      tipo: 'gasto',
+      category_id: 'c1',
+      payment_method_id: 'p1',
+      parcelamento_id: null,
+    }))
+    return {
+      ...appCompleto(),
+      'transactions.listarGastosRecentes': historico,
+      'mes.carregarMes': {
+        ...mesPadrao(),
+        lancamentos: [
+          {
+            id: 'atipico',
+            user_id: 'u',
+            data: '2026-08-12',
+            descricao: 'Compra grande',
+            payment_method_id: 'p1',
+            category_id: 'c1',
+            valor_centavos: 50000,
+            tipo: 'gasto',
+            created_at: '',
+            fingerprint: null,
+            parcelamento_id: null,
+            parcela: null,
+            parcelas_total: null,
+          },
+        ],
+        gastosFixos: [],
+        faturas: [],
+      },
+    }
+  }
+
+  test('a compra que é 4x ou mais a média da categoria aparece com o número', async ({ page }) => {
+    await fixarHoje(page, '2026-08-18T10:00:00')
+    await prepararApp(page, comCompraAtipica())
+    await page.goto('/painel')
+
+    const linha = page.getByRole('link', { name: /a sua média em Mercado/ })
+    await expect(linha).toBeVisible()
+    await expect(linha).toContainText('5× a sua média em Mercado')
+    await expect(linha).toContainText('normalmente')
+    await expect(linha).toContainText('100,00')
+    await expect(linha).toContainText('500,00')
+  })
+
+  test('sem histórico suficiente, o painel não fala nada sobre a compra', async ({ page }) => {
+    await fixarHoje(page, '2026-08-18T10:00:00')
+    const fixture = comCompraAtipica()
+    // Só duas no histórico: abaixo do mínimo de cinco.
+    fixture['transactions.listarGastosRecentes'] = fixture['transactions.listarGastosRecentes'].slice(0, 2)
+    await prepararApp(page, fixture)
+    await page.goto('/painel')
+
+    await expect(page.getByText(/Gastos por categoria/i)).toBeVisible()
+    await expect(page.getByText(/a sua média em/)).toHaveCount(0)
+  })
+})

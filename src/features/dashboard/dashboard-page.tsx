@@ -28,6 +28,8 @@ import { useAuthStore } from '@/store/auth'
 import { usePeriodoStore } from '@/store/periodo'
 import { cn } from '@/lib/utils'
 import { observacoesDoMes, projecaoFimDoMes } from '@/lib/observacoes'
+import { gastoMaisAtipico, historicoPorCategoria } from '@/lib/gasto-atipico'
+import { useGastosRecentes } from '@/lib/use-gastos-recentes'
 import { estaVigente, vaiParaFatura } from '@/lib/calculations'
 import { carregarMes } from '@/services/mes'
 import { ObservacoesMes } from './components/observacoes-mes'
@@ -141,6 +143,23 @@ export function DashboardPage() {
     })
   }, [resumo, mesCru, hoje.ano, hoje.mes])
 
+  /**
+   * A janela de doze meses é a MESMA leitura da detecção de assinatura (6.2):
+   * mesma chave de cache do `useGastosRecentes`, então o painel não dispara
+   * uma segunda consulta grande só porque este widget existe.
+   */
+  const { dados: gastosRecentes } = useGastosRecentes()
+
+  const gastoAtipico = useMemo(() => {
+    if (!mesCru || !gastosRecentes) return null
+    const candidatos = mesCru.lancamentos.filter((l) => l.tipo === 'gasto')
+    const historico = historicoPorCategoria({
+      gastos: gastosRecentes,
+      periodoAvaliado: { ano: hoje.ano, mes: hoje.mes },
+    })
+    return gastoMaisAtipico({ candidatos, historico })
+  }, [mesCru, gastosRecentes, hoje.ano, hoje.mes])
+
   const observacoes = useMemo(
     () =>
       resumo
@@ -151,9 +170,10 @@ export function DashboardPage() {
             mes: hoje.mes,
             ano: hoje.ano,
             projecao,
+            gastoAtipico,
           })
         : [],
-    [resumo, gastosCategoria, meses, hoje.mes, hoje.ano, projecao],
+    [resumo, gastosCategoria, meses, hoje.mes, hoje.ano, projecao, gastoAtipico],
   )
 
   const primeiroNome = (perfil?.nome ?? '').split(' ')[0]

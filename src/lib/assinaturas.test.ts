@@ -4,7 +4,7 @@ import {
   detectarAssinaturas,
   textoDaAssinatura,
   toleranciaDe,
-  type LancamentoParaAssinatura,
+  type GastoDaJanela,
 } from './assinaturas'
 
 const HOJE = new Date('2025-08-15T12:00:00')
@@ -14,8 +14,8 @@ function lanc(
   data: string,
   descricao: string,
   valor: number,
-  extra: Partial<LancamentoParaAssinatura> = {},
-): LancamentoParaAssinatura {
+  extra: Partial<GastoDaJanela> = {},
+): GastoDaJanela {
   contador += 1
   return {
     id: `t${contador}`,
@@ -37,9 +37,9 @@ function serie(
   de: number,
   ate: number,
   dia = 10,
-  extra: Partial<LancamentoParaAssinatura> = {},
+  extra: Partial<GastoDaJanela> = {},
 ) {
-  const saida: LancamentoParaAssinatura[] = []
+  const saida: GastoDaJanela[] = []
   for (let m = de; m <= ate; m += 1) {
     const v = Array.isArray(valor) ? valor[m - de] : valor
     saida.push(
@@ -49,7 +49,7 @@ function serie(
   return saida
 }
 
-const detectar = (lancamentos: LancamentoParaAssinatura[], gastosFixos: Array<{ nome: string }> = []) =>
+const detectar = (lancamentos: GastoDaJanela[], gastosFixos: Array<{ nome: string }> = []) =>
   detectarAssinaturas({ lancamentos, gastosFixos, hoje: HOJE })
 
 describe('detectarAssinaturas', () => {

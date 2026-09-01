@@ -42,7 +42,7 @@ import { periodoAtual } from './dates'
  * por um trimestre é o preço certo por não sugerir o supermercado.
  */
 
-export interface LancamentoParaAssinatura {
+export interface GastoDaJanela {
   id: string
   /** ISO, `YYYY-MM-DD`. */
   data: string
@@ -136,7 +136,7 @@ export function toleranciaDe(valorTipico: number): number {
  * dependa do relógio de quem roda apodrece na virada do mês.
  */
 export function detectarAssinaturas(params: {
-  lancamentos: LancamentoParaAssinatura[]
+  lancamentos: GastoDaJanela[]
   gastosFixos: FixoExistente[]
   hoje?: Date
 }): Assinatura[] {
@@ -148,7 +148,7 @@ export function detectarAssinaturas(params: {
   // agrupamento para "Netflix" casar com "NETFLIX" e com "Netflix.com".
   const jaEhFixo = new Set(gastosFixos.map((f) => chaveDoDestinatario(f.nome)).filter((c) => c !== ''))
 
-  const grupos = new Map<string, LancamentoParaAssinatura[]>()
+  const grupos = new Map<string, GastoDaJanela[]>()
   for (const l of lancamentos) {
     if (l.tipo !== 'gasto') continue // trava 1
     if (l.parcelamento_id !== null) continue // trava 2
@@ -165,7 +165,7 @@ export function detectarAssinaturas(params: {
   for (const [chave, itens] of grupos) {
     // trava 3: um por mês. Dois no mesmo mês descarta o grupo inteiro, e não
     // só o mês repetido — quem cobra duas vezes num mês não é assinatura.
-    const porMes = new Map<number, LancamentoParaAssinatura>()
+    const porMes = new Map<number, GastoDaJanela>()
     let repetiu = false
     for (const l of itens) {
       const m = indiceDoMes(l.data)
@@ -188,7 +188,7 @@ export function detectarAssinaturas(params: {
     let inicio = ultimo
     while (porMes.has(inicio - 1)) inicio -= 1
     const sequencia = []
-    for (let m = inicio; m <= ultimo; m += 1) sequencia.push(porMes.get(m) as LancamentoParaAssinatura)
+    for (let m = inicio; m <= ultimo; m += 1) sequencia.push(porMes.get(m) as GastoDaJanela)
 
     if (sequencia.length < MESES_MINIMOS) continue // trava 4
 

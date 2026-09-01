@@ -53,6 +53,7 @@ import { useSwipeMes, mesVizinho, type Direcao } from '@/lib/swipe-mes'
 import { useEhMobile } from '@/lib/hooks'
 import { useAuthStore } from '@/store/auth'
 import { atualizarPerfil } from '@/services/profiles'
+import { MOV } from '@/lib/movimento'
 
 const SEM_FIXOS: FixedExpense[] = []
 
@@ -417,7 +418,7 @@ export function ControleMensalPage() {
             key={`${ano}-${mes}`}
             initial={{ opacity: 0, x: direcao.current * 28 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
+            transition={{ duration: MOV.normal, ease: 'easeOut' }}
             onAnimationComplete={() => {
               direcao.current = 0
             }}

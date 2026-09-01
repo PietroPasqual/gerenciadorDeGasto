@@ -98,7 +98,7 @@ export function ResumoMes({
           )}
         </div>
 
-        <div className="rounded-xl bg-muted/50 p-4">
+        <div className="rounded-xl bg-superficie p-4">
           {/* Empilhado e não lado a lado: na coluna de 3/12 (D2) sobravam 82px
               para o texto e "do total que entrou" quebrava em quatro linhas. */}
           <div className="flex flex-col items-center gap-2 text-center">

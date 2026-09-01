@@ -165,7 +165,7 @@ export function SheetMovimentoMeta({
 
           {/* O efeito no resumo do mês, dito antes de salvar. A diferença entre
               as duas ações é justamente essa, e ela não é óbvia. */}
-          <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+          <p className="rounded-lg bg-superficie px-3 py-2 text-sm text-muted-foreground">
             {tipo === 'resgate'
               ? 'Resgatar reduz o total investido do mês — é dinheiro que voltou para você.'
               : 'Transferir não muda o total investido do mês: sai de uma meta e entra na outra.'}

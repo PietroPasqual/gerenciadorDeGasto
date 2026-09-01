@@ -6,6 +6,7 @@ import { Marca } from '@/components/common/marca'
 import { PreviaApp } from '@/components/common/previa-app'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/store/auth'
+import { MOV } from '@/lib/movimento'
 
 const RECURSOS = [
   {
@@ -72,7 +73,7 @@ export function LandingPage() {
           <motion.div
             initial={reduzir ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: MOV.lento }}
             className="max-w-2xl space-y-6"
           >
             <span className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-accent-foreground">
@@ -102,7 +103,7 @@ export function LandingPage() {
           <motion.div
             initial={reduzir ? false : { opacity: 0, y: 24, rotate: -1.5 }}
             animate={{ opacity: 1, y: 0, rotate: -1.5 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
+            transition={{ duration: MOV.lento, delay: 0.15 }}
             // Largura de tela de app, e não a coluna inteira: solta, a prévia
             // esticava para 668px e os valores iam parar na borda direita — lia
             // como banner, não como o produto.
@@ -127,7 +128,7 @@ export function LandingPage() {
               initial={reduzir ? false : { opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-80px' }}
-              transition={{ duration: 0.4, delay: reduzir ? 0 : indice * 0.06 }}
+              transition={{ duration: MOV.lento, delay: reduzir ? 0 : indice * 0.06 }}
             >
               <Card className="h-full">
                 <CardHeader>

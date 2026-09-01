@@ -163,7 +163,7 @@ export function PaletaComandos() {
               return (
                 <li key={c.id}>
                   {novoGrupo && (
-                    <p className="px-3 pb-1 pt-3 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground first:pt-1">
+                    <p className="px-3 pb-1 pt-3 text-micro font-semibold uppercase tracking-wide text-muted-foreground first:pt-1">
                       {c.grupo}
                     </p>
                   )}
@@ -199,10 +199,7 @@ export function DicaAtalho({ className }: { className?: string }) {
   React.useEffect(() => setMac(ehMac()), [])
   return (
     <kbd
-      className={cn(
-        'rounded border border-border px-1.5 py-0.5 text-[0.7rem] text-muted-foreground',
-        className,
-      )}
+      className={cn('rounded border border-border px-1.5 py-0.5 text-micro text-muted-foreground', className)}
     >
       {mac ? '⌘' : 'Ctrl'} K
     </kbd>

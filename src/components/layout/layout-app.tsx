@@ -21,6 +21,7 @@ import { useAcoesPagina } from '@/store/acoes-pagina'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useTemaStore } from '@/store/tema'
+import { MOV } from '@/lib/movimento'
 
 export function LayoutApp() {
   const perfil = useAuthStore((s) => s.profile)
@@ -124,7 +125,7 @@ export function LayoutApp() {
           key={local.pathname}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
+          transition={{ duration: MOV.normal, ease: 'easeOut' }}
           // pb generoso no celular: a barra inferior é fixa e cobriria o fim da página.
           className="container space-y-6 py-6 pb-28 sm:py-8 sm:pb-8"
         >

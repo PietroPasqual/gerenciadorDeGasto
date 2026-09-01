@@ -66,7 +66,7 @@ export function Linha({
         'group grid grid-cols-1 gap-2 rounded-xl border border-border p-3 transition-colors',
         'md:items-center md:rounded-none md:border-0 md:border-b md:px-3 md:py-linha-y',
         destacada && 'bg-primary-soft/60',
-        'hover:bg-accent/40',
+        'hover:bg-realce',
         template,
         className,
       )}
@@ -87,7 +87,7 @@ export function Campo({
 }) {
   return (
     <div className={cn('min-w-0 space-y-1 md:space-y-0', className)}>
-      <span className="block text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground md:hidden">
+      <span className="block text-micro font-medium uppercase tracking-wide text-muted-foreground md:hidden">
         {rotulo}
       </span>
       {children}
@@ -108,7 +108,7 @@ export function Total({
   return (
     <div
       className={cn(
-        'flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2 text-sm font-medium md:rounded-none',
+        'flex items-center justify-between rounded-xl bg-superficie px-3 py-2 text-sm font-medium md:rounded-none',
         className,
       )}
     >

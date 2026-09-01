@@ -206,7 +206,7 @@ export function ComparativoAnualPage() {
                   const classe = cn(
                     'grid grid-cols-1 gap-0.5 rounded-xl border border-border px-3 py-2 text-left transition-colors',
                     'md:grid-cols-[1fr,1fr,1fr,1fr] md:items-center md:gap-2 md:rounded-none md:border-0 md:border-b md:py-1.5',
-                    'hover:bg-accent/40',
+                    'hover:bg-realce',
                     negativo && !futuro && 'bg-destructive/5',
                     // Fundo tingido, NUNCA opacidade: `opacity` multiplica o
                     // texto junto com o resto e derrubava a linha inteira
@@ -216,7 +216,7 @@ export function ComparativoAnualPage() {
                     // cor, contornando por fora a calibração do themes.css.
                     // O que distingue o mês futuro é a etiqueta "previsto",
                     // que é texto; o fundo só reforça.
-                    futuro && 'bg-muted/50',
+                    futuro && 'bg-superficie',
                   )
 
                   const corpo = (

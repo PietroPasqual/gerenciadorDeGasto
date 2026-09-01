@@ -103,7 +103,7 @@ export function TabelaGastos({
       <button
         type="button"
         onClick={() => onAbrirEdicao?.(gasto)}
-        className="flex w-full flex-col gap-1 rounded-xl border border-border px-3 py-2.5 text-left transition-colors active:bg-accent/60"
+        className="flex w-full flex-col gap-1 rounded-xl border border-border px-3 py-2.5 text-left transition-colors active:bg-realce"
       >
         <span className="flex items-baseline justify-between gap-3">
           <span className="min-w-0 flex-1 truncate text-corpo font-medium">{gasto.descricao}</span>

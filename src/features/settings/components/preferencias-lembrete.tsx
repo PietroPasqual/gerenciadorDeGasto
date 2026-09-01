@@ -110,7 +110,7 @@ export function PreferenciasLembreteConfig({
         )}
 
         {!algumLigado && (
-          <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+          <p className="rounded-lg bg-superficie px-3 py-2 text-sm text-muted-foreground">
             Todos os lembretes estão desligados. O app não vai avisar de vencimento nenhum.
           </p>
         )}

@@ -225,7 +225,7 @@ function AbaAparencia() {
                   'flex flex-col gap-2 rounded-xl border p-2 text-xs transition-colors sm:text-sm',
                   tema === opcao.valor
                     ? 'border-primary bg-primary-soft/60 font-medium'
-                    : 'border-border hover:bg-accent/50',
+                    : 'border-border hover:bg-realce',
                 )}
               >
                 <PreviaTema tema={opcao.valor} escuro={escuro} />
@@ -244,7 +244,7 @@ function AbaAparencia() {
             role="switch"
             aria-checked={escuro}
             onClick={alternarEscuro}
-            className="flex w-full items-center justify-between gap-3 rounded-xl border border-border p-3 text-left transition-colors hover:bg-accent/50"
+            className="flex w-full items-center justify-between gap-3 rounded-xl border border-border p-3 text-left transition-colors hover:bg-realce"
           >
             <span>
               <span className="block text-sm font-medium">Modo escuro</span>
@@ -268,7 +268,7 @@ function AbaAparencia() {
                     'rounded-xl border p-3 text-left transition-colors',
                     densidade === opcao.valor
                       ? 'border-primary bg-primary-soft/60'
-                      : 'border-border hover:bg-accent/50',
+                      : 'border-border hover:bg-realce',
                   )}
                 >
                   <span className="block text-sm font-medium">{opcao.rotulo}</span>

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Marca } from '@/components/common/marca'
 import { PreviaApp } from '@/components/common/previa-app'
+import { MOV } from '@/lib/movimento'
 
 export function AuthLayout({
   titulo,
@@ -34,7 +35,7 @@ export function AuthLayout({
           <motion.div
             initial={reduzir ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ duration: MOV.lento, delay: 0.1 }}
             className="mx-auto w-full max-w-[19rem]"
           >
             <PreviaApp />
@@ -59,7 +60,7 @@ export function AuthLayout({
           <motion.div
             initial={reduzir ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: MOV.normal }}
             className="w-full max-w-sm space-y-6"
           >
             <div className="space-y-2">

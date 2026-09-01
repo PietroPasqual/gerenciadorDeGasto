@@ -206,7 +206,7 @@ function Exemplo({ config }: { config: ConfigFatura }) {
   const adiado = config.dia_vencimento !== null && vencimentoAdiado(faturaDentro, config.dia_vencimento)
 
   return (
-    <div className="space-y-1 rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+    <div className="space-y-1 rounded-lg bg-superficie px-3 py-2 text-sm text-muted-foreground">
       <p>
         Compra em <strong>{formatDataISO(dentro)}</strong> → fatura de{' '}
         <strong>{nomeFatura(faturaDentro)}</strong>

@@ -45,7 +45,7 @@ export function PainelLembretes({ lembretes }: { lembretes: Lembrete[] }) {
                   type="button"
                   onClick={() => navegar(l.para)}
                   className={cn(
-                    'flex min-h-11 w-full items-center gap-2.5 rounded-lg px-1 py-1.5 text-left transition-colors hover:bg-accent/60',
+                    'flex min-h-11 w-full items-center gap-2.5 rounded-lg px-1 py-1.5 text-left transition-colors hover:bg-realce',
                   )}
                 >
                   <Icone

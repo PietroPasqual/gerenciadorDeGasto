@@ -180,7 +180,7 @@ export function BackupRestauracao() {
 
           <div className="max-h-[50vh] space-y-1 overflow-y-auto">
             {itensComAlgo.length === 0 ? (
-              <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+              <p className="rounded-lg bg-superficie px-3 py-2 text-sm text-muted-foreground">
                 O arquivo não tem nenhuma linha para restaurar.
               </p>
             ) : (

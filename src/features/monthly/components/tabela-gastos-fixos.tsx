@@ -276,7 +276,7 @@ function BotaoPago({
       onClick={() => onAlternar(id, !pago)}
       className="alvo-toque flex shrink-0 items-center gap-1.5 rounded-lg px-1 md:justify-center md:px-0"
     >
-      <span className="text-[0.7rem] uppercase tracking-wide text-muted-foreground md:hidden">pago</span>
+      <span className="text-micro uppercase tracking-wide text-muted-foreground md:hidden">pago</span>
       <span
         aria-hidden
         className={cn(

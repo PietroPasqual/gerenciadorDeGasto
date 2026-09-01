@@ -90,7 +90,7 @@ export function TabelaEntradasRecorrentes({
       </p>
 
       {duplicadas.length > 0 && (
-        <p className="flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+        <p className="flex items-start gap-2 rounded-lg bg-superficie px-3 py-2 text-sm text-muted-foreground">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>
             {duplicadas.map((r) => r.descricao).join(', ')} também aparece nas entradas avulsas deste mês. As

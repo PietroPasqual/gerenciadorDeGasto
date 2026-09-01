@@ -112,7 +112,7 @@ export function SheetVigencia({
           />
         </div>
 
-        <p className="mt-4 rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+        <p className="mt-4 rounded-lg bg-superficie px-3 py-2 text-sm text-muted-foreground">
           {resumoDoPeriodo(rascunho)}
         </p>
 

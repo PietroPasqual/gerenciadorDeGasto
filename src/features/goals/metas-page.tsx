@@ -451,7 +451,7 @@ function GradeMetas({
                 key={meta.id}
                 type="button"
                 onClick={() => setMetaAberta({ id: meta.id, nome: meta.nome })}
-                className="space-y-1.5 rounded-xl border border-border p-3 text-left transition-colors active:bg-accent/60"
+                className="space-y-1.5 rounded-xl border border-border p-3 text-left transition-colors active:bg-realce"
               >
                 {conteudo}
               </button>
@@ -469,11 +469,11 @@ function GradeMetas({
             <div className="tabela-scroll">
               <table className="w-full min-w-[52rem] text-sm">
                 <caption className="sr-only">Valores guardados por meta em cada mês de {ano}</caption>
-                <thead className="bg-muted/60">
+                <thead className="bg-superficie">
                   <tr>
                     <th
                       scope="col"
-                      className="sticky left-0 z-10 bg-muted/60 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                      className="sticky left-0 z-10 bg-superficie px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                     >
                       Meta
                     </th>
@@ -523,11 +523,11 @@ function GradeMetas({
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-muted/40">
+                <tfoot className="bg-superficie">
                   <tr>
                     <th
                       scope="row"
-                      className="sticky left-0 z-10 bg-muted/40 px-3 py-2 text-left text-xs font-semibold uppercase text-muted-foreground"
+                      className="sticky left-0 z-10 bg-superficie px-3 py-2 text-left text-xs font-semibold uppercase text-muted-foreground"
                     >
                       Total do mês
                     </th>
@@ -550,13 +550,13 @@ function GradeMetas({
             faixa que desliza, com os doze meses do ano. */}
         {ehEstreito && (
           <div>
-            <p className="mb-1.5 text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="mb-1.5 text-micro font-medium uppercase tracking-wide text-muted-foreground">
               Total guardado por mês
             </p>
             <FaixaRolavel rotulo="Total guardado por mês" className="-mx-1 flex gap-1.5 px-1 pb-1">
               {MESES_CURTOS.map((nome, indice) => (
                 <div key={nome} className="shrink-0 rounded-xl border border-border px-3 py-2 text-center">
-                  <p className="text-[0.7rem] uppercase text-muted-foreground">{nome}</p>
+                  <p className="text-micro uppercase text-muted-foreground">{nome}</p>
                   <p className="tabular whitespace-nowrap text-sm font-medium">
                     {formatCentavos(totalDoMes(indice + 1))}
                   </p>

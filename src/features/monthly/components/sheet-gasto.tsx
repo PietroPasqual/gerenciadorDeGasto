@@ -324,7 +324,7 @@ function CampoParcelas({
         </Button>
       </div>
 
-      <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+      <p className="rounded-lg bg-superficie px-3 py-2 text-sm text-muted-foreground">
         {parcelas <= 1 ? (
           'À vista — o valor sai todo de uma vez.'
         ) : valores.length === 0 ? (

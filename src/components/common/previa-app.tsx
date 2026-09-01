@@ -37,7 +37,7 @@ export function PreviaApp({ className }: { className?: string }) {
         <span className="titulo-serif text-sm">
           fin<span className="text-primary-strong">Z</span>
         </span>
-        <span className="ml-auto text-[0.65rem] text-muted-foreground">Agosto</span>
+        <span className="ml-auto text-micro text-muted-foreground">Agosto</span>
       </div>
 
       <div className="space-y-3 p-4">
@@ -57,12 +57,12 @@ export function PreviaApp({ className }: { className?: string }) {
 
         {/* lista de gastos */}
         <div className="space-y-1.5 rounded-xl border border-border p-2.5">
-          <p className="text-[0.65rem] font-medium">Gastos do mês</p>
+          <p className="text-micro font-medium">Gastos do mês</p>
           {GASTOS.map((g) => (
             <div key={g.nome} className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: g.cor }} />
-              <span className="flex-1 truncate text-[0.65rem] text-muted-foreground">{g.nome}</span>
-              <span className="tabular text-[0.65rem] font-medium">{g.valor}</span>
+              <span className="flex-1 truncate text-micro text-muted-foreground">{g.nome}</span>
+              <span className="tabular text-micro font-medium">{g.valor}</span>
             </div>
           ))}
         </div>
@@ -70,7 +70,7 @@ export function PreviaApp({ className }: { className?: string }) {
         {/* meta com barra de progresso */}
         <div className="space-y-1.5 rounded-xl border border-border p-2.5">
           <div className="flex items-baseline justify-between">
-            <span className="text-[0.65rem] font-medium">Reserva de emergência</span>
+            <span className="text-micro font-medium">Reserva de emergência</span>
             <span className="tabular text-[0.6rem] text-muted-foreground">62%</span>
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-muted">

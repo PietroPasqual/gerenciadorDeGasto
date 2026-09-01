@@ -49,7 +49,12 @@ export interface SituacaoOrcamento {
  */
 export function diasRestantesDoMes(ano: number, mes: number, hoje = new Date()): number {
   const total = ultimoDiaDoMes(ano, mes)
-  const atual = periodoAtual()
+  // `periodoAtual(hoje)` e não `periodoAtual()`: as duas perguntas — "qual mês
+  // é hoje" e "que dia do mês é hoje" — têm de vir do MESMO relógio. Um teste
+  // que fixa `hoje` em agosto continua vendo agosto como mês corrente mesmo
+  // que o relógio real já tenha virado para setembro; sem isto, a função dizia
+  // "mês passado" para o mês que o próprio `hoje` está descrevendo.
+  const atual = periodoAtual(hoje)
   if (ano > atual.ano || (ano === atual.ano && mes > atual.mes)) return total
   if (ano < atual.ano || (ano === atual.ano && mes < atual.mes)) return 0
   return total - hoje.getDate() + 1

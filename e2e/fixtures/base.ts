@@ -316,6 +316,11 @@ export function relatoriosPadrao() {
     'profiles.obterPerfil': {
       id: 'u',
       nome: 'Teste',
+      // Conta que já passou do primeiro acesso — como toda conta existente
+      // ficou depois da 0022. Sem isto o guia abriria por cima de todas as
+      // outras specs.
+      onboarding_em: '2025-01-01T00:00:00Z',
+      onboarding_vistos: [],
       tema: 'rosa',
       orcamento_centavos: 0,
       preferencias_lembrete: {

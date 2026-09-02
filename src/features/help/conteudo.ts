@@ -8,6 +8,7 @@ import {
   ListChecks,
   Scale,
   Settings,
+  Sparkles,
   Split,
   Target,
   Upload,
@@ -260,7 +261,7 @@ export const TOPICOS: TopicoAjuda[] = [
     sinonimos: ['tema', 'escuro', 'limite', 'orçamento', 'apagar tudo', 'senha', 'sair', 'conta'],
     corpo: [
       'São oito seções, na ordem do que é seu para o que é irreversível. No PC elas ficam numa coluna com um índice ao lado; no celular viram abas que deslizam.',
-      'Perfil: o nome pelo qual o app te chama.',
+      'Perfil: o nome pelo qual o app te chama, e o botão que reabre o guia de primeiro acesso.',
       'Aparência: tema rosa, azul, verde ou roxo — e modo escuro, que combina com qualquer um. A densidade só existe de tablet para cima, porque é lá que ela muda alguma coisa.',
       'Lembretes: escolha com quantos dias de antecedência o app avisa de faturas e gastos fixos que vencem, e quais tipos você quer ver.',
       'Categorias e limites: nome, cor e limite mensal (opcional). A barra da categoria fica amarela a partir de 80% do limite e vermelha quando estoura.',
@@ -272,6 +273,23 @@ export const TOPICOS: TopicoAjuda[] = [
   },
 
   // -------------------------------------------------------------- detalhes
+  {
+    id: 'primeiro-acesso',
+    grupo: 'telas',
+    Icone: Sparkles,
+    titulo: 'O guia de primeiro acesso',
+    para: '/configuracoes',
+    resumo: 'Sete passos para deixar o app com a sua cara. Todos puláveis.',
+    sinonimos: ['comecar', 'início', 'configurar', 'tutorial', 'primeiros passos'],
+    corpo: [
+      'Ele aparece uma vez, na conta nova: nome, orçamento do mês, sua entrada que se repete, categorias, limites, avisos de vencimento e o primeiro gasto.',
+      'Nenhum passo é obrigatório. "Pular este passo" avança sem gravar nada, e "Fazer isto depois" encerra o guia de vez.',
+      'O estado de cada passo é lido do que existe na sua conta, não de um progresso guardado. Se você configurar o orçamento pelas Configurações, o passo aparece pronto sem o guia precisar saber.',
+      'Por isso ele é retomável: fechar no meio e voltar amanhã mostra exatamente o que ainda falta, em qualquer aparelho.',
+      'O último passo leva à folha de lançamento de verdade, e não a uma cópia menor dela.',
+      'Para abrir de novo: Configurações → Perfil → "Abrir o guia de novo". Ele continua servindo como lista do que ainda falta configurar.',
+    ],
+  },
   {
     id: 'atalhos',
     grupo: 'detalhes',

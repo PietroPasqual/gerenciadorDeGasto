@@ -17,6 +17,9 @@ export async function atualizarLancamento(...args: unknown[]) {
 export async function excluirLancamento(...args: unknown[]) {
   return doFixture('transactions.excluirLancamento', args)
 }
+export async function existeLancamento(...args: unknown[]) {
+  return doFixture('transactions.existeLancamento', args)
+}
 export async function listarLancamentosPorIntervalo(...args: unknown[]) {
   return doFixture('transactions.listarLancamentosPorIntervalo', args)
 }

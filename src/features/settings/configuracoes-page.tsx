@@ -11,6 +11,7 @@ import {
   Palette,
   Plus,
   ShieldCheck,
+  Sparkles,
   Tags,
   Target,
   Trash2,
@@ -346,6 +347,25 @@ function AbaPerfil() {
   const definirProfile = useAuthStore((s) => s.definirProfile)
   const [nome, setNome] = useState(perfil?.nome ?? '')
   const [salvando, setSalvando] = useState(false)
+  const [reabrindo, setReabrindo] = useState(false)
+
+  /**
+   * Reabrir é zerar a coluna da 0022 e recarregar.
+   *
+   * O recarregar é necessário: o guia é montado pela moldura do app e só decide
+   * abrir uma vez por sessão, então mudar o perfil no store não o traria de
+   * volta sozinho.
+   */
+  const reabrirGuia = async () => {
+    setReabrindo(true)
+    try {
+      definirProfile(await atualizarPerfil({ onboarding_em: null }))
+      window.location.assign('/painel')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Não foi possível reabrir o guia.')
+      setReabrindo(false)
+    }
+  }
 
   const salvarNome = async () => {
     setSalvando(true)
@@ -378,6 +398,25 @@ function AbaPerfil() {
         >
           Salvar
         </Button>
+
+        {/* O guia aparece uma vez por conta. Sem esta porta ele seria
+            irrecuperável — e ele é justamente a lista do que ainda falta
+            configurar, que continua útil no terceiro mês de uso. */}
+        <div className="border-t border-border pt-3">
+          <p className="mb-2 text-sm text-muted-foreground">
+            O guia de primeiro acesso mostra o que já está configurado e o que falta.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="alvo-toque"
+            disabled={reabrindo}
+            onClick={() => void reabrirGuia()}
+          >
+            <Sparkles className="mr-1.5 h-4 w-4" aria-hidden />
+            Abrir o guia de novo
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )

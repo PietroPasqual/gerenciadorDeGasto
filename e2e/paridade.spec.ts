@@ -666,6 +666,161 @@ test.describe('wishlist', () => {
   })
 })
 
+test.describe('primeiro acesso guiado', () => {
+  /** Conta nova: nada configurado, e o guia nunca encerrado. */
+  function contaNova(mudancas: Record<string, unknown> = {}) {
+    const base = relatoriosPadrao()
+    return {
+      ...appCompleto(),
+      'profiles.obterPerfil': {
+        ...(base['profiles.obterPerfil'] as Record<string, unknown>),
+        nome: '',
+        orcamento_centavos: 0,
+        onboarding_em: null,
+        onboarding_vistos: [],
+      },
+      'recurring-incomes.listarEntradasRecorrentes': [],
+      'transactions.existeLancamento': false,
+      // Categorias semeadas pela 0004, sem limite nenhum — a fixture comum tem
+      // um limite em Mercado, e ele deixaria o passo "limites" pronto antes de
+      // a pessoa fazer qualquer coisa.
+      'categories.listarCategorias': [
+        {
+          id: 'c1',
+          user_id: 'u',
+          nome: 'Mercado',
+          limite_centavos: null,
+          cor: '#a5f6d8',
+          ordem: 1,
+          created_at: '',
+        },
+        {
+          id: 'c2',
+          user_id: 'u',
+          nome: 'Transporte',
+          limite_centavos: null,
+          cor: '#9ecbff',
+          ordem: 2,
+          created_at: '',
+        },
+      ],
+      ...mudancas,
+    }
+  }
+
+  test('abre sozinho na conta nova, e nunca em quem já usa o app', async ({ page }) => {
+    await prepararApp(page, contaNova())
+    await page.goto('/painel')
+    await expect(page.getByRole('heading', { name: 'Deixe o app com a sua cara' })).toBeVisible()
+
+    // A fixture padrão tem `onboarding_em` preenchido — como toda conta que já
+    // existia ficou depois da 0022.
+    await prepararApp(page, fixtureMes())
+    await page.goto('/painel')
+    await expect(page.getByRole('heading', { name: 'Deixe o app com a sua cara' })).toHaveCount(0)
+  })
+
+  test('mostra progresso e abre na primeira pendente', async ({ page }) => {
+    await prepararApp(page, contaNova())
+    await page.goto('/painel')
+    await expect(page.getByText('0 de 7')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Como te chamar' })).toBeVisible()
+  })
+
+  /**
+   * O ponto inteiro de derivar o estado do dado: ninguém precisou avisar o
+   * guia de que o orçamento foi configurado por outro caminho.
+   */
+  test('o que já foi configurado por fora chega marcado como feito', async ({ page }) => {
+    const base = relatoriosPadrao()
+    await prepararApp(
+      page,
+      contaNova({
+        'profiles.obterPerfil': {
+          ...(base['profiles.obterPerfil'] as Record<string, unknown>),
+          nome: 'Ana',
+          orcamento_centavos: 300000,
+          onboarding_em: null,
+          onboarding_vistos: [],
+        },
+        'transactions.existeLancamento': true,
+      }),
+    )
+    await page.goto('/painel')
+    await expect(page.getByText('3 de 7')).toBeVisible()
+    // Nome, orçamento e primeiro gasto prontos: a primeira pendente é a entrada.
+    await expect(page.getByRole('heading', { name: 'Sua entrada que se repete' })).toBeVisible()
+  })
+
+  test('salvar o nome escreve pelo mesmo serviço das configurações', async ({ page }) => {
+    await prepararApp(page, contaNova())
+    await page.goto('/painel')
+    await page.getByLabel('Seu nome').fill('Ana')
+    await page.getByRole('button', { name: 'Salvar nome' }).click()
+
+    const gravadas = await escritas(page)
+    const salva = gravadas.find((e) => e.chave === 'profiles.atualizarPerfil')
+    expect(salva?.args[0]).toEqual({ nome: 'Ana' })
+  })
+
+  test('"pular" não grava dado de exemplo nenhum', async ({ page }) => {
+    await prepararApp(page, contaNova())
+    await page.goto('/painel')
+    await page.getByRole('button', { name: 'Pular este passo' }).click()
+    await expect(page.getByRole('heading', { name: /Quanto você quer gastar/ })).toBeVisible()
+
+    // Nem nome vazio, nem orçamento zero: pular é não escrever.
+    const gravadas = await escritas(page)
+    expect(gravadas.some((e) => e.chave === 'profiles.atualizarPerfil')).toBe(false)
+  })
+
+  test('"fazer isto depois" encerra o guia de vez', async ({ page }) => {
+    await prepararApp(page, contaNova())
+    await page.goto('/painel')
+    await page.getByRole('button', { name: 'Fazer isto depois' }).click()
+    await expect(page.getByRole('heading', { name: 'Deixe o app com a sua cara' })).toHaveCount(0)
+
+    const gravadas = await escritas(page)
+    const salva = gravadas.find(
+      (e) => e.chave === 'profiles.atualizarPerfil' && 'onboarding_em' in (e.args[0] as object),
+    )
+    expect(typeof (salva?.args[0] as { onboarding_em: string }).onboarding_em).toBe('string')
+  })
+
+  test('dá para andar pelos passos em qualquer ordem', async ({ page }) => {
+    await prepararApp(page, contaNova())
+    await page.goto('/painel')
+    await page.getByRole('button', { name: /Passo 6: Avisos de vencimento/ }).click()
+    await expect(page.getByRole('heading', { name: 'Avisos de vencimento' })).toBeVisible()
+    await page.getByRole('button', { name: /Passo 1: Como te chamar/ }).click()
+    await expect(page.getByRole('heading', { name: 'Como te chamar' })).toBeVisible()
+  })
+
+  test('o último passo leva à folha de lançamento de verdade', async ({ page }) => {
+    await prepararApp(page, contaNova())
+    await page.goto('/painel')
+    await page.getByRole('button', { name: /Passo 7: Seu primeiro gasto/ }).click()
+    await page.getByRole('link', { name: 'Lançar meu primeiro gasto' }).click()
+    // O guia não tem formulário próprio: usa `?novo=1`, o mesmo atalho do
+    // manifest. Confirmo a FOLHA aberta, e não o endereço — a tela consome o
+    // parâmetro na hora, para o botão voltar não reabrir a folha.
+    await expect(page.getByRole('heading', { name: 'Novo gasto' })).toBeVisible()
+  })
+
+  test('"está bom assim" resolve o passo que não dá para derivar', async ({ page }) => {
+    await prepararApp(page, contaNova())
+    await page.goto('/painel')
+    await page.getByRole('button', { name: /Passo 4: As categorias/ }).click()
+    await page.getByRole('button', { name: 'Está bom assim' }).click()
+
+    const gravadas = await escritas(page)
+    const salva = gravadas.find(
+      (e) => e.chave === 'profiles.atualizarPerfil' && 'onboarding_vistos' in (e.args[0] as object),
+    )
+    expect((salva?.args[0] as { onboarding_vistos: string[] }).onboarding_vistos).toEqual(['categorias'])
+  })
+})
+
 test.describe('configurações', () => {
   test.beforeEach(async ({ page }) => {
     await prepararApp(page, fixtureMes())

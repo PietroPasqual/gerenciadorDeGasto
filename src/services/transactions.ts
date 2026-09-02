@@ -76,6 +76,18 @@ export async function excluirLancamento(id: string): Promise<void> {
   if (error) throw error
 }
 
+/**
+ * Existe pelo menos um lançamento nesta conta?
+ *
+ * `limit(1)` e só o id: o guia de primeiro acesso precisa de um sim ou não, e
+ * baixar o histórico inteiro para responder isso seria caro justamente na
+ * conta que ainda não tem nada — mas também na que tem três anos.
+ */
+export async function existeLancamento(): Promise<boolean> {
+  const linhas = unwrap(await supabase.from('transactions').select('id').limit(1)) ?? []
+  return linhas.length > 0
+}
+
 /** Lançamentos de um intervalo qualquer — usado para achar duplicata na importação. */
 export async function listarLancamentosPorIntervalo(
   inicioISO: string,

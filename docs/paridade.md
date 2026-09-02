@@ -262,6 +262,21 @@ porque a página abre e não responde.
 | "O que o fechamento e o vencimento mudam" — configurações  | O mesmo                           |
 | "O que entra, o que fica e o que nunca é apagado" — backup | O mesmo                           |
 
+## Primeiro acesso guiado
+
+Ver `docs/onboarding.md`. Uma folha só, igual nos dois tamanhos: o estado de
+cada passo é lido do dado real, então não há progresso para divergir entre
+aparelhos.
+
+| No PC                                                       | No celular                       |
+| ----------------------------------------------------------- | -------------------------------- |
+| O guia abre sozinho na conta nova, uma vez                  | O mesmo                          |
+| Ver progresso ("3 de 7") e a barra                          | O mesmo                          |
+| Andar pelos sete passos em qualquer ordem — trilha de chips | A mesma trilha, rolando de lado  |
+| Pular um passo, ou encerrar o guia                          | Os mesmos botões, com 44px       |
+| Lançar o primeiro gasto — leva à folha de verdade           | O mesmo link, para a mesma folha |
+| Reabrir o guia — Configurações → Perfil                     | O mesmo botão                    |
+
 ## Quando alguma tela quebra
 
 O limite de erro (`src/components/common/limite-de-erro.tsx`) vive dentro do

@@ -28,6 +28,10 @@ export interface Database {
           preferencias_lembrete: Json
           /** Chaves de destinatário dispensadas na sugestão de assinatura (ver 0018). */
           assinaturas_ignoradas: Json
+          /** Quando o primeiro acesso guiado foi encerrado. NULL = ainda não apareceu (ver 0022). */
+          onboarding_em: string | null
+          /** Passos do guia resolvidos sem mudar dado (ver 0022). */
+          onboarding_vistos: string[]
         }
         Insert: {
           id: string
@@ -37,6 +41,8 @@ export interface Database {
           orcamento_centavos?: number
           preferencias_lembrete?: Json
           assinaturas_ignoradas?: Json
+          onboarding_em?: string | null
+          onboarding_vistos?: string[]
         }
         Update: {
           id?: string
@@ -46,6 +52,8 @@ export interface Database {
           orcamento_centavos?: number
           preferencias_lembrete?: Json
           assinaturas_ignoradas?: Json
+          onboarding_em?: string | null
+          onboarding_vistos?: string[]
         }
         Relationships: []
       }

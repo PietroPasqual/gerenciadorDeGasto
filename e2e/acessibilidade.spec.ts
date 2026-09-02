@@ -100,29 +100,46 @@ async function abrir(page: Page, rota: string, tema: string, escuro: boolean, lo
   }
 }
 
-async function rodarAxe(page: Page, regras?: string[]): Promise<Violacao[]> {
+/**
+ * `contexto` limita a varredura a um pedaço da tela — e ele existe por causa de
+ * um falso positivo real.
+ *
+ * Quando uma folha está aberta, o overlay (`bg-foreground/40`) cobre a página
+ * atrás dela. O axe mede o texto daquela página ATRAVÉS do overlay e reprova
+ * cores que passam limpo com a folha fechada — a varredura da própria rota já
+ * mede aquilo, sem véu nenhum. Medir a folha pelo seu `role="dialog"` afirma o
+ * que se quis afirmar, e nada além.
+ */
+async function rodarAxe(page: Page, regras?: string[], contexto?: string): Promise<Violacao[]> {
   await page.addScriptTag({ content: AXE })
-  return page.evaluate(async (somente) => {
-    const opcoes = somente ? { runOnly: somente } : { runOnly: ['wcag2a', 'wcag2aa', 'wcag22aa'] as string[] }
-    // @ts-expect-error axe é injetado no navegador
-    const r = await window.axe.run(document, opcoes)
-    return r.violations.map((v: never) => {
-      const viol = v as {
-        id: string
-        impact: string
-        nodes: Array<{ html: string; target: string[]; any: Array<{ message: string }> }>
-      }
-      return {
-        id: viol.id,
-        impacto: viol.impact,
-        nos: viol.nodes.slice(0, 5).map((n) => ({
-          html: n.html.slice(0, 120),
-          alvo: n.target.join(' '),
-          resumo: n.any[0]?.message ?? '',
-        })),
-      }
-    })
-  }, regras)
+  return page.evaluate(
+    async ([somente, alvo]) => {
+      const opcoes = somente
+        ? { runOnly: somente as string[] }
+        : { runOnly: ['wcag2a', 'wcag2aa', 'wcag22aa'] as string[] }
+      const raiz = alvo ? document.querySelector(alvo as string) : document
+      if (!raiz) throw new Error(`Contexto "${alvo}" não existe na tela — a varredura não olharia nada.`)
+      // @ts-expect-error axe é injetado no navegador
+      const r = await window.axe.run(raiz, opcoes)
+      return r.violations.map((v: never) => {
+        const viol = v as {
+          id: string
+          impact: string
+          nodes: Array<{ html: string; target: string[]; any: Array<{ message: string }> }>
+        }
+        return {
+          id: viol.id,
+          impacto: viol.impact,
+          nos: viol.nodes.slice(0, 5).map((n) => ({
+            html: n.html.slice(0, 120),
+            alvo: n.target.join(' '),
+            resumo: n.any[0]?.message ?? '',
+          })),
+        }
+      })
+    },
+    [regras, contexto] as const,
+  )
 }
 
 function relatar(rota: string, contexto: string, violacoes: Violacao[]): string {
@@ -292,10 +309,60 @@ test.describe('acessibilidade no navegador', () => {
       await page.getByRole('button', { name: /Estado de Notebook/ }).click()
       await expect(page.getByText(/o mesmo dinheiro para os dois/)).toBeVisible()
       await page.waitForTimeout(250)
-      const v = await rodarAxe(page)
+      const v = await rodarAxe(page, undefined, '[role="dialog"]')
       if (v.length) problemas.push(relatar('folha de estado do desejo', escuro ? 'escuro' : 'claro', v))
     }
     expect(problemas.join('\n'), 'violações na folha de estado do desejo').toBe('')
+  })
+
+  /**
+   * O guia de primeiro acesso, aberto.
+   *
+   * Ele só existe no DOM para uma conta que nunca o encerrou, e a fixture de
+   * toda a suíte marca a conta como encerrada (é o que impede o guia de abrir
+   * por cima das outras specs). Sem esta passada, sete passos de formulário
+   * nunca teriam sido varridos.
+   */
+  test('sem violações de axe no guia de primeiro acesso', async ({ page }) => {
+    const problemas: string[] = []
+    for (const escuro of [false, true]) {
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      const base = appCompleto()
+      await prepararApp(page, {
+        ...base,
+        ...assinaturasPadrao(),
+        'profiles.obterPerfil': {
+          ...(base['profiles.obterPerfil'] as Record<string, unknown>),
+          nome: '',
+          orcamento_centavos: 0,
+          onboarding_em: null,
+          onboarding_vistos: [],
+        },
+        'recurring-incomes.listarEntradasRecorrentes': [],
+        'transactions.existeLancamento': false,
+      })
+      await page.addInitScript(
+        (e) =>
+          localStorage.setItem(
+            'gdg-tema',
+            JSON.stringify({ state: { tema: 'rosa', escuro: e }, version: 0 }),
+          ),
+        escuro,
+      )
+      await page.goto('/painel')
+      await expect(page.getByRole('heading', { name: 'Deixe o app com a sua cara' })).toBeVisible()
+      await page.waitForTimeout(250)
+      const v = await rodarAxe(page, undefined, '[role="dialog"]')
+      if (v.length) problemas.push(relatar('guia de primeiro acesso', escuro ? 'escuro' : 'claro', v))
+
+      // O passo dos lembretes traz um bloco inteiro emprestado das
+      // Configurações, e ele não aparece no passo 1.
+      await page.getByRole('button', { name: /Passo 6: Avisos de vencimento/ }).click()
+      await page.waitForTimeout(200)
+      const v6 = await rodarAxe(page, undefined, '[role="dialog"]')
+      if (v6.length) problemas.push(relatar('guia, passo 6', escuro ? 'escuro' : 'claro', v6))
+    }
+    expect(problemas.join('\n'), 'violações no guia de primeiro acesso').toBe('')
   })
 
   /**
@@ -344,7 +411,7 @@ test.describe('acessibilidade no navegador', () => {
       await expect(folha.getByText('Este lançamento é de Outubro de 2025')).toBeVisible()
       await expect(folha.getByText(/entra na fatura de/i)).toBeVisible()
       await page.waitForTimeout(250)
-      const v = await rodarAxe(page, ['color-contrast'])
+      const v = await rodarAxe(page, ['color-contrast'], '[role="dialog"]')
       if (v.length) problemas.push(relatar('folha de lançamento', escuro ? 'escuro' : 'claro', v))
     }
     expect(problemas.join('\n'), 'contraste abaixo de AA nas consequências').toBe('')

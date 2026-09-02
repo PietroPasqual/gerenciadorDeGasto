@@ -19,6 +19,8 @@ export async function atualizarPerfil(mudancas: {
   orcamento_centavos?: number
   preferencias_lembrete?: Json
   assinaturas_ignoradas?: Json
+  onboarding_em?: string | null
+  onboarding_vistos?: string[]
 }): Promise<Profile> {
   const userId = await userIdAtual()
   return unwrap(

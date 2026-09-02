@@ -1,88 +1,79 @@
-# Proposta: primeiro acesso guiado (nada implementado)
+# Primeiro acesso guiado (implementado — migration `0022`)
 
-## O problema
+> Esta nota substitui a proposta anterior, escrita antes de o guia existir. As
+> regras que ela defendia — pulável, retomável, idempotente, sem dado fictício
+> — continuam valendo; o que mudou foi a forma de garanti-las.
 
-Hoje, quem cria conta cai direto no painel de um mês vazio. A `0004` semeia
-categorias e formas de pagamento padrão — então a tela não está literalmente
-em branco —, mas ninguém disse à pessoa o que aquilo significa, e nada nela
-ainda é dela: nome genérico de categoria, nenhum orçamento, nenhuma entrada
-recorrente cadastrada, lembretes com os padrões da `0017` que ninguém
-confirmou.
+## O que ele resolve
 
-O primeiro minuto de uso decide se a pessoa volta amanhã. Um onboarding curto
-transforma "tela vazia, e agora?" em "já configurei o básico, hora de lançar
-o primeiro gasto".
+Quem cria conta caía direto num painel de mês vazio. A `0004` semeia categorias
+e formas de pagamento, então a tela não estava literalmente em branco — mas
+nada nela ainda era da pessoa: nome genérico, nenhum orçamento, nenhuma entrada
+recorrente, lembretes com o padrão da `0017` que ninguém confirmou.
 
-## O que ele pediria, em ordem
+O guia é uma lista de sete passos: nome, orçamento, entrada recorrente,
+categorias, limites, lembretes e o primeiro gasto.
 
-1. **Nome** — já existe em `profiles.nome`; só falta perguntar cedo.
-2. **Orçamento do mês** — `profiles.orcamento_centavos` (`0015`). Opcional:
-   quem não sabe o número ainda pode pular e configurar depois em
-   Configurações.
-3. **Principal entrada recorrente** — um atalho para criar UMA
-   `recurring_incomes` (salário, o caso mais comum), não uma tela de
-   cadastro completa.
-4. **Categorias que quer usar** — a `0004` já cria um conjunto padrão; aqui a
-   pessoa só marca quais quer manter e pode renomear/remover na hora, em vez
-   de abrir Configurações depois para faxinar o que não usa.
-5. **Limites** — opcional, só nas categorias marcadas no passo anterior.
-6. **Preferências de lembrete** — os três interruptores e a antecedência da
-   `0017`, mostrados com os valores padrão já marcados: a pessoa confirma ou
-   ajusta, não parte do zero.
-7. **Primeiro gasto** — termina com uma ação real, não com "pronto!". A tela
-   seguinte já é o mês com um lançamento nela.
+## A decisão que organiza tudo: o estado é DERIVADO, não guardado
 
-## Regras que fariam esta proposta funcionar
+O óbvio seria guardar "em que passo a pessoa está". Isso cria uma segunda
+verdade que envelhece — o ponteiro diria "passo 2" enquanto o orçamento do
+passo 2 já existe, e a tela pediria de novo algo já feito.
 
-**Pulável, e sem culpa.** Cada etapa tem "Pular" visível — e "pular tudo"
-manda direto pro painel. Ninguém pode ficar preso.
+Em vez disso, cada passo pergunta ao dado real: tem nome? tem orçamento? tem
+entrada recorrente? alguma categoria com limite? algum lançamento? Quem
+configurou o orçamento pelas Configurações volta ao guia e encontra o passo
+pronto, sem ninguém ter avisado o guia.
 
-**Retomável.** Fechar o app no passo 3 e voltar amanhã continua no passo 3,
-não recomeça do 1. Isso implica guardar em algum lugar "até onde a pessoa
-chegou" — um campo simples em `profiles` (`onboarding_etapa` ou
-`onboarding_concluido_em`) resolve, e é aditivo: uma coluna nova, default
-que não muda comportamento de ninguém que já tem conta.
+Três propriedades saem daí de graça:
 
-**Idempotente em cada etapa.** Salvar o nome duas vezes não pode criar duas
-entradas recorrentes nem duplicar categoria. Isso é automático se cada etapa
-usa os mesmos `criarX`/`atualizarX` que Configurações já usa — o onboarding
-não é um caminho de escrita novo, é uma ordem guiada por cima do que existe.
+- **Retomável** — não há progresso para perder. Fechar no meio e voltar amanhã
+  mostra exatamente o que ainda falta.
+- **Idempotente** — salvar duas vezes escreve o mesmo dado no mesmo lugar,
+  porque cada passo usa os mesmos serviços que as Configurações usam. O guia
+  não é um caminho de escrita novo; é uma ordem sugerida por cima do que existe.
+- **Honesto** — ele nunca afirma que algo está configurado quando não está.
 
-**Nunca inventa dado na conta real.** Nenhum valor de exemplo é gravado como
-se fosse real; campos vazios ficam vazios até a pessoa preencher.
+## Os dois passos que não dão para derivar
 
-**Conta antiga nunca vê isto.** `onboarding_concluido_em is null` e a conta
-foi criada antes da existência do onboarding → marcar como concluído sem
-mostrar nada, não empurrar o fluxo para quem já usa o app.
+Categorias e lembretes já nascem preenchidos (`0004` e `0017`), e "está bom
+assim" é uma resposta legítima. Não há nada no dado que distinga "conferi e
+gostei" de "nunca olhei".
 
-## Onde ele mora tecnicamente
+Para esses existe `profiles.onboarding_vistos`, um `text[]` que guarda só o "eu
+olhei isto". Ele **nunca contradiz o dado**, porque só acrescenta: um passo é
+feito se o dado diz que sim **ou** se está na lista.
 
-- Estado: um wizard de poucos passos, cada um seu próprio componente, sem
-  rota própria — um overlay sobre o painel, na linha do que já existe para
-  sheets. Sair no meio preserva o que já foi salvo (regra da idempotência
-  acima).
-- Dado: nenhuma tabela nova além da coluna de progresso em `profiles`. Tudo o
-  resto já existe.
-- Entrada: dispara uma vez, depois do primeiro login, quando
-  `onboarding_concluido_em is null`. Um link em Configurações ("Refazer a
-  configuração inicial") permite rodar de novo por vontade própria.
+## O que a `0022` guarda
 
-## Como isto se encaixa com o prompt de redesign visual
+| Coluna              | Para quê                                                             |
+| ------------------- | -------------------------------------------------------------------- |
+| `onboarding_em`     | Quando o guia foi encerrado — concluído OU dispensado. NULL = nunca. |
+| `onboarding_vistos` | Os passos resolvidos sem mudar dado.                                 |
 
-O prompt de evolução visual (seção 14.1) também especifica onboarding, com os
-mesmos campos essencialmente — nome, orçamento, entrada recorrente,
-categorias, limites, lembretes, primeiro gasto — mas dentro de uma direção
-visual mais elaborada (progresso mostrado, cada etapa salva de forma
-idempotente, pulável). Esta nota foi escrita ANTES daquele prompt existir
-como sequência combinada de trabalho; quando a fase de onboarding daquele
-prompt for implementada, é este documento que deve ser revisado e
-substituído — as regras acima (pulável, retomável, idempotente, sem dado
-fictício) continuam valendo e não precisam ser redecididas, só desenhadas de
-novo com a linguagem visual da fase 1 daquele prompt.
+Quem já usava o app nunca vê o guia: a migration marca toda conta existente
+como encerrada. Empurrar uma configuração inicial para quem tem um ano de
+lançamentos seria ruído, não ajuda.
 
-## Recomendação
+## Regras que o código cumpre, e onde
 
-Baixo risco, alto retorno: nenhuma tabela nova de peso, nenhuma mudança de
-schema em dado existente, e o pior caso de bug (etapa que falha) é uma pessoa
-ver o painel vazio de novo — o comportamento de hoje, não uma regressão. Vale
-a pena antes de qualquer coisa mais arriscada da fase 8.
+- **Nunca grava dado de exemplo.** "Pular" não escreve valor nenhum — só avança.
+  Campo em branco fica em branco.
+- **Tudo é pulável.** Todo passo tem `opcional: true`, e "Fazer isto depois"
+  encerra de vez.
+- **Abre uma vez por sessão.** A decisão é tomada na primeira leitura do perfil
+  e não é revista: uma gravação posterior que devolvesse um perfil parcial
+  reabriria o guia por cima do que a pessoa está fazendo.
+- **O último passo sai do guia.** "Lançar meu primeiro gasto" leva à folha de
+  verdade (`?novo=1`, o mesmo atalho do manifest). Uma cópia menor dela, sem
+  parcelas, fatura e consequências, ensinaria o app errado.
+- **Dá para reabrir.** Configurações → Perfil → "Abrir o guia de novo". Sem essa
+  porta ele seria irrecuperável, e ele continua útil no terceiro mês de uso —
+  é a lista do que ainda falta configurar.
+
+## Onde está
+
+- Regra pura e testada: `src/lib/onboarding.ts`
+- Leituras e escritas: `src/features/onboarding/use-guia.ts`
+- Tela: `src/features/onboarding/guia-primeiro-acesso.tsx`
+- Montagem: `src/components/layout/layout-app.tsx`

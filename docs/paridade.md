@@ -22,9 +22,11 @@ Os caminhos do celular foram verificados no navegador a 390px, um a um, e não
 de memória (22 de 22). A verificação pegou dois falsos negativos que valem
 lembrar para quem for refazê-la:
 
-- Contar `nav[aria-label="Navegação principal"]` no DOM dá 3 (barra lateral,
-  abas do header e barra inferior). O que importa é quantos estão **visíveis** —
-  use `checkVisibility()`, não a contagem.
+- Contar `nav[aria-label="Navegação principal"]` no DOM dava 3 (barra lateral,
+  abas do header e barra inferior), e o que importava era quantos estavam
+  **visíveis** — `checkVisibility()`, não a contagem. **A fase 3 acabou com o
+  problema pela raiz:** há uma navegação só no DOM, o dock, e o teste cobra as
+  duas coisas.
 - `textContent` lê texto de elemento oculto. Para afirmar que algo NÃO aparece
   no celular, também vale `checkVisibility()`.
 
@@ -32,11 +34,53 @@ lembrar para quem for refazê-la:
 
 ## Navegação
 
-| No PC                                                                    | No celular                                                                                                                                                    |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Abrir qualquer das 6 telas — abas no topo (sm–lg) ou barra lateral (lg+) | Barra inferior: Painel, Mês, Metas e **Mais** (Comparativo anual, Configurações, Ajuda)                                                                       |
-| Trocar tema claro/escuro e sair — rodapé da barra lateral                | Sheet **Mais**, no fim da lista                                                                                                                               |
-| Paleta de comandos (⌘K)                                                  | Não existe — e não precisa: as três coisas que ela faz têm caminho próprio (navegar → barra inferior, ações da tela → menu ⋯, tema/densidade → Configurações) |
+A fase 3 trocou três navegações por uma. Esta seção é a que mais encolheu com
+isso: onde havia uma coluna por largura, agora há **o mesmo dock nas duas**, e
+as linhas que sobram são as poucas coisas que continuam diferindo de verdade.
+
+| No PC                                                      | No celular                                                                             |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Dock flutuante: Painel, Mês, Metas, Ano e **Mais**         | O mesmo dock, nos mesmos cinco alvos                                                   |
+| Configurações e Ajuda — sheet **Mais**                     | O mesmo                                                                                |
+| Trocar tema claro/escuro e sair — sheet **Mais**           | O mesmo                                                                                |
+| Mover o dock para a lateral — sheet **Mais**               | Não existe: abaixo de lg o dock fica sempre embaixo, que é onde o polegar alcança      |
+| Paleta de comandos — ⌘K, ou **Mais → Buscar tela ou ação** | Só por **Mais → Buscar tela ou ação**; o atalho de teclado não tem equivalente no dedo |
+
+A última linha é ganho da fase 3, e não paridade preexistente: até ela a paleta
+só abria por ⌘K, e portanto **não abria no celular**. A tabela registrava isso
+como "não existe, e não precisa". Precisava.
+
+## Painel personalizável
+
+A edição mora no PRÓPRIO painel, e não em Configurações: mexer no arranjo de
+uma tela olhando para um formulário noutra é escolher no escuro. Aqui cada seta
+move um card que está à vista.
+
+Não há diferença de caminho entre PC e celular — o que muda é só quantas colunas
+o grid interno de cada bloco usa, que já era assim antes.
+
+| No PC                                                          | No celular                               |
+| -------------------------------------------------------------- | ---------------------------------------- |
+| "Personalizar" no cabeçalho da tela                            | O mesmo botão, no mesmo lugar            |
+| Mover um bloco — setas ↑ ↓ na moldura dele                     | As mesmas setas, em alvos de 44px        |
+| Esconder um bloco — ícone de olho na moldura                   | O mesmo                                  |
+| Trazer de volta — botão na bandeja "Escondidos"                | O mesmo                                  |
+| Trocar a capa — seis amostras, a escolhida com um tique        | As mesmas seis, quebrando em duas linhas |
+| "Voltar ao padrão" — limpa ordem, escondidos e capa de uma vez | O mesmo                                  |
+
+Três coisas que a tabela não mostra e valem registro:
+
+- **Nada de arrastar.** Custaria uma biblioteca, não teria equivalente de
+  teclado que não fosse "mover para cima/para baixo" — que é o que as setas já
+  são — e arrastar o último card até o topo num painel que rola é a pior
+  interação de toque que existe.
+- **Em modo de edição os cards ficam `inert`.** Eles continuam à vista, mas não
+  recebem toque nem tabulação: um toque mal-calibrado no card de atalhos levaria
+  a pessoa para outra tela no meio da personalização.
+- **A capa não tem texto por cima.** É `aria-hidden` e puramente decorativa. O
+  gradiente muda de luminosidade ao longo da faixa, e texto ali teria contraste
+  diferente em cada ponto — a mesma armadilha do `opacity-60` que derrubou o
+  comparativo anual para 2,54:1.
 
 ## Painel — projeção de fechamento
 
@@ -106,7 +150,7 @@ preço cheio, não o preço).
 | Ver "fat. set" no gasto que vai para uma fatura                              | A mesma etiqueta no card                                                                       |
 | Editar/excluir parcela — pergunta "só esta ou as N?"                         | O mesmo diálogo, com os botões empilhados e 44px cada                                          |
 | Marcar vários lançamentos — botão "Marcar" no cabeçalho da tabela            | O mesmo botão, e o card inteiro vira alvo da marcação                                          |
-| Ver quantos, quanto somam e de que recorte saíram                            | A mesma barra, presa acima da navegação (o FAB se recolhe)                                     |
+| Ver quantos, quanto somam e de que recorte saíram                            | A mesma barra, grudada acima do dock (o FAB se recolhe)                                        |
 | Categorizar em lote / trocar a forma em lote                                 | As mesmas ações, na mesma barra                                                                |
 | Duplicar os marcados, com desfazer                                           | O mesmo                                                                                        |
 | Excluir os marcados — confirmação que diz o escopo, e desfazer               | O mesmo diálogo, com botões de 44px                                                            |
@@ -236,7 +280,7 @@ ainda não entrou.
 | No PC                                                     | No celular                                                          |
 | --------------------------------------------------------- | ------------------------------------------------------------------- |
 | Abrir o app sem rede e ver o mês já visitado              | O mesmo                                                             |
-| Aviso de "sem internet" — canto inferior esquerdo         | O mesmo aviso, centralizado acima da barra inferior                 |
+| Aviso de "sem internet" — canto inferior esquerdo         | O mesmo aviso, centralizado acima do dock                           |
 | Aviso de versão nova, com botão "Atualizar"               | O mesmo, com o botão em 44px                                        |
 | Atalho para lançar gasto — paleta de comandos (⌘K) ou FAB | Atalho **Lançar gasto** ao segurar o ícone do app, que abre a folha |
 
@@ -283,12 +327,12 @@ O limite de erro (`src/components/common/limite-de-erro.tsx`) vive dentro do
 `<main>`, então a moldura de navegação fica de pé nos dois tamanhos e a saída
 está sempre a um toque.
 
-| No PC                                                              | No celular                                                  |
-| ------------------------------------------------------------------ | ----------------------------------------------------------- |
-| Cartão de erro no lugar do conteúdo, abas e barra lateral intactas | O mesmo cartão, com a barra inferior intacta                |
-| **Tentar novamente** — remonta a tela sem recarregar o app         | O mesmo, com os dois botões em coluna e 44px de altura cada |
-| **Voltar ao início** — vai para o painel                           | O mesmo                                                     |
-| Navegar para outra tela limpa o erro sozinho                       | O mesmo, inclusive pela barra inferior                      |
+| No PC                                                      | No celular                                                  |
+| ---------------------------------------------------------- | ----------------------------------------------------------- |
+| Cartão de erro no lugar do conteúdo, dock intacto          | O mesmo cartão, com o dock intacto                          |
+| **Tentar novamente** — remonta a tela sem recarregar o app | O mesmo, com os dois botões em coluna e 44px de altura cada |
+| **Voltar ao início** — vai para o painel                   | O mesmo                                                     |
+| Navegar para outra tela limpa o erro sozinho               | O mesmo, inclusive pelo dock                                |
 
 ### A única linha assimétrica
 

@@ -25,6 +25,76 @@ caro e estão anotadas lá:
   comparativo anual foram parar em 2,54:1 contra o mínimo de 4,5:1, nos quatro
   temas. Para apagar, use uma superfície ou uma cor de texto própria.
 
+**O escuro é o padrão.** Isso vale só para quem ainda não escolheu: o `persist`
+do store hidrata antes, então quem já usava o claro continua no claro. O claro
+não virou versão secundária por isso — os dois seguem com as mesmas contas de
+contraste aqui, e o e2e mede os quatro temas nos dois modos. O que mudou foi
+qual deles atende a quem não pediu nada.
+
+O padrão aparece em dois lugares e eles têm que concordar: `escuro: true` em
+`store/tema.ts` e o `<html class="dark">` do `index.html`. Lá há também um
+script síncrono que lê a preferência gravada antes da primeira pintura — sem
+ele, quem pediu o claro leva um flash preto enquanto o pacote JS carrega. Ele
+duplica de propósito o que `aplicar()` faz: não duplicar exigiria carregar o
+store, que é justamente o que demora.
+
+## Vidro
+
+Uma superfície translúcida com desfoque, para o que flutua POR CIMA do
+conteúdo: o dock e o cabeçalho grudado. Uma barra opaca ali corta a página em
+duas; uma translúcida mostra que o conteúdo continua embaixo.
+
+A translucidez é o **conteúdo da superfície**, não um `opacity` sobre o texto —
+a mesma distinção da seção de Cor. O texto do dock é pintado depois, com a cor
+e o contraste de sempre.
+
+`--vidro` é `--card` a 88% e não a 60% porque o que passa atrás entra na conta
+do contraste. A pior composição é o rótulo inativo em `muted-foreground` sobre
+o vidro com texto do app por trás: ~4,8:1 no claro, contra o mínimo de 4,5.
+Baixar o alfa derruba esse número.
+
+Fundo, blur e fallback andam juntos na classe `.vidro` do `index.css`, e não
+como três utilitários soltos. Onde não há `backdrop-filter`, o fundo vira
+opaco: sem o desfoque, a translucidez não embaça nada — ela só deixa o texto da
+página aparecer atrás do texto do dock, que é o pior dos dois mundos.
+
+## Capa
+
+Gradientes nomeados (`--capa-aurora` e companhia) para a faixa decorativa do
+topo do painel. São **gradiente e não imagem** por decisão, não por atalho:
+capa exigiria arquivos originais em AVIF/WebP, um por variante, e o projeto não
+tem nenhum; banco de imagens seria promessa que o produto não cumpre; hotlink
+seria dependência de domínio de terceiro numa tela que abre offline.
+
+Derivam das variáveis do tema, então a mesma capa é rosa no tema rosa e verde
+no verde, escurece junto no escuro, e não custa um byte de rede.
+
+O perfil guarda o **nome** da capa, nunca o gradiente. Assim aposentar ou
+redesenhar uma capa não invalida o que já está gravado, e nome desconhecido cai
+no padrão (`lib/painel.ts`).
+
+**Nada de texto sobre a capa.** O gradiente muda de luminosidade ao longo da
+faixa, e texto ali teria contraste diferente em cada ponto — fora do alcance de
+qualquer calibração deste arquivo. `--capa-scrim` existe para a base dissolver
+no fundo da página, e o título fica abaixo, sobre `--background`.
+
+## Dock
+
+`--dock-altura`, `--dock-raio`, `--dock-margem`, `--sombra-dock` e as duas
+reservas. As medidas ficam num lugar só porque **quatro** componentes as leem: o
+dock, o respiro do `<main>`, o FAB e a barra de ações em lote.
+
+`--dock-reserva` é derivada — `altura + margem + max(margem, safe-area)` — e não
+um número escolhido de novo. Era exatamente assim que o `pb-28` da barra
+inferior antiga saía do lugar: ele fora calibrado para a altura de uma
+navegação que depois mudou, e junto com ele saíram de lugar o `bottom-24` do
+FAB, o `bottom-[4.75rem]` da barra de seleção e o `bottom-[5.5rem]` do aviso de
+versão. Os quatro leem o token agora.
+
+Cuidado ao mexer no `<main>`: um `sm:py-8` escreve `padding-bottom` de dentro
+de uma media query e **ganha** do `pb-dock-reserva` sem prefixo. Por isso a
+casca usa `pt-`, e a reserva é dona do lado de baixo sozinha.
+
 ## Superfície
 
 Três níveis, e nada de opacidade escolhida caso a caso:
@@ -113,12 +183,10 @@ o que separa camadas ali é o card ser mais claro que o fundo.
 
 ## O que NÃO existe, e por quê
 
-Tokens que o redesign vai pedir e que **não** foram criados agora, porque nada
-os consome ainda e token sem consumidor é peso morto:
+Tokens que **não** existem, porque nada os consome e token sem consumidor é
+peso morto. (Blur e gradiente saíram desta lista nas fases 3 e 4: o dock e a
+capa passaram a consumi-los, e viraram as seções _Vidro_ e _Capa_ acima.)
 
-- **Blur** — o dock flutuante e o scrim da capa vão precisar. As duas coisas
-  dependem de decisões ainda não tomadas.
-- **Gradiente** — idem.
 - **Paleta de gráfico por tema.** Hoje `PALETA` vive em `donut.tsx`, com três
   tons derivados do `primary` e sete pastéis fixos. Não tem defeito medível:
   as fatias são conteúdo não-textual, separadas por um traço da cor do card, e

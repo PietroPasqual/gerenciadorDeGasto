@@ -321,6 +321,12 @@ export function relatoriosPadrao() {
       // outras specs.
       onboarding_em: '2025-01-01T00:00:00Z',
       onboarding_vistos: [],
+      // Painel de fábrica (0023): listas vazias significam "nunca
+      // personalizei", e é assim que toda conta existente ficou. As specs que
+      // não são do painel precisam ver os quatro blocos na ordem declarada.
+      painel_ordem: [],
+      painel_ocultos: [],
+      painel_capa: 'aurora',
       tema: 'rosa',
       orcamento_centavos: 0,
       preferencias_lembrete: {

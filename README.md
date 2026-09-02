@@ -114,12 +114,17 @@ src/
                              money-input     -> input de dinheiro (texto <-> centavos)
                              numero-animado  -> número que conta ao carregar
                              donut, estrelas, seletor-periodo, estados (vazio/erro)
-    layout/                Casca do app logado (topo + navegação + transição de página)
+    layout/                Casca do app logado
+                             dock            -> a ÚNICA navegação, flutuante, em toda largura
+                             layout-app      -> topo, área de conteúdo e transição de página
+                             paleta-comandos -> ⌘K, ou "Mais -> Buscar" no dock
 
   features/<dominio>/      Uma pasta por tela; cada uma com sua página, seus componentes
     auth/                    login, cadastro, guarda de rota
     landing/                 página pública
-    dashboard/               painel com resumo do mês e atalhos
+    dashboard/               painel personalizável — a pessoa move, esconde e escolhe a capa
+      use-painel.ts            lê e grava o arranjo no perfil (migration 0023)
+      components/              capa (gradiente), widget (moldura do modo de edição)
     monthly/                 CONTROLE MENSAL (tela principal)
       use-controle-mensal.ts   carrega o mês e concentra os updates otimistas
       exportar.ts              CSV do mês

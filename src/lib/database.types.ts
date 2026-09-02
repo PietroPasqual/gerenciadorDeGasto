@@ -32,6 +32,12 @@ export interface Database {
           onboarding_em: string | null
           /** Passos do guia resolvidos sem mudar dado (ver 0022). */
           onboarding_vistos: string[]
+          /** Ordem dos widgets do painel — a ordem é a do array (ver 0023). */
+          painel_ordem: string[]
+          /** Widgets que a pessoa escondeu. Separado da ordem de propósito (ver 0023). */
+          painel_ocultos: string[]
+          /** Nome do gradiente de capa do painel (ver 0023). */
+          painel_capa: string
         }
         Insert: {
           id: string
@@ -43,6 +49,9 @@ export interface Database {
           assinaturas_ignoradas?: Json
           onboarding_em?: string | null
           onboarding_vistos?: string[]
+          painel_ordem?: string[]
+          painel_ocultos?: string[]
+          painel_capa?: string
         }
         Update: {
           id?: string
@@ -54,6 +63,9 @@ export interface Database {
           assinaturas_ignoradas?: Json
           onboarding_em?: string | null
           onboarding_vistos?: string[]
+          painel_ordem?: string[]
+          painel_ocultos?: string[]
+          painel_capa?: string
         }
         Relationships: []
       }

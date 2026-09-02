@@ -3,8 +3,12 @@ import { cn } from '@/lib/utils'
 
 /**
  * Botão flutuante da ação principal da tela, no celular.
- * Fica acima da barra de navegação (bottom-24) para não cobri-la, e some a
- * partir de sm — no desktop a mesma ação já está visível na própria tabela.
+ * Some a partir de sm — no desktop a mesma ação já está visível na tabela.
+ *
+ * Ele sobe acima do dock pela MESMA reserva que o conteúdo usa
+ * (`--dock-reserva`), e não por um `bottom-24` escolhido no olho. Era assim
+ * antes, e o número tinha sido calibrado para a altura da barra inferior de
+ * então: qualquer mudança na navegação o deixava colado ou boiando.
  */
 export function Fab({
   onClick,
@@ -21,11 +25,12 @@ export function Fab({
       onClick={onClick}
       aria-label={rotulo}
       className={cn(
-        'fixed bottom-24 z-30 grid h-14 w-14 place-items-center rounded-full',
+        'fixed bottom-dock-reserva z-30 mb-2 grid h-14 w-14 place-items-center rounded-full',
         'bg-primary text-primary-foreground shadow-2 transition-transform active:scale-95 sm:hidden',
-        // right/mb com env(): em paisagem o botão ficava por baixo do notch e
-        // da barra de gestos.
-        'right-[max(1rem,env(safe-area-inset-right))] mb-[env(safe-area-inset-bottom)]',
+        // O inset de baixo já está DENTRO de --dock-reserva; repeti-lo aqui
+        // empurraria o botão duas vezes. O da direita continua, para o botão
+        // não cair sob o notch em paisagem.
+        'right-[max(1rem,env(safe-area-inset-right))]',
         className,
       )}
     >

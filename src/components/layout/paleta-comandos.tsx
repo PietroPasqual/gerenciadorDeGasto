@@ -20,6 +20,23 @@ interface Comando {
 /** ⌘ no Mac, Ctrl no resto. Só para desenhar a dica — o atalho escuta os dois. */
 const ehMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
+const EVENTO_ABRIR = 'finz:abrir-paleta'
+
+/**
+ * Abre a paleta de fora dela.
+ *
+ * Quem quisesse isto antes fabricava um `KeyboardEvent` de ⌘K e jogava na
+ * window — a barra lateral fazia exatamente isso. Funcionava por tabela: o
+ * atalho é um `toggle`, então um segundo disparo com a paleta já aberta a
+ * FECHAVA, e o "Buscar…" do dock viraria um interruptor em vez de um botão.
+ *
+ * Um evento próprio que só abre resolve os dois problemas, e não depende mais
+ * de o atalho continuar sendo ⌘K.
+ */
+export function abrirPaleta() {
+  window.dispatchEvent(new CustomEvent(EVENTO_ABRIR))
+}
+
 /**
  * Paleta de comandos (D4).
  *
@@ -49,8 +66,13 @@ export function PaletaComandos() {
         setAberta((v) => !v)
       }
     }
+    const aoPedirAbertura = () => setAberta(true)
     window.addEventListener('keydown', aoTeclar)
-    return () => window.removeEventListener('keydown', aoTeclar)
+    window.addEventListener(EVENTO_ABRIR, aoPedirAbertura)
+    return () => {
+      window.removeEventListener('keydown', aoTeclar)
+      window.removeEventListener(EVENTO_ABRIR, aoPedirAbertura)
+    }
   }, [])
 
   const comandos: Comando[] = React.useMemo(

@@ -39,7 +39,24 @@ export const useTemaStore = create<EstadoTema>()(
   persist(
     (set, get) => ({
       tema: 'rosa',
-      escuro: false,
+      /**
+       * Escuro é o padrão do app.
+       *
+       * Isto vale só para quem ainda não escolheu: o `persist` abaixo hidrata
+       * antes, então quem já usava o claro continua no claro sem perceber
+       * nada — o padrão é o que preenche a ausência, não o que sobrescreve a
+       * escolha. Conta nova, aparelho novo e navegador com o storage limpo é
+       * que abrem no escuro.
+       *
+       * O claro NÃO virou versão secundária por isso: os dois seguem
+       * calibrados no themes.css, com as mesmas contas de contraste, e o e2e
+       * de acessibilidade continua medindo os quatro temas nos dois modos.
+       * O que mudou foi qual deles atende a quem não pediu nada.
+       *
+       * O index.html sabe deste padrão e o repete no <html class="dark">, para
+       * o primeiro quadro já sair na cor certa. Mudou aqui, mude lá.
+       */
+      escuro: true,
 
       definirTema: (tema, salvarNoPerfil = true) => {
         set({ tema })

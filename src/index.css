@@ -108,6 +108,25 @@
     animation: flash-salvo 0.6s ease-out;
   }
 
+  /* Superfície de vidro: o dock flutuante e os cabeçalhos grudados.
+
+     Uma classe, e não três utilitários soltos, porque o fallback faz parte do
+     desenho. Sem backdrop-filter (Firefox com a flag desligada, WebView
+     velha) a translucidez não embaça coisa nenhuma — ela apenas deixa o texto
+     da página aparecer ATRÁS do texto do dock, que é o pior dos dois mundos.
+     Ali o fundo vira opaco e o dock deixa de ser vidro, de propósito. */
+  .vidro {
+    background-color: var(--vidro);
+    -webkit-backdrop-filter: blur(var(--vidro-blur));
+    backdrop-filter: blur(var(--vidro-blur));
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .vidro {
+      background-color: var(--vidro-opaco);
+    }
+  }
+
   /* Wrapper padrão de tabela: rolagem contida, nunca estoura o body */
   .tabela-scroll {
     @apply w-full overflow-x-auto rounded-lg border border-border;

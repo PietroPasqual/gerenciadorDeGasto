@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   ArrowDown,
   ArrowUp,
@@ -9,9 +10,12 @@ import {
   Database,
   Palette,
   Plus,
+  ShieldCheck,
   Tags,
   Target,
   Trash2,
+  Upload,
+  UserRound,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -50,6 +54,7 @@ import { executarOtimista } from '@/lib/otimista'
 import { lerPreferencias, type PreferenciasLembrete } from '@/lib/lembretes'
 import { MAX_METAS } from '@/lib/limites'
 import { LinkAjuda } from '@/components/common/link-ajuda'
+import { SegurancaSessao } from './components/seguranca-sessao'
 import { useConfiguracoes } from './use-configuracoes'
 
 const TIPOS: Array<{ valor: TipoPagamento; rotulo: string }> = [
@@ -80,14 +85,37 @@ const TEMAS: Array<{ valor: TemaCor; rotulo: string }> = [
   { valor: 'roxo', rotulo: 'Roxo' },
 ]
 
+/**
+ * A ordem é a da fase 6, e ela não é alfabética: começa pelo que é seu (perfil,
+ * aparência), passa pelo que o app faz sozinho (lembretes), pelo que você
+ * cadastra uma vez (categorias, formas, metas) e termina no que é irreversível
+ * (dados, sessão). Quem rola de cima para baixo vai do inofensivo ao sério.
+ *
+ * SEM BUSCA, DE PROPÓSITO
+ *
+ * A fase 6 pede busca "apenas se a quantidade justificar". São oito seções e
+ * cerca de quinze controles, todos visíveis num rolar; um campo de busca aqui
+ * seria mais uma coisa a manter e uma segunda forma de achar o que o índice já
+ * acha. A busca que valia a pena foi a da ajuda, onde o texto é longo.
+ */
 const SECOES: SecaoConfig[] = [
+  { id: 'perfil', rotulo: 'Perfil', Icone: UserRound },
   { id: 'aparencia', rotulo: 'Aparência', Icone: Palette },
   { id: 'lembretes', rotulo: 'Lembretes', Icone: BellRing },
-  { id: 'categorias', rotulo: 'Categorias', Icone: Tags },
+  { id: 'categorias', rotulo: 'Categorias e limites', Icone: Tags },
   { id: 'pagamento', rotulo: 'Formas de pagamento', Icone: CreditCard },
   { id: 'metas', rotulo: 'Metas', Icone: Target },
-  { id: 'dados', rotulo: 'Dados', Icone: Database },
+  { id: 'dados', rotulo: 'Importação e dados', Icone: Database },
+  { id: 'seguranca', rotulo: 'Segurança e sessão', Icone: ShieldCheck },
 ]
+
+/** Os rótulos que não cabem em 360px, com o nome curto que a aba usa lá. */
+const ABREVIADO: Record<string, string | undefined> = {
+  pagamento: 'Pagamento',
+  categorias: 'Categorias',
+  dados: 'Dados',
+  seguranca: 'Segurança',
+}
 
 export function ConfiguracoesPage() {
   const { dados, carregando, erro, recarregar, acoes } = useConfiguracoes()
@@ -103,6 +131,8 @@ export function ConfiguracoesPage() {
 
   const conteudo = (id: string) => {
     if (!dados) return null
+    if (id === 'perfil') return <AbaPerfil />
+    if (id === 'seguranca') return <SegurancaSessao />
     if (id === 'aparencia') return <AbaAparencia />
     if (id === 'lembretes') return <AbaLembretes />
     if (id === 'categorias') return <AbaCategorias dados={dados} acoes={acoes} />
@@ -110,6 +140,7 @@ export function ConfiguracoesPage() {
     if (id === 'dados')
       return (
         <div className="space-y-4">
+          <OndeImportar />
           {/* Backup antes de apagar, de propósito: quem chega nesta seção para
               limpar tudo passa primeiro pela porta que salva. */}
           <BackupRestauracao />
@@ -134,16 +165,19 @@ export function ConfiguracoesPage() {
           <Skeleton className="h-64 w-full" />
         </div>
       ) : !dados ? null : ehEstreito ? (
-        <Tabs defaultValue="aparencia">
+        <Tabs defaultValue="perfil">
           {/* Com cinco seções a grade de colunas iguais espremia os rótulos em
               360px. Vira uma tira rolável — o mesmo recurso das abas do mês —
               e cada aba fica com a largura do próprio texto. */}
           <TabsList className="sem-barra-rolagem flex w-full justify-start overflow-x-auto sm:inline-flex sm:w-auto">
             {SECOES.map(({ id, rotulo }) => (
               <TabsTrigger key={id} value={id} className={cn(ABA, 'shrink-0')}>
-                {id === 'pagamento' ? (
+                {/* Três rótulos longos ficam com um apelido no celular; o nome
+                    inteiro volta a partir de sm. Abreviar todos seria trocar
+                    clareza por simetria. */}
+                {ABREVIADO[id] ? (
                   <>
-                    <span className="sm:hidden">Pagamento</span>
+                    <span className="sm:hidden">{ABREVIADO[id]}</span>
                     <span className="hidden sm:inline">{rotulo}</span>
                   </>
                 ) : (
@@ -183,26 +217,9 @@ function AbaAparencia() {
   const { tema, definirTema, escuro, alternarEscuro } = useTemaStore()
   const densidade = useDensidadeStore((e) => e.densidade)
   const definirDensidade = useDensidadeStore((e) => e.definirDensidade)
-  const perfil = useAuthStore((s) => s.profile)
-  const definirProfile = useAuthStore((s) => s.definirProfile)
-  const [nome, setNome] = useState(perfil?.nome ?? '')
-  const [salvando, setSalvando] = useState(false)
-
-  const salvarNome = async () => {
-    setSalvando(true)
-    try {
-      const atualizado = await atualizarPerfil({ nome })
-      definirProfile(atualizado)
-      toast.success('Nome atualizado.')
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Não foi possível salvar o nome.')
-    } finally {
-      setSalvando(false)
-    }
-  }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4">
       <Card>
         <CardHeader>
           <CardTitle>Tema de cor</CardTitle>
@@ -280,26 +297,89 @@ function AbaAparencia() {
           </div>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Seu perfil</CardTitle>
-          <CardDescription>Como você quer ser chamado no app.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="nome-perfil">Nome</Label>
-            <Input id="nome-perfil" value={nome} onChange={(e) => setNome(e.target.value)} />
-          </div>
-          <Button
-            onClick={salvarNome}
-            disabled={salvando || !nome.trim() || nome.trim() === (perfil?.nome ?? '')}
-          >
-            Salvar
-          </Button>
-        </CardContent>
-      </Card>
     </div>
+  )
+}
+
+/**
+ * Onde fica a importação.
+ *
+ * A fase 6 junta "importação, backup e dados" numa seção só, e é aqui que
+ * alguém vem procurar. Mas importar um extrato precisa de um MÊS de destino, e
+ * por isso a tela dele mora no controle mensal — trazer o fluxo para cá pediria
+ * um seletor de mês que já existe lá. Em vez de duplicar a tela, esta seção
+ * aponta para ela: um beco sem saída ("está em outro lugar", sem dizer onde) é
+ * pior do que a viagem.
+ */
+function OndeImportar() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Upload className="h-4 w-4 text-muted-foreground" aria-hidden />
+          Importar extrato
+        </CardTitle>
+        <CardDescription>
+          A importação acontece no controle mensal, porque cada arquivo entra num mês. A tela mostra uma
+          prévia antes de gravar e não importa duas vezes a mesma linha.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap items-center gap-3">
+        <Button asChild variant="outline" size="sm" className="alvo-toque">
+          <Link to="/mes?aba=gastos">Ir para o controle mensal</Link>
+        </Button>
+        <LinkAjuda topico="importar">Como a importação funciona</LinkAjuda>
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
+ * O perfil, numa seção própria.
+ *
+ * Ele morava dentro de "Aparência", ao lado do seletor de tema — quem procura
+ * o próprio nome não procura em aparência, procura em perfil. A fase 6 lista
+ * as duas como seções separadas, e a separação é a razão de a lista existir.
+ */
+function AbaPerfil() {
+  const perfil = useAuthStore((s) => s.profile)
+  const definirProfile = useAuthStore((s) => s.definirProfile)
+  const [nome, setNome] = useState(perfil?.nome ?? '')
+  const [salvando, setSalvando] = useState(false)
+
+  const salvarNome = async () => {
+    setSalvando(true)
+    try {
+      const atualizado = await atualizarPerfil({ nome })
+      definirProfile(atualizado)
+      toast.success('Nome atualizado.')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Não foi possível salvar o nome.')
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Seu perfil</CardTitle>
+        <CardDescription>Como você quer ser chamado no app.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="nome-perfil">Nome</Label>
+          <Input id="nome-perfil" value={nome} onChange={(e) => setNome(e.target.value)} />
+        </div>
+        <Button
+          className="alvo-toque"
+          onClick={salvarNome}
+          disabled={salvando || !nome.trim() || nome.trim() === (perfil?.nome ?? '')}
+        >
+          Salvar
+        </Button>
+      </CardContent>
+    </Card>
   )
 }
 

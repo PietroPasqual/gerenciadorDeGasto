@@ -666,6 +666,98 @@ test.describe('wishlist', () => {
   })
 })
 
+test.describe('configurações', () => {
+  test.beforeEach(async ({ page }) => {
+    await prepararApp(page, fixtureMes())
+    await page.goto('/configuracoes')
+    await expect(page.getByRole('heading', { name: 'Configurações' })).toBeVisible()
+  })
+
+  /** Abre a seção — índice lateral no PC, aba rolável no celular. */
+  async function abrirSecao(page: import('@playwright/test').Page, rotulo: string | RegExp) {
+    const alvo = page.getByRole('tab', { name: rotulo })
+    if (await alvo.count()) await alvo.click()
+    else await page.getByRole('link', { name: rotulo }).click()
+  }
+
+  test('as oito seções da fase 6 existem, nos dois tamanhos', async ({ page, isMobile }) => {
+    const rotulos = [
+      'Perfil',
+      'Aparência',
+      'Lembretes',
+      /Categorias/,
+      /pagamento|Pagamento/,
+      'Metas',
+      /dados|Dados/,
+      /Segurança/,
+    ]
+    for (const rotulo of rotulos) {
+      const papel = isMobile ? 'tab' : 'link'
+      await expect(page.getByRole(papel, { name: rotulo }).first()).toBeVisible()
+    }
+  })
+
+  test('o perfil saiu de dentro de "Aparência" e tem seção própria', async ({ page }) => {
+    await abrirSecao(page, 'Perfil')
+    // `exact`: no PC as oito seções renderizam juntas, e "Nome da categoria",
+    // "Nome do item" e "Nome da forma de pagamento" também casariam.
+    await expect(page.getByLabel('Nome', { exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Seu perfil' })).toBeVisible()
+  })
+
+  test('a seção de dados aponta para onde a importação realmente mora', async ({ page }) => {
+    await abrirSecao(page, /dados|Dados/)
+    await expect(page.getByRole('heading', { name: 'Importar extrato' })).toBeVisible()
+    await page.getByRole('link', { name: 'Ir para o controle mensal' }).click()
+    await expect(page).toHaveURL(/\/mes\?aba=gastos/)
+  })
+})
+
+test.describe('segurança e sessão', () => {
+  test.beforeEach(async ({ page, isMobile }) => {
+    await prepararApp(page, fixtureMes())
+    await page.goto('/configuracoes')
+    if (isMobile) await page.getByRole('tab', { name: /Segurança/ }).click()
+    await expect(page.getByRole('heading', { name: 'Trocar a senha' })).toBeVisible()
+  })
+
+  test('mostra o e-mail da conta e a saída, sem prometer o que não faz', async ({ page }) => {
+    await expect(page.getByText('teste@finz.local')).toBeVisible()
+    // Dentro do `main`: a moldura do app tem o próprio "Sair da conta", e é o
+    // desta seção que precisa existir.
+    await expect(page.getByRole('main').getByRole('button', { name: 'Sair da conta' })).toBeVisible()
+    // A seção só existe "caso existam opções reais": o que não dá para fazer
+    // com a chave pública está escrito como não dá.
+    await expect(page.getByText(/encerrar a conta não são feitos pelo app/)).toBeVisible()
+  })
+
+  test('senha curta e senha que não confere são recusadas antes de sair do app', async ({ page }) => {
+    await page.getByLabel('Nova senha', { exact: true }).fill('123')
+    await page.getByLabel('Confirmar nova senha').fill('123')
+    await page.getByRole('button', { name: 'Trocar senha' }).click()
+    await expect(page.getByText('A senha precisa ter pelo menos 6 caracteres')).toBeVisible()
+
+    await page.getByLabel('Nova senha', { exact: true }).fill('senhanova')
+    await page.getByLabel('Confirmar nova senha').fill('senhaoutra')
+    await page.getByRole('button', { name: 'Trocar senha' }).click()
+    await expect(page.getByText('As senhas não conferem')).toBeVisible()
+
+    const gravadas = await page.evaluate(() => window.__ESCRITAS__ ?? [])
+    expect(gravadas.some((e) => e.chave === 'supabase.auth.updateUser')).toBe(false)
+  })
+
+  test('senha válida chega ao Supabase', async ({ page }) => {
+    await page.getByLabel('Nova senha', { exact: true }).fill('senhanova')
+    await page.getByLabel('Confirmar nova senha').fill('senhanova')
+    await page.getByRole('button', { name: 'Trocar senha' }).click()
+
+    await expect(page.getByText('Senha trocada')).toBeVisible()
+    const gravadas = await page.evaluate(() => window.__ESCRITAS__ ?? [])
+    const troca = gravadas.find((e) => e.chave === 'supabase.auth.updateUser')
+    expect(troca?.args[0]).toEqual({ password: 'senhanova' })
+  })
+})
+
 test.describe('ajuda', () => {
   test.beforeEach(async ({ page }) => {
     await prepararApp(page, fixtureMes())

@@ -15,6 +15,7 @@ interface EstadoAuth {
   entrar: (email: string, senha: string) => Promise<void>
   criarConta: (email: string, senha: string, nome: string) => Promise<{ precisaConfirmar: boolean }>
   recuperarSenha: (email: string) => Promise<void>
+  trocarSenha: (novaSenha: string) => Promise<void>
   sair: () => Promise<void>
   recarregarPerfil: () => Promise<void>
   definirProfile: (profile: Profile) => void
@@ -78,6 +79,19 @@ export const useAuthStore = create<EstadoAuth>((set, get) => ({
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/entrar`,
     })
+    if (error) throw new Error(traduzErroAuth(error.message))
+  },
+
+  /**
+   * Troca a senha de quem já está logado.
+   *
+   * Não pede a senha atual porque o GoTrue não a exige: quem tem sessão válida
+   * já provou quem é. Pedi-la daria uma sensação de segurança que o servidor
+   * não sustenta — e a defesa de verdade contra sessão roubada é o logout, que
+   * está logo ali na mesma seção.
+   */
+  trocarSenha: async (novaSenha) => {
+    const { error } = await supabase.auth.updateUser({ password: novaSenha })
     if (error) throw new Error(traduzErroAuth(error.message))
   },
 

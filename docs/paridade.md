@@ -151,7 +151,7 @@ preço cheio, não o preço).
 
 | No PC                                                           | No celular                                                                                   |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Ver as seis seções — coluna única com índice e scroll-spy (lg+) | Seis abas numa tira rolável                                                                  |
+| Ver as oito seções — coluna única com índice e scroll-spy (lg+) | Oito abas numa tira rolável, com apelido curto onde o nome não cabe                          |
 | Criar categoria / forma / meta — linha de adição                | Botão de largura total → sheet                                                               |
 | Editar — células inline                                         | Tocar no card → sheet                                                                        |
 | Reordenar — setas ↑ ↓ na linha (aparecem no hover)              | **Subir** / **Descer** dentro da sheet                                                       |
@@ -159,9 +159,13 @@ preço cheio, não o preço).
 | Escolher a cor da categoria                                     | A mesma paleta de 16 tons (no PC atrás de um botão, no celular aberta na sheet)              |
 | Tema de cor, com miniatura de cada um                           | O mesmo                                                                                      |
 | Modo escuro                                                     | O mesmo                                                                                      |
-| Nome do perfil                                                  | O mesmo                                                                                      |
+| Nome do perfil — seção **Perfil**, separada de Aparência        | O mesmo                                                                                      |
 | Ligar e desligar cada tipo de lembrete — seção **Lembretes**    | O mesmo, com a linha inteira em 44px como alvo do interruptor                                |
 | Escolher a antecedência do aviso (0 a 15 dias)                  | O mesmo campo, com 44px de altura                                                            |
+| Ver onde a importação mora, e ir até lá — seção **Dados**       | O mesmo card e o mesmo link                                                                  |
+| Ver o e-mail da conta — seção **Segurança e sessão**            | O mesmo                                                                                      |
+| Trocar a senha, com as duas validações antes de enviar          | O mesmo formulário, com campos de 44px                                                       |
+| Sair da conta a partir das configurações                        | O mesmo botão (a moldura do app também tem o dela)                                           |
 
 ## Cartão de crédito
 

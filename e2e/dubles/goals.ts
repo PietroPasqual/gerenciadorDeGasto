@@ -2,7 +2,6 @@
 // Gerado por scripts/gerar-dubles.mjs — não edite à mão.
 import { doFixture } from './fixture'
 
-export const MAX_METAS = 10
 export async function listarMetas(...args: unknown[]) {
   return doFixture('goals.listarMetas', args)
 }

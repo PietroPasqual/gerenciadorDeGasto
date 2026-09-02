@@ -59,7 +59,6 @@ vi.mock('@/services/reports', () => ({
   obterResumoMetas: vi.fn(async () => []),
 }))
 vi.mock('@/services/goals', () => ({
-  MAX_METAS: 10,
   listarMetas: vi.fn(async () => []),
   listarAportesDoAno: vi.fn(async () => []),
   listarAportesDoMes: vi.fn(async () => []),

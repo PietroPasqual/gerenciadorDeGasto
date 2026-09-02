@@ -48,7 +48,8 @@ import { useAuthStore } from '@/store/auth'
 import { atualizarPerfil } from '@/services/profiles'
 import { executarOtimista } from '@/lib/otimista'
 import { lerPreferencias, type PreferenciasLembrete } from '@/lib/lembretes'
-import { MAX_METAS } from '@/services/goals'
+import { MAX_METAS } from '@/lib/limites'
+import { LinkAjuda } from '@/components/common/link-ajuda'
 import { useConfiguracoes } from './use-configuracoes'
 
 const TIPOS: Array<{ valor: TipoPagamento; rotulo: string }> = [
@@ -641,6 +642,9 @@ function AbaFormasPagamento({ dados, acoes }: { dados: Dados; acoes: Acoes }) {
         <CardDescription>
           Crie uma linha por cartão (ex.: “Crédito 1”, “Crédito 2”) para separar as saídas.
         </CardDescription>
+        {/* O fechamento e o vencimento são configurados aqui, e são eles que
+            decidem em que mês cada compra de crédito pesa. */}
+        <LinkAjuda topico="fatura">O que o fechamento e o vencimento mudam</LinkAjuda>
       </CardHeader>
       <CardContent className="space-y-2">
         {ehCelular ? (

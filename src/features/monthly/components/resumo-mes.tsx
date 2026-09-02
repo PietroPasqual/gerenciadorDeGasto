@@ -1,6 +1,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { ArrowDownRight, ArrowUpRight, CreditCard, PiggyBank, Wallet } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { LinkAjuda } from '@/components/common/link-ajuda'
 import { NumeroAnimado } from '@/components/common/numero-animado'
 import { formatCentavos } from '@/lib/money'
 import { nomeDoMes } from '@/lib/dates'
@@ -95,6 +96,13 @@ export function ResumoMes({
                 </>
               )}
             </p>
+          )}
+          {/* Só quando os dois números diferem: é aí que a pergunta "por que
+              gastei X e sai Y?" nasce, e é aí que o link responde. */}
+          {temFatura && (
+            <LinkAjuda topico="competencia-e-caixa" className="text-xs">
+              Por que "Gastei" e "Sai da conta" são diferentes
+            </LinkAjuda>
           )}
         </div>
 

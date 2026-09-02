@@ -224,6 +224,28 @@ ainda não entrou.
 | Aviso de versão nova, com botão "Atualizar"               | O mesmo, com o botão em 44px                                        |
 | Atalho para lançar gasto — paleta de comandos (⌘K) ou FAB | Atalho **Lançar gasto** ao segurar o ícone do app, que abre a folha |
 
+## Ajuda
+
+O manual é dado (`src/features/help/conteudo.ts`), não JSX: é isso que dá o que
+buscar. Os assuntos ficam sempre abertos — sanfona fechada mata o Ctrl+F do
+navegador, que é a busca que a pessoa já sabe usar.
+
+Cada assunto tem endereço próprio (`/ajuda#fatura`), e é por ele que as outras
+telas mandam para cá. Um teste varre a árvore atrás de todo `<LinkAjuda>` e
+confere que o destino existe: link de ajuda quebrado é pior que link nenhum,
+porque a página abre e não responde.
+
+| No PC                                                      | No celular                        |
+| ---------------------------------------------------------- | --------------------------------- |
+| Buscar na ajuda — campo no topo                            | O mesmo campo, com 48px de altura |
+| Ver o termo realçado no texto, com acento                  | O mesmo                           |
+| Índice dos assuntos em pílulas                             | As mesmas pílulas, com 44px       |
+| Abrir um assunto por link (`/ajuda#fatura`), destacado     | O mesmo                           |
+| "Como a fatura é calculada" — no painel de faturas         | O mesmo link, no mesmo painel     |
+| 'Por que "Gastei" e "Sai da conta" são diferentes'         | O mesmo link, no cartão de resumo |
+| "O que o fechamento e o vencimento mudam" — configurações  | O mesmo                           |
+| "O que entra, o que fica e o que nunca é apagado" — backup | O mesmo                           |
+
 ## Quando alguma tela quebra
 
 O limite de erro (`src/components/common/limite-de-erro.tsx`) vive dentro do

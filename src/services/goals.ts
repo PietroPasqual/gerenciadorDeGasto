@@ -2,8 +2,6 @@ import { supabase } from '@/lib/supabase'
 import type { Goal, GoalContribution } from '@/lib/database.types'
 import { unwrap, userIdAtual } from './base'
 
-export const MAX_METAS = 10
-
 export async function listarMetas(): Promise<Goal[]> {
   return unwrap(await supabase.from('goals').select('*').order('ordem').order('created_at')) ?? []
 }

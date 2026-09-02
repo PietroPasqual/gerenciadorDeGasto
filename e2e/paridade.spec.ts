@@ -370,6 +370,64 @@ async function medirAlvos(page: import('@playwright/test').Page) {
   })
 }
 
+test.describe('ajuda', () => {
+  test.beforeEach(async ({ page }) => {
+    await prepararApp(page, fixtureMes())
+    await page.goto('/ajuda')
+    await expect(page.getByRole('heading', { name: 'Ajuda', exact: true })).toBeVisible()
+  })
+
+  test('a busca acha o assunto e diz por que ele apareceu', async ({ page }) => {
+    await page.getByLabel('Buscar na ajuda').fill('não desconta')
+    await expect(page.getByText('1 assunto encontrado')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Competência e caixa' })).toBeVisible()
+    // O realce responde "por que este apareceu" — e ele acha o texto COM acento
+    // a partir da busca sem acento.
+    await expect(page.locator('mark', { hasText: 'não' }).first()).toBeVisible()
+    // E o resto do manual sai da tela.
+    await expect(page.getByRole('heading', { name: 'Atalhos de teclado' })).toHaveCount(0)
+  })
+
+  test('a busca ignora acento e maiúscula', async ({ page }) => {
+    await page.getByLabel('Buscar na ajuda').fill('COMPETENCIA')
+    await expect(page.getByRole('heading', { name: 'Competência e caixa' })).toBeVisible()
+    // O realce cai em cima da palavra acentuada, e não uma letra ao lado.
+    await expect(page.locator('mark').first()).toHaveText('Competência')
+  })
+
+  test('busca sem resposta mostra o vazio, e não o manual inteiro', async ({ page }) => {
+    await page.getByLabel('Buscar na ajuda').fill('criptomoeda')
+    await expect(page.getByText('Nada na ajuda sobre isso')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Atalhos de teclado' })).toHaveCount(0)
+  })
+
+  test('os seis assuntos que a fase 6 exige estão escritos', async ({ page }) => {
+    for (const titulo of [
+      'Competência e caixa',
+      'Como a fatura do cartão é calculada',
+      'Compras parceladas',
+      'Backup e restauração',
+      'O app sem internet',
+      'Importar extrato em CSV',
+    ]) {
+      await expect(page.getByRole('heading', { name: titulo })).toBeVisible()
+    }
+  })
+
+  test('o link do painel de faturas leva ao assunto certo, nos dois tamanhos', async ({ page }) => {
+    await page.goto('/mes?aba=resumo')
+    await page
+      .getByRole('link', { name: 'Como a fatura é calculada' })
+      .locator('visible=true')
+      .first()
+      .click()
+    await expect(page).toHaveURL(/\/ajuda#fatura$/)
+    // O bloco apontado fica destacado: quem foi MANDADO para cá não escolheu o
+    // destino, e sem a marca teria doze blocos para adivinhar qual é.
+    await expect(page.locator('#fatura')).toHaveClass(/ring-2/)
+  })
+})
+
 test.describe('alvos de toque e layout', () => {
   test('nenhum alvo abaixo de 44px no celular, e nada rola de lado', async ({ page, isMobile }) => {
     // 03/08 põe o painel de lembretes na tela: o alvo que só aparece perto de

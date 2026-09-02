@@ -202,6 +202,26 @@ test.describe('acessibilidade no navegador', () => {
   })
 
   /**
+   * A ajuda COM uma busca digitada.
+   *
+   * O realce (`<mark>`) só existe enquanto alguém está buscando: a varredura de
+   * /ajuda acima roda com o campo vazio e nunca vê esse fundo tingido. Mesma
+   * classe de vão da folha de lançamento logo abaixo.
+   */
+  test('contraste do realce da busca na ajuda', async ({ page }) => {
+    const problemas: string[] = []
+    for (const escuro of [false, true]) {
+      await abrir(page, '/ajuda', 'rosa', escuro)
+      await page.getByLabel('Buscar na ajuda').fill('competencia')
+      await expect(page.locator('mark').first()).toBeVisible()
+      await page.waitForTimeout(200)
+      const v = await rodarAxe(page, ['color-contrast'])
+      if (v.length) problemas.push(relatar('/ajuda com busca', escuro ? 'escuro' : 'claro', v))
+    }
+    expect(problemas.join('\n'), 'contraste abaixo de AA no realce da busca').toBe('')
+  })
+
+  /**
    * A folha de lançamento COM as consequências na tela.
    *
    * O bloco só existe depois de escolher uma forma com fatura ou uma data de

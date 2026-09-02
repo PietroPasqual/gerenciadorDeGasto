@@ -68,6 +68,22 @@ o grid interno de cada bloco usa, que já era assim antes.
 | Trocar a capa — seis amostras, a escolhida com um tique        | As mesmas seis, quebrando em duas linhas |
 | "Voltar ao padrão" — limpa ordem, escondidos e capa de uma vez | O mesmo                                  |
 
+**Mês em branco.** Um mês sem nada lançado não abre com quatro blocos vazios:
+abre com um convite só — "Setembro ainda está em branco" e o botão que leva
+direto à folha de lançamento. Os blocos voltam no primeiro lançamento, no
+arranjo que a pessoa tinha, e voltam também em modo de edição, porque ali eles
+precisam estar à vista para receber as setas.
+
+"Em branco" é medido em CAIXA: uma fatura de compra do mês passado vencendo
+agora faz o mês ter movimento sem nenhum gasto novo, e chamar isso de vazio
+mandaria a pessoa lançar algo num mês que tem dinheiro saindo.
+
+**Densidade do primeiro quadro.** No celular a capa é 6rem e o botão
+"Personalizar" fica na linha do título; no PC a capa é 9rem e o botão vai para
+a ponta. Medido a 390x844, o primeiro dado do painel começa a 277px — eram
+361px, ou 43% da tela em moldura. Há um teste de paridade travando o teto em
+300px.
+
 Três coisas que a tabela não mostra e valem registro:
 
 - **Nada de arrastar.** Custaria uma biblioteca, não teria equivalente de

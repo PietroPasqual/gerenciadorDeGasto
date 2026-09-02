@@ -221,6 +221,28 @@ test.describe('painel personalizável', () => {
     expect(gravadas.some((e) => e.chave.includes('atualizarPerfil'))).toBe(true)
   })
 
+  test('a moldura do painel não come metade do primeiro quadro no celular', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'a medida é sobre o primeiro quadro do celular')
+
+    // Medido a 390x844 antes deste teste existir: header 57px + capa 144px +
+    // saudação + uma linha inteira só para o botão "Personalizar" punham o
+    // primeiro dado a 361px — 43% da tela era moldura, e num telefone com a
+    // barra do navegador o primeiro card não aparecia sem rolar.
+    //
+    // A capa encolheu para 6rem no celular e o botão foi para a linha do
+    // título. O teto de 300px trava o resultado: é folgado o bastante para
+    // caber ajuste de tipografia, e apertado o bastante para quebrar se
+    // alguém devolver a capa de 9rem ao celular ou empilhar o botão de novo.
+    const m = await page.evaluate(() => {
+      const primeiro = document.querySelector('main > div > *:not([aria-hidden]):not(header)')
+      return {
+        viewport: window.innerHeight,
+        primeiroDadoEm: primeiro ? Math.round(primeiro.getBoundingClientRect().top) : null,
+      }
+    })
+    expect(m.primeiroDadoEm, 'o primeiro dado do painel desceu demais').toBeLessThanOrEqual(300)
+  })
+
   test('nenhum alvo da personalização fica abaixo de 44px no celular', async ({ page, isMobile }) => {
     // O modo de edição cria oito setas e um seletor de seis capas de uma vez
     // — a maior safra de alvos novos que o app ganhou numa fase só, e

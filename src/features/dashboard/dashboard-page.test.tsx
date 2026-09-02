@@ -26,17 +26,34 @@ vi.mock('@/services/profiles', () => ({
   obterPerfil: vi.fn(async () => perfilBase()),
 }))
 
+/**
+ * Os relatórios ficam em consts para cada teste poder trocar a resposta.
+ *
+ * O painel decide o que desenhar a partir DELES — o mês em branco é
+ * "resumo zerado e nenhuma categoria" —, então testar essa decisão exige
+ * mandar números diferentes, e não um dublê fixo.
+ */
+const obterResumoMensal = vi.fn()
+const obterGastosPorCategoria = vi.fn()
+
+const RESUMO_COM_MOVIMENTO = {
+  total_entradas: 300_000,
+  total_saidas: 120_000,
+  saldo: 180_000,
+  total_investido: 50_000,
+  percentual_investido: 16,
+}
+const RESUMO_ZERADO = {
+  total_entradas: 0,
+  total_saidas: 0,
+  saldo: 0,
+  total_investido: 0,
+  percentual_investido: 0,
+}
+
 vi.mock('@/services/reports', () => ({
-  obterResumoMensal: vi.fn(async () => ({
-    total_entradas: 300_000,
-    total_saidas: 120_000,
-    saldo: 180_000,
-    total_investido: 50_000,
-    percentual_investido: 16,
-  })),
-  obterGastosPorCategoria: vi.fn(async () => [
-    { category_id: 'c1', nome: 'Mercado', cor: '#a5f6d8', gasto_centavos: 120_000 },
-  ]),
+  obterResumoMensal: () => obterResumoMensal(),
+  obterGastosPorCategoria: () => obterGastosPorCategoria(),
   obterComparativoAnual: vi.fn(async () => []),
 }))
 
@@ -118,6 +135,10 @@ function montar() {
 describe('painel personalizável', () => {
   beforeEach(() => {
     atualizarPerfil.mockClear()
+    obterResumoMensal.mockResolvedValue(RESUMO_COM_MOVIMENTO)
+    obterGastosPorCategoria.mockResolvedValue([
+      { category_id: 'c1', nome: 'Mercado', cor: '#a5f6d8', gasto_centavos: 120_000 },
+    ])
     useAuthStore.setState({ profile: perfilBase() as never })
   })
 
@@ -296,6 +317,60 @@ describe('painel personalizável', () => {
       painel_ocultos: [],
       painel_capa: 'aurora',
     })
+  })
+
+  it('mês em branco mostra um caminho, e não quatro blocos vazios', async () => {
+    // Antes, um mês recém-começado abria com um donut "Sem dados", cards
+    // zerados e nenhuma saída. Informava que não havia informação, e só.
+    obterResumoMensal.mockResolvedValue(RESUMO_ZERADO)
+    obterGastosPorCategoria.mockResolvedValue([])
+    montar()
+    await screen.findByText(/ainda está em branco/i)
+
+    expect(screen.getByRole('link', { name: /lançar o primeiro gasto/i })).toHaveAttribute(
+      'href',
+      '/mes?aba=gastos&novo=1',
+    )
+    // E os blocos vazios saem de cena: eram a segunda mensagem de vazio
+    // seguida, repetindo a primeira com menos ajuda.
+    expect(screen.queryByText('Gastos por categoria')).toBeNull()
+  })
+
+  it('um mês com qualquer movimento NÃO mostra o convite', async () => {
+    montar()
+    await screen.findByText(/olá, pietro/i)
+    expect(screen.queryByText(/ainda está em branco/i)).toBeNull()
+  })
+
+  it('fatura de outro mês vencendo aqui já conta como movimento', async () => {
+    // `total_saidas` é CAIXA: uma compra do mês passado que vence agora faz o
+    // mês ter movimento sem nenhum gasto novo lançado. Chamar isso de "em
+    // branco" mandaria a pessoa lançar um gasto num mês que tem dinheiro
+    // saindo.
+    obterResumoMensal.mockResolvedValue({ ...RESUMO_ZERADO, total_saidas: 45_000, saldo: -45_000 })
+    obterGastosPorCategoria.mockResolvedValue([])
+    montar()
+    await screen.findByText(/olá, pietro/i)
+    expect(screen.queryByText(/ainda está em branco/i)).toBeNull()
+  })
+
+  it('no modo de edição os blocos voltam, mesmo com o mês em branco', async () => {
+    // Sem isto, quem tem um mês vazio não consegue arranjar o painel: os
+    // blocos precisam estar à vista justamente para receberem as setas.
+    obterResumoMensal.mockResolvedValue(RESUMO_ZERADO)
+    obterGastosPorCategoria.mockResolvedValue([])
+    montar()
+    await screen.findByText(/ainda está em branco/i)
+    await clicar(screen.getByRole('button', { name: /personalizar/i }))
+
+    expect(await ordemNaTela()).toEqual([
+      'Personalizar o painel',
+      'Gastos por categoria',
+      'Observações do mês',
+      'Resumo do mês',
+      'Atalhos',
+    ])
+    expect(screen.queryByText(/ainda está em branco/i)).toBeNull()
   })
 
   it('se a gravação falhar, o painel volta ao que era e avisa', async () => {

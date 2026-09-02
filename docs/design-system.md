@@ -69,6 +69,12 @@ seria dependência de domínio de terceiro numa tela que abre offline.
 Derivam das variáveis do tema, então a mesma capa é rosa no tema rosa e verde
 no verde, escurece junto no escuro, e não custa um byte de rede.
 
+`--capa-altura` é **6rem no celular e 9rem de sm para cima**. É o inverso da
+densidade abaixo (que só vale de md para cima porque mexe em alvo de toque):
+aqui o valor apertado é o do telefone. Com 9rem em toda largura, o primeiro
+dado do painel começava a 361px de 844 — 43% do primeiro quadro era moldura, e
+a capa respondia por 144px deles sem carregar informação nenhuma.
+
 O perfil guarda o **nome** da capa, nunca o gradiente. Assim aposentar ou
 redesenhar uma capa não invalida o que já está gravado, e nome desconhecido cai
 no padrão (`lib/painel.ts`).

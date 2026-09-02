@@ -10,6 +10,7 @@ import {
   LineChart,
   PiggyBank,
   RotateCcw,
+  Plus,
   Settings,
   SlidersHorizontal,
   Target,
@@ -22,7 +23,7 @@ import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
 import { NumeroAnimado } from '@/components/common/numero-animado'
-import { EstadoErro } from '@/components/common/estados'
+import { EstadoErro, EstadoVazio } from '@/components/common/estados'
 import { Donut } from '@/components/common/donut'
 import { useConsulta } from '@/lib/cache'
 import { obterResumoMensal, obterGastosPorCategoria, obterComparativoAnual } from '@/services/reports'
@@ -214,6 +215,31 @@ export function DashboardPage() {
     [resumo, gastosCategoria, meses, hoje.mes, hoje.ano, projecao, gastoAtipico],
   )
 
+  /**
+   * O mês não tem NADA — nem entrada, nem saída, nem investimento.
+   *
+   * Sem isto o painel de um mês recém-começado abria com um donut vazio
+   * dizendo "Sem dados", que é a pior primeira tela possível: informa que não
+   * há informação e não oferece caminho nenhum. Quem acabou de virar o mês
+   * via um gráfico em branco onde deveria ver por onde começar.
+   *
+   * A conta usa `total_saidas`, que é CAIXA: uma fatura de compra do mês
+   * passado vencendo agora faz o mês ter movimento mesmo sem gasto novo
+   * lançado, e nesse caso ele não está em branco — está só sem compras deste
+   * mês, que é outra coisa e o donut já sabe dizer.
+   *
+   * `gastosCategoria` entra na conta para o estado não piscar: enquanto ele
+   * não chegou, `?? null` mantém a decisão indefinida em vez de afirmar
+   * "vazio" e voltar atrás um quadro depois.
+   */
+  const mesEmBranco =
+    resumo && gastosCategoria
+      ? resumo.total_entradas === 0 &&
+        resumo.total_saidas === 0 &&
+        resumo.total_investido === 0 &&
+        gastosCategoria.length === 0
+      : false
+
   const primeiroNome = (perfil?.nome ?? '').split(' ')[0]
 
   const painel = usePainel(IDS)
@@ -375,6 +401,9 @@ export function DashboardPage() {
       <CabecalhoPagina
         titulo={primeiroNome ? `Olá, ${primeiroNome}` : 'Olá'}
         descricao={`Aqui está o resumo de ${nomeDoMes(hoje.mes)} de ${hoje.ano}.`}
+        /* Um botão curto e só: cabe ao lado do título e devolve uma linha
+           inteira ao conteúdo. Ver a explicação da prop. */
+        acoesInline
         acoes={
           <Button
             variant={painel.editando ? 'default' : 'outline'}
@@ -435,26 +464,59 @@ export function DashboardPage() {
         <EstadoErro mensagem={erroCategorias} onTentarNovamente={() => void recarregarCategorias()} />
       )}
 
-      {painel.visiveis.map((id, i) => (
-        <Widget
-          key={id}
-          id={id}
-          titulo={TITULO_DO_WIDGET.get(id) ?? id}
-          editando={painel.editando}
-          primeiro={i === 0}
-          ultimo={i === painel.visiveis.length - 1}
-          onMover={painel.moverWidget}
-          onEsconder={painel.esconder}
-        >
-          {desenhar(id)}
-        </Widget>
-      ))}
+      {/* MÊS EM BRANCO: um caminho, no lugar de quatro blocos vazios.
+
+          Antes, um mês recém-começado abria com um donut "Sem dados", cards
+          zerados e nenhuma saída — informava que não havia informação e não
+          oferecia nada. Empilhar o convite ACIMA desses blocos foi a primeira
+          tentativa, e ficou pior: duas mensagens de vazio seguidas, a segunda
+          repetindo a primeira com menos ajuda.
+
+          Os widgets não têm o que dizer aqui, então quem fala é o convite. Nada
+          disso mexe na personalização: nenhum bloco é escondido, e no primeiro
+          lançamento o painel volta a ser exatamente o que a pessoa arranjou.
+
+          A exceção é o modo de edição — ali os blocos precisam estar à vista
+          justamente para serem arranjados, mesmo sem dado dentro. */}
+      {mesEmBranco && !painel.editando ? (
+        <EstadoVazio
+          /* `lista` e não `grafico`: o desenho do gráfico é o MESMO que o donut
+             vazio usa, e os dois lado a lado pareciam a mesma caixa duplicada.
+             O que se oferece aqui é lançar, não visualizar. */
+          ilustracao="lista"
+          titulo={`${nomeDoMes(hoje.mes)} ainda está em branco`}
+          descricao="Nada lançado por aqui até agora. O primeiro gasto já faz os gráficos e o saldo aparecerem."
+          acao={
+            <Button asChild>
+              <Link to="/mes?aba=gastos&novo=1" onClick={() => definirPeriodo(hoje)}>
+                <Plus className="h-4 w-4" />
+                Lançar o primeiro gasto
+              </Link>
+            </Button>
+          }
+        />
+      ) : (
+        painel.visiveis.map((id, i) => (
+          <Widget
+            key={id}
+            id={id}
+            titulo={TITULO_DO_WIDGET.get(id) ?? id}
+            editando={painel.editando}
+            primeiro={i === 0}
+            ultimo={i === painel.visiveis.length - 1}
+            onMover={painel.moverWidget}
+            onEsconder={painel.esconder}
+          >
+            {desenhar(id)}
+          </Widget>
+        ))
+      )}
 
       {/* Painel inteiro escondido é uma escolha legítima, mas não pode virar
           uma tela em branco sem saída: sem isto, a única porta de volta seria
           o botão "Personalizar" lá em cima, que a pessoa acabou de usar para
           chegar aqui. */}
-      {painel.visiveis.length === 0 && !painel.editando && (
+      {painel.visiveis.length === 0 && !painel.editando && !mesEmBranco && (
         <div className="rounded-lg border border-dashed border-border p-8 text-center">
           <p className="text-corpo text-muted-foreground">Você escondeu todos os blocos do painel.</p>
           <Button variant="outline" className="mt-3" onClick={() => painel.setEditando(true)}>

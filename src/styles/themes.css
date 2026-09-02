@@ -156,7 +156,7 @@
      O scrim dissolve a base da faixa no fundo da página. Sem ele a capa
      termina numa linha reta no meio da tela, e o título que fica logo abaixo
      parece de outra seção. */
-  --capa-altura: 9rem;
+  --capa-altura: 6rem;
   --capa-scrim: linear-gradient(to bottom, hsl(var(--background) / 0) 45%, hsl(var(--background)) 100%);
 
   /* Os gradientes de capa. São nomeados aqui, e não escolhidos no componente,
@@ -231,6 +231,22 @@
   --success-foreground: 0 0% 100%;
   --warning: 38 92% 50%;
   --warning-foreground: 38 90% 12%;
+}
+
+/* A capa é mais baixa no celular.
+
+   Medido a 390x844: com 9rem, o primeiro dado do painel começava a 361px —
+   43% do primeiro quadro era moldura, e a capa sozinha respondia por 144px
+   deles sem carregar informação nenhuma. Num monitor esses 144px são um
+   detalhe; num telefone são metade do que se vê antes de rolar.
+
+   Não é o mesmo caso da densidade abaixo (que só vale de md para cima porque
+   mexe em alvo de toque): aqui é o contrário — o valor apertado é o do
+   celular, e a tela grande é que ganha a versão folgada. */
+@media (min-width: 640px) {
+  :root {
+    --capa-altura: 9rem;
+  }
 }
 
 [data-densidade='compacto'] {

@@ -36,6 +36,7 @@ import { BarraSelecao } from './components/barra-selecao'
 import { podarSelecao, resumirSelecao, textoDaAcao } from '@/lib/selecao'
 import { BarraMesCelular } from './components/barra-mes-celular'
 import type { FixedExpense, Transaction } from '@/lib/database.types'
+import { useGravarPerfil } from '@/lib/use-gravar-perfil'
 import { usePeriodoStore } from '@/store/periodo'
 import { useControleMensal } from './use-controle-mensal'
 import { exportarMesCSV } from './exportar'
@@ -54,7 +55,6 @@ import { nomeDoMes } from '@/lib/dates'
 import { useSwipeMes, mesVizinho, type Direcao } from '@/lib/swipe-mes'
 import { useEhMobile } from '@/lib/hooks'
 import { useAuthStore } from '@/store/auth'
-import { atualizarPerfil } from '@/services/profiles'
 import { MOV } from '@/lib/movimento'
 
 const SEM_FIXOS: FixedExpense[] = []
@@ -62,26 +62,18 @@ const SEM_FIXOS: FixedExpense[] = []
 export function ControleMensalPage() {
   const { ano, mes, definirPeriodo } = usePeriodoStore()
   const perfil = useAuthStore((s) => s.profile)
-  const definirProfile = useAuthStore((s) => s.definirProfile)
 
   /**
-   * O teto vive no perfil, então salvá-lo não passa pelo hook do mês. O store
-   * é atualizado na hora para o bloco não piscar o valor antigo, e o servidor
-   * confirma depois — se falhar, o valor volta ao que era.
+   * O teto vive no perfil, então salvá-lo não passa pelo hook do mês.
+   *
+   * O rollback otimista estava escrito à mão aqui e de novo no painel; agora é
+   * `useGravarPerfil`, num lugar só. Três cópias de um rollback seriam três
+   * chances de uma restaurar errado, e o erro só aparece quando a rede cai —
+   * que é quando ninguém está olhando.
    */
-  const definirOrcamento = async (centavos: number) => {
-    const anterior = perfil
-    if (perfil) definirProfile({ ...perfil, orcamento_centavos: centavos })
-    try {
-      const salvo = await atualizarPerfil({ orcamento_centavos: centavos })
-      definirProfile(salvo)
-    } catch (erro) {
-      if (anterior) definirProfile(anterior)
-      toast.error('Não foi possível salvar o orçamento', {
-        description: erro instanceof Error ? erro.message : undefined,
-      })
-    }
-  }
+  const gravarPerfil = useGravarPerfil()
+  const definirOrcamento = (centavos: number) =>
+    gravarPerfil({ orcamento_centavos: centavos }, 'Não foi possível salvar o orçamento')
   const {
     dados,
     gastos,
@@ -590,7 +582,7 @@ export function ControleMensalPage() {
                     // pesa neste mês, e contá-lo faria o app pedir para
                     // economizar um dinheiro que ainda não precisa existir.
                     gastoCentavos={caixa.totalSaidasCaixa}
-                    onSalvarTeto={(centavos) => void definirOrcamento(centavos)}
+                    onSalvarTeto={definirOrcamento}
                   />
                 </SecaoMes>
 

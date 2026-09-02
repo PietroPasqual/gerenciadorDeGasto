@@ -465,6 +465,27 @@ test.describe('comparativo anual', () => {
     await expect(grafico.locator('text', { hasText: 'previsto' })).toBeVisible()
   })
 
+  test('a categoria mais pesada abre escolhida, e trocar de chip troca a série', async ({ page }) => {
+    await abrirAno(page)
+    await expect(page.getByRole('heading', { name: 'Uma categoria ao longo do ano' })).toBeVisible()
+
+    // Mercado soma R$ 5.000,00 em Jan–Abr (110 + 120 + 130 + 140); Sem
+    // categoria, R$ 333,33 num mês só.
+    await expect(page.getByText(/Total em Jan–Abr:/)).toBeVisible()
+    await expect(page.locator('text=/R\\$\\s*5\\.000,00/').locator('visible=true').first()).toBeVisible()
+
+    await page.getByRole('button', { name: 'Sem categoria' }).click()
+    await expect(page.locator('text=/R\\$\\s*333,33/').locator('visible=true').first()).toBeVisible()
+  })
+
+  test('o bloco de categoria diz que a medida é outra', async ({ page }) => {
+    await abrirAno(page)
+    // Os números do topo são de caixa; este bloco é de competência. Duas
+    // medidas na mesma tela só é honesto se as duas se apresentarem.
+    await expect(page.getByText(/Pela data da compra, e não pelo vencimento da fatura/)).toBeVisible()
+    await expect(page.getByRole('link', { name: 'O que muda entre uma medida e a outra' })).toBeVisible()
+  })
+
   test('sem seis meses realizados, não há frase de tendência', async ({ page }) => {
     await abrirAno(page)
     // Só quatro meses aconteceram: o app prefere não dizer nada a dizer algo

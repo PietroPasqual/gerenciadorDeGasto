@@ -217,6 +217,20 @@ export function relatoriosPadrao() {
       saidas: 250000 + i * 1000,
       diferenca: 330000 - i * 1000,
     })),
+    /**
+     * Gasto por categoria, mês a mês (0020). Mercado cresce ao longo do ano e
+     * Sem categoria aparece uma vez só — é o que sobra de um extrato.
+     */
+    'reports.obterGastosPorCategoriaAno': [
+      ...[1, 2, 3, 4].map((mes) => ({
+        mes,
+        category_id: 'c1',
+        nome: 'Mercado',
+        cor: '#a5f6d8',
+        gasto_centavos: 100000 + mes * 10000,
+      })),
+      { mes: 2, category_id: null, nome: 'Sem categoria', cor: '#94a3b8', gasto_centavos: 33333 },
+    ],
     'reports.obterResumoMetas': [
       {
         goal_id: 'g1',

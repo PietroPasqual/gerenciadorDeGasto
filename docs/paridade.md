@@ -125,6 +125,8 @@ preço cheio, não o preço).
 | Ver a variação vs o ano anterior, com a base entre parênteses       | O mesmo                                                 |
 | Ler de onde saiu a comparação, o que é previsão e a tendência       | O mesmo bloco de leitura                                |
 | Ver a faixa de "previsto" no gráfico                                | O mesmo                                                 |
+| Ver uma categoria ao longo dos 12 meses — chips + barras            | Os mesmos chips, na faixa que rola de lado              |
+| Ler que aquele bloco conta por competência, e não por caixa         | O mesmo aviso e o mesmo link para a ajuda               |
 
 ## Metas
 

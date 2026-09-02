@@ -25,7 +25,7 @@ import { EstadoErro, EstadoVazio } from '@/components/common/estados'
 import { Cabecalho, Total } from '@/components/common/linha-planilha'
 import { useEhMobile } from '@/lib/hooks'
 import { useConsulta } from '@/lib/cache'
-import { obterComparativoAnual } from '@/services/reports'
+import { obterComparativoAnual, obterGastosPorCategoriaAno } from '@/services/reports'
 import { formatCentavos, formatCentavosCompacto } from '@/lib/money'
 import { ehFuturo, nomeCurtoDoMes, nomeDoMes } from '@/lib/dates'
 import { mediaMensal } from '@/lib/calculations'
@@ -38,6 +38,8 @@ import {
   type Tendencia,
 } from '@/lib/comparativo'
 import { baixarCSV, csvMoeda, gerarCSV } from '@/lib/csv'
+import { seriesPorCategoria } from '@/lib/categoria-no-ano'
+import { CategoriaNoAno } from './components/categoria-no-ano'
 import { usePeriodoStore } from '@/store/periodo'
 import { cn } from '@/lib/utils'
 import { FaixaRolavel } from '@/components/common/faixa-rolavel'
@@ -80,6 +82,18 @@ export function ComparativoAnualPage() {
     obterComparativoAnual(anoComparativo - 1),
   )
 
+  /**
+   * Gasto por categoria, mês a mês (0020).
+   *
+   * Uma chamada e não doze: `gastos_por_categoria` responde por mês, e pedir os
+   * doze seriam doze idas ao servidor para desenhar uma linha. Como a de cima,
+   * o erro dela não derruba a página — o bloco de categoria some e o resto
+   * continua servindo.
+   */
+  const { dados: porCategoria } = useConsulta(['categoria-no-ano', anoComparativo], () =>
+    obterGastosPorCategoriaAno(anoComparativo),
+  )
+
   // O `?? []` precisa ficar memoizado: sem isso ele cria um array novo a cada
   // render e o useMemo abaixo recalcula sempre, que é o oposto do que ele faz ali.
   const meses = useMemo(() => dados ?? [], [dados])
@@ -117,6 +131,17 @@ export function ComparativoAnualPage() {
 
   /** O primeiro mês previsto, para marcar a faixa do gráfico onde ele começa. */
   const primeiroPrevisto = separacao.previstos[0]?.mes ?? null
+
+  /** Os meses realizados COM movimento — a base honesta do total por categoria. */
+  const mesesRealizados = useMemo(
+    () => separacao.realizados.filter((m) => m.entradas !== 0 || m.saidas !== 0).map((m) => m.mes),
+    [separacao],
+  )
+
+  const series = useMemo(
+    () => seriesPorCategoria(porCategoria ?? [], separacao.realizados.length),
+    [porCategoria, separacao],
+  )
 
   const dadosGrafico = meses.map((m) => ({
     // `numeroMes` viaja junto com o ponto só para o clique no gráfico saber
@@ -503,6 +528,13 @@ export function ComparativoAnualPage() {
               </CardContent>
             </Card>
           </div>
+
+          <CategoriaNoAno
+            series={series}
+            ano={anoComparativo}
+            mesesRealizados={mesesRealizados}
+            primeiroPrevisto={primeiroPrevisto}
+          />
         </>
       )}
     </div>

@@ -221,6 +221,7 @@ export const TOPICOS: TopicoAjuda[] = [
       'A comparação com o ano anterior usa só os meses que já aconteceram E tiveram movimento nos dois anos. A tela diz quais meses entraram na conta: comparar três meses contra doze daria um número bonito e falso.',
       'Quando o ano anterior era zero naquele recorte, o app mostra a diferença em reais em vez de um percentual — sair de R$ 0 não é "aumento de X%".',
       'A tendência compara a média dos três últimos meses com movimento contra a dos três anteriores. Ela só aparece com seis meses de movimento, e variação abaixo de 5% é chamada de estável: é ruído do mês, não tendência.',
+      'O bloco "Uma categoria ao longo do ano" mostra os doze meses de uma categoria só, para responder "o mercado está subindo?". Ele conta pela DATA DA COMPRA, e não pelo vencimento da fatura — diferente dos números do topo da tela, e por isso está escrito ali.',
       'Clicar no mês — na tabela, no card ou no ponto do gráfico — abre aquele mês no controle mensal.',
       '"Exportar CSV" aqui baixa o ano inteiro.',
     ],

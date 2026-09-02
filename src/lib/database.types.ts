@@ -536,6 +536,17 @@ export interface Database {
         Args: { p_ano: number }
         Returns: { mes: number; entradas: number; saidas: number; diferenca: number }[]
       }
+      /** 0020 — a mesma medida de `gastos_por_categoria`, o ano inteiro de uma vez. */
+      gastos_por_categoria_ano: {
+        Args: { p_ano: number }
+        Returns: {
+          mes: number
+          category_id: string | null
+          nome: string
+          cor: string
+          gasto_centavos: number
+        }[]
+      }
       resumo_metas: {
         Args: { p_ano: number }
         Returns: {
@@ -585,4 +596,5 @@ export type GastoCategoria = Fn<'gastos_por_categoria'>[number]
 export type SaidaFormaPagamento = Fn<'saidas_por_forma_pagamento'>[number]
 export type InvestimentoMeta = Fn<'investimentos_por_meta'>[number]
 export type ComparativoAnualMes = Fn<'comparativo_anual'>[number]
+export type GastoCategoriaMes = Fn<'gastos_por_categoria_ano'>[number]
 export type ResumoMeta = Fn<'resumo_metas'>[number]

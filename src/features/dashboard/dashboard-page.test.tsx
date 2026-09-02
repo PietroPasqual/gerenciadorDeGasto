@@ -163,6 +163,7 @@ describe('painel personalizável', () => {
       'Observações do mês',
       'Resumo do mês',
       'Atalhos',
+      'Orçamento do mês',
     ])
   })
 
@@ -180,11 +181,12 @@ describe('painel personalizável', () => {
         'Gastos por categoria',
         'Resumo do mês',
         'Atalhos',
+        'Orçamento do mês',
       ]),
     )
 
     expect(atualizarPerfil).toHaveBeenCalledWith({
-      painel_ordem: ['observacoes', 'categorias', 'saldo', 'atalhos'],
+      painel_ordem: ['observacoes', 'categorias', 'saldo', 'atalhos', 'orcamento'],
     })
   })
 
@@ -213,7 +215,7 @@ describe('painel personalizável', () => {
     // Esconder guarda a ordem JUNTO, para o bloco saber de onde saiu.
     expect(atualizarPerfil).toHaveBeenCalledWith({
       painel_ocultos: ['atalhos'],
-      painel_ordem: ['categorias', 'observacoes', 'saldo', 'atalhos'],
+      painel_ordem: ['categorias', 'observacoes', 'saldo', 'atalhos', 'orcamento'],
     })
 
     const bandeja = screen.getByRole('region', { name: 'Personalizar o painel' })
@@ -240,6 +242,7 @@ describe('painel personalizável', () => {
         'Observações do mês',
         'Resumo do mês',
         'Atalhos',
+        'Orçamento do mês',
       ]),
     )
   })
@@ -248,7 +251,7 @@ describe('painel personalizável', () => {
     useAuthStore.setState({
       profile: {
         ...perfilBase(),
-        painel_ocultos: ['categorias', 'observacoes', 'saldo', 'atalhos'],
+        painel_ocultos: ['categorias', 'observacoes', 'saldo', 'atalhos', 'orcamento'],
       } as never,
     })
     montar()
@@ -289,12 +292,16 @@ describe('painel personalizável', () => {
     await screen.findByText(/olá, pietro/i)
     await clicar(screen.getByRole('button', { name: /personalizar/i }))
 
+    // 'saldo' e 'categorias' vieram da ordem salva; os três que ela não
+    // menciona entram atrás, na ordem que o app declara — inclusive o
+    // 'orcamento', que nasceu depois de esta conta já ter sido personalizada.
     expect(await ordemNaTela()).toEqual([
       'Personalizar o painel',
       'Resumo do mês',
       'Gastos por categoria',
       'Observações do mês',
       'Atalhos',
+      'Orçamento do mês',
     ])
   })
 
@@ -369,6 +376,7 @@ describe('painel personalizável', () => {
       'Observações do mês',
       'Resumo do mês',
       'Atalhos',
+      'Orçamento do mês',
     ])
     expect(screen.queryByText(/ainda está em branco/i)).toBeNull()
   })

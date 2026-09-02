@@ -207,6 +207,7 @@ test.describe('painel personalizável', () => {
         'Gastos por categoria',
         'Resumo do mês',
         'Atalhos',
+        'Orçamento do mês',
       ])
 
     await page.getByRole('button', { name: 'Esconder Atalhos' }).click()

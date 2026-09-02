@@ -68,6 +68,24 @@ o grid interno de cada bloco usa, que já era assim antes.
 | Trocar a capa — seis amostras, a escolhida com um tique        | As mesmas seis, quebrando em duas linhas |
 | "Voltar ao padrão" — limpa ordem, escondidos e capa de uma vez | O mesmo                                  |
 
+**Os widgets, na ordem de fábrica:** gastos por categoria, observações do mês,
+resumo do mês, atalhos, orçamento do mês.
+
+O último entrou DEPOIS de a fase 4 ir ao ar, e serve de prova de que a 0023
+acertou ao separar "escondi" de "ainda não existia": ele apareceu no fim do
+painel de todo mundo — inclusive de quem já tinha personalizado — sem
+ressuscitar nada que alguém houvesse escondido.
+
+Ele existe porque o dock passou a levar às cinco telas em toda largura, e o
+widget "Atalhos" virou repetição da navegação que está fixa na tela. Em vez de
+aposentar os atalhos por decreto, o painel ganhou um concorrente que responde
+algo que o dock não responde — "quanto ainda posso gastar por dia" — e quem
+achar os atalhos redundantes os esconde.
+
+O orçamento reusa o MESMO componente do controle mensal, não uma cópia, e
+recebe o gasto de CAIXA nos dois lugares. Competência ali faria o app pedir
+para economizar um dinheiro que ainda não precisa existir.
+
 **Mês em branco.** Um mês sem nada lançado não abre com quatro blocos vazios:
 abre com um convite só — "Setembro ainda está em branco" e o botão que leva
 direto à folha de lançamento. Os blocos voltam no primeiro lançamento, no

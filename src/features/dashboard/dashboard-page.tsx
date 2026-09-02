@@ -38,6 +38,8 @@ import { useGastosRecentes } from '@/lib/use-gastos-recentes'
 import { estaVigente, vaiParaFatura } from '@/lib/calculations'
 import { carregarMes } from '@/services/mes'
 import { ObservacoesMes } from './components/observacoes-mes'
+import { PainelOrcamento } from '@/features/monthly/components/painel-orcamento'
+import { useGravarPerfil } from '@/lib/use-gravar-perfil'
 import { Capa, SeletorDeCapa } from './components/capa'
 import { Widget } from './components/widget'
 import { usePainel } from './use-painel'
@@ -94,6 +96,17 @@ const WIDGETS = [
   { id: 'observacoes', titulo: 'Observações do mês' },
   { id: 'saldo', titulo: 'Resumo do mês' },
   { id: 'atalhos', titulo: 'Atalhos' },
+  // Entrou DEPOIS de a fase 4 ir ao ar, e é a prova de que a 0023 fez a coisa
+  // certa ao separar "escondi" de "ainda não existia": ele aparece no fim do
+  // painel de todo mundo, inclusive de quem já tinha personalizado, sem
+  // ressuscitar nada que alguém tenha escondido.
+  //
+  // O motivo de existir: o dock passou a levar às cinco telas de toda largura,
+  // e o widget "Atalhos" virou repetição da navegação que está fixa na tela.
+  // Em vez de aposentá-lo por decreto, o painel ganhou um concorrente que
+  // responde algo que o dock não responde — "quanto ainda posso gastar por
+  // dia" — e quem achar os atalhos redundantes os esconde.
+  { id: 'orcamento', titulo: 'Orçamento do mês' },
 ] as const
 
 /** Fora do componente: entra como dependência de memo dentro do usePainel. */
@@ -243,6 +256,7 @@ export function DashboardPage() {
   const primeiroNome = (perfil?.nome ?? '').split(' ')[0]
 
   const painel = usePainel(IDS)
+  const gravarPerfil = useGravarPerfil()
 
   /**
    * O conteúdo de cada widget.
@@ -385,6 +399,34 @@ export function DashboardPage() {
               </motion.div>
             ))}
           </div>
+        )
+
+      /**
+       * O teto do mês e quanto sobra por dia.
+       *
+       * Reusa o MESMO componente do controle mensal, e não uma cópia: o
+       * cuidado que ele tem — o número grande é o por-dia e não o restante,
+       * "por dia" some em mês encerrado, o truncar para baixo que impede o
+       * próprio conselho do app de estourar o teto — é o tipo de coisa que uma
+       * segunda implementação perde em silêncio.
+       *
+       * `resumo.total_saidas` é a mesma medida que a tela do mês passa ali:
+       * CAIXA. Usar o gasto de competência faria o app pedir para economizar
+       * um dinheiro que ainda não precisa existir, e é exatamente a família de
+       * defeito que a 0016 consertou.
+       */
+      case 'orcamento':
+        if (!resumo) return null
+        return (
+          <PainelOrcamento
+            ano={hoje.ano}
+            mes={hoje.mes}
+            tetoCentavos={perfil?.orcamento_centavos ?? 0}
+            gastoCentavos={resumo.total_saidas}
+            onSalvarTeto={(centavos) =>
+              gravarPerfil({ orcamento_centavos: centavos }, 'Não foi possível salvar o orçamento')
+            }
+          />
         )
 
       // Id que veio do perfil e o app não conhece mais. `widgetsVisiveis` já o

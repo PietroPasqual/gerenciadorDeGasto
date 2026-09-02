@@ -23,6 +23,22 @@ import {
  */
 const fixtureMes = () => appCompleto()
 
+/**
+ * Abre a folha de lançamento — o mesmo formulário nos dois tamanhos.
+ *
+ * No celular quem abre é o FAB; no PC, o botão do cabeçalho da tabela. Daí
+ * para dentro é a MESMA superfície, e é justamente por isso que os testes de
+ * consequência abaixo não ramificam: o que eles verificam existe igual nos
+ * dois lugares, e ramificar esconderia o dia em que deixar de existir.
+ */
+async function abrirFolhaDeLancamento(page: import('@playwright/test').Page, isMobile: boolean) {
+  const abrir = isMobile
+    ? page.getByRole('button', { name: /novo gasto/i })
+    : page.getByRole('button', { name: 'Lançar gasto' })
+  await abrir.click()
+  await expect(page.getByLabel('Valor', { exact: true })).toBeVisible()
+}
+
 test.describe('entrar', () => {
   test('sem sessão, qualquer rota protegida manda para o login', async ({ page }) => {
     await prepararApp(page, {}, { logado: false })
@@ -120,14 +136,56 @@ test.describe('controle mensal', () => {
   })
 
   test('a compra parcelada pede o número de parcelas', async ({ page, isMobile }) => {
-    // No PC não existe FAB: a folha abre pelo botão do cabeçalho da tabela.
-    const abrir = isMobile
-      ? page.getByRole('button', { name: /novo gasto/i })
-      : page.getByRole('button', { name: 'Lançar gasto' })
-    await abrir.click()
-    await expect(page.getByLabel('Parcelas')).toBeVisible()
+    await abrirFolhaDeLancamento(page, isMobile)
+    // Parcelar é a exceção — o campo fica recolhido até alguém pedir.
+    await page.getByRole('button', { name: 'Parcelar compra' }).click()
+    await expect(page.getByLabel('Número de parcelas')).toHaveValue('2')
     await page.getByRole('button', { name: 'Mais uma parcela' }).click()
-    await expect(page.getByText(/2x de|preencha o valor total/i)).toBeVisible()
+    await expect(page.getByLabel('Número de parcelas')).toHaveValue('3')
+    // A divisão é dita antes de salvar, junto com as outras consequências.
+    await expect(page.getByText(/3x de|preencha o valor total/i).first()).toBeVisible()
+    await expect(page.getByText(/entram nos meses seguintes/i)).toBeVisible()
+  })
+
+  test('a folha diz em que fatura a compra vai cair, antes de salvar', async ({ page, isMobile }) => {
+    await abrirFolhaDeLancamento(page, isMobile)
+    // Sem forma escolhida não há fatura, e o formulário fica calado: um aviso
+    // que aparece sempre deixa de ser lido.
+    await expect(page.getByText(/entra na fatura de/i)).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Crédito' }).click()
+    // Agosto/2025 é o mês aberto, o cartão fecha dia 20 e vence dia 10.
+    await expect(page.getByText('Entra na fatura de Setembro')).toBeVisible()
+    await expect(page.getByText(/vence em 10\/09\/2025/)).toBeVisible()
+    await expect(page.getByText('Gasto de Agosto, sai da conta em Setembro')).toBeVisible()
+  })
+
+  test('a folha avisa quando o lançamento é de outro mês', async ({ page, isMobile }) => {
+    await abrirFolhaDeLancamento(page, isMobile)
+    await expect(page.getByText(/este lançamento é de/i)).toHaveCount(0)
+    await page.getByLabel('Data', { exact: true }).fill('2025-10-03')
+    await expect(page.getByText('Este lançamento é de Outubro de 2025')).toBeVisible()
+    await expect(page.getByText(/não vai aparecer nesta lista/i)).toBeVisible()
+  })
+
+  test('o mesmo formulário lança entrada, e diz onde ela foi parar', async ({ page, isMobile }) => {
+    await abrirFolhaDeLancamento(page, isMobile)
+    await page.getByRole('button', { name: 'Entrada', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Nova entrada' })).toBeVisible()
+    // Escopo na folha: "Forma de pagamento" também é cabeçalho de coluna e
+    // campo do filtro, e procurar na página inteira acharia esses.
+    const folha = page.getByRole('dialog')
+    // Entrada com data é descrição, valor e dia — é o que a tabela mostra dela.
+    await expect(folha.getByText('Forma de pagamento')).toHaveCount(0)
+    await expect(folha.getByText('Parcelar compra')).toHaveCount(0)
+
+    await page.getByLabel('Valor', { exact: true }).fill('12345')
+    await page.getByLabel('Descrição', { exact: true }).fill('Freela')
+    await page.getByRole('button', { name: 'Salvar', exact: true }).click()
+
+    const gravadas = await page.evaluate(() => window.__ESCRITAS__ ?? [])
+    expect(gravadas.some((e) => e.chave.includes('criarLancamento'))).toBe(true)
+    await expect(page.getByText('Ela fica na aba Entradas.')).toBeVisible()
   })
 
   test('a fatura do mês aparece com valor e vencimento', async ({ page }) => {

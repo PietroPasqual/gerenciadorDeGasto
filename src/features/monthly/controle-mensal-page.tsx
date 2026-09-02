@@ -268,13 +268,25 @@ export function ControleMensalPage() {
 
   const salvarGastoDaSheet = (d: DadosGasto) => {
     if (gastoEditando) {
-      const { parcelas: _ignorado, ...mudancas } = d
+      // `tipo` sai junto com `parcelas`: a folha não deixa trocar gasto por
+      // entrada numa edição, então mandá-lo de volta só arriscaria reescrever
+      // com o valor errado se algum dia o formulário mudar.
+      const { parcelas: _semParcelas, tipo: _semTipo, ...mudancas } = d
       void acoes.editarLancamento(gastoEditando.id, mudancas)
       return
     }
     // O valor digitado é o TOTAL da compra; quem divide é criarParcelamento.
     if (d.parcelas && d.parcelas > 1) void acoes.adicionarParcelamento({ ...d, parcelas: d.parcelas })
-    else void acoes.adicionarLancamento({ ...d, tipo: 'gasto' })
+    else void acoes.adicionarLancamento(d)
+    // A folha lança os dois tipos, mas ela é aberta a partir da aba de Gastos:
+    // sem este aviso, uma entrada salva daqui simplesmente não aparece, e o
+    // que a pessoa vê é o lançamento ter sumido.
+    if (d.tipo === 'entrada' && aba !== 'entradas') {
+      toast.success('Entrada lançada', {
+        description: 'Ela fica na aba Entradas.',
+        action: { label: 'Ver', onClick: () => definirAba('entradas') },
+      })
+    }
   }
 
   /**
@@ -325,7 +337,9 @@ export function ControleMensalPage() {
             payment_method_id: gasto.payment_method_id,
             category_id: gasto.category_id,
             valor_centavos: gasto.valor_centavos,
-            tipo: 'gasto',
+            // O tipo do próprio lançamento, e não 'gasto' fixo: desfazer tem
+            // que devolver o que foi apagado, não uma versão parecida dele.
+            tipo: gasto.tipo,
           }),
       },
     })

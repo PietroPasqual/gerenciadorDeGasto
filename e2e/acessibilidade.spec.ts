@@ -202,6 +202,38 @@ test.describe('acessibilidade no navegador', () => {
   })
 
   /**
+   * A folha de lançamento COM as consequências na tela.
+   *
+   * O bloco só existe depois de escolher uma forma com fatura ou uma data de
+   * outro mês, e a fixture padrão não faz nem uma coisa nem outra: varrer
+   * /mes?aba=gastos com a folha fechada não olha para ele. É o mesmo vão das
+   * linhas inativas, e o aviso usa `bg-warning/10` — um fundo tingido que
+   * ninguém tinha medido ainda.
+   */
+  test('contraste do bloco de consequências, nos dois tons', async ({ page }) => {
+    const problemas: string[] = []
+    for (const escuro of [false, true]) {
+      await abrir(page, '/mes?aba=gastos', 'rosa', escuro)
+      // A mesma folha, aberta pelo botão da tabela no PC e pelo FAB no celular.
+      await page
+        .getByRole('button', { name: /lançar gasto|novo gasto/i })
+        .locator('visible=true')
+        .first()
+        .click()
+      const folha = page.getByRole('dialog')
+      // Data de outro mês + cartão com fatura: sai um item de cada tom.
+      await folha.getByLabel('Data', { exact: true }).fill('2025-10-03')
+      await folha.getByRole('button', { name: 'Crédito' }).click()
+      await expect(folha.getByText('Este lançamento é de Outubro de 2025')).toBeVisible()
+      await expect(folha.getByText(/entra na fatura de/i)).toBeVisible()
+      await page.waitForTimeout(250)
+      const v = await rodarAxe(page, ['color-contrast'])
+      if (v.length) problemas.push(relatar('folha de lançamento', escuro ? 'escuro' : 'claro', v))
+    }
+    expect(problemas.join('\n'), 'contraste abaixo de AA nas consequências').toBe('')
+  })
+
+  /**
    * O contraste dos QUATRO temas, nas telas mais densas.
    *
    * `themes.css` documenta uma calibração por tema; sem medir os quatro, essa

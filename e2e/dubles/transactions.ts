@@ -38,9 +38,18 @@ export async function excluirSerie(...args: unknown[]) {
 export async function atualizarSerie(...args: unknown[]) {
   return doFixture('transactions.atualizarSerie', args)
 }
+export async function atualizarVarios(...args: unknown[]) {
+  return doFixture('transactions.atualizarVarios', args)
+}
 export async function atualizarCategoriaDeVarios(...args: unknown[]) {
   return doFixture('transactions.atualizarCategoriaDeVarios', args)
 }
 export async function atualizarFormaDeVarios(...args: unknown[]) {
   return doFixture('transactions.atualizarFormaDeVarios', args)
+}
+export async function excluirVarios(...args: unknown[]) {
+  return doFixture('transactions.excluirVarios', args)
+}
+export async function criarVarios(...args: unknown[]) {
+  return doFixture('transactions.criarVarios', args)
 }

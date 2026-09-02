@@ -121,6 +121,16 @@ test.describe('controle mensal', () => {
     await expect(etiqueta).toHaveText('2/3')
   })
 
+  test('a linha diz em que fatura o gasto sai, nos dois tamanhos', async ({ page }) => {
+    // "Notebook" é no crédito, que fecha dia 20: compra de 10/08 vence em
+    // setembro. "Mercado Dia" é no Pix e não tem fatura nenhuma.
+    const etiqueta = page.locator('[title="Sai na fatura de Setembro de 2025"]:visible')
+    await expect(etiqueta).toHaveCount(1)
+    await expect(etiqueta).toHaveText('fat. set')
+    // Só o do crédito ganha etiqueta — o do Pix pesa no próprio mês.
+    await expect(page.locator('[title^="Sai na fatura"]:visible')).toHaveCount(1)
+  })
+
   test('lançar gasto: FAB no celular, linha de adição no PC', async ({ page, isMobile }) => {
     if (isMobile) {
       const fab = page.getByRole('button', { name: /novo gasto/i })
@@ -188,6 +198,118 @@ test.describe('controle mensal', () => {
     await expect(page.getByText('Ela fica na aba Entradas.')).toBeVisible()
   })
 
+  /**
+   * Ações em lote.
+   *
+   * A fixture tem dois gastos, e um deles é a parcela 2/3 de uma compra — que é
+   * exatamente o caso que a confirmação precisa saber explicar. Nenhum destes
+   * ramifica por tamanho: marcar, a barra e a confirmação são a MESMA
+   * superfície nos dois, e ramificar aqui esconderia o dia em que deixarem de
+   * ser.
+   */
+  test.describe('ações em lote', () => {
+    async function marcar(page: import('@playwright/test').Page, ...nomes: string[]) {
+      await page.getByRole('button', { name: 'Marcar', exact: true }).click()
+      for (const nome of nomes) {
+        await page
+          .getByRole('checkbox', { name: `Marcar ${nome}` })
+          .locator('visible=true')
+          .click()
+      }
+    }
+
+    test('a barra diz quantos, quanto e de onde eles saíram', async ({ page }) => {
+      await marcar(page, 'Mercado Dia', 'Notebook')
+      const barra = page.getByRole('group', { name: 'Ações para os lançamentos marcados' })
+      // R$ 300,00 + R$ 333,33. O separador do Intl é NBSP, então a comparação
+      // é por regex e não por texto literal.
+      await expect(barra.getByText(/2 lançamentos ·\s*R\$\s*633,33/)).toBeVisible()
+      await expect(barra.getByText('2 de 2 lançamentos do mês.')).toBeVisible()
+    })
+
+    test('o filtro tira da seleção o que saiu da tela', async ({ page }) => {
+      await marcar(page, 'Mercado Dia', 'Notebook')
+      const barra = page.getByRole('group', { name: 'Ações para os lançamentos marcados' })
+      await page.getByLabel('Buscar lançamento por descrição').fill('Notebook')
+      // Um marcado sumiu da lista: a barra tem que encolher junto, senão
+      // "excluir" apagaria um lançamento que ninguém está vendo.
+      await expect(barra.getByText(/1 lançamento ·\s*R\$\s*333,33/)).toBeVisible()
+      await expect(barra.getByText('1 de 1 no filtro atual — o mês tem 2.')).toBeVisible()
+
+      // E a AÇÃO tem que ir junto: a barra dizer "1" e o banco receber dois ids
+      // seria pior do que não podar nada, porque aí ninguém desconfia.
+      await page.getByRole('button', { name: 'Categoria' }).click()
+      await page.getByRole('button', { name: /Mercado/ }).click()
+      const gravadas = await page.evaluate(() => window.__ESCRITAS__ ?? [])
+      expect(gravadas.find((e) => e.chave === 'transactions.atualizarVarios')?.args[0]).toEqual(['t2'])
+    })
+
+    test('excluir em lote confirma, e promete por escrito que a série fica', async ({ page }) => {
+      await marcar(page, 'Mercado Dia', 'Notebook')
+      await page.getByRole('button', { name: 'Excluir', exact: true }).click()
+      await expect(page.getByText('Excluir 2 lançamentos?')).toBeVisible()
+      await expect(page.getByText(/1 é parcela de 1 compra parcelada/)).toBeVisible()
+      await expect(page.getByText(/só a parcela marcada sai, o resto da série fica/)).toBeVisible()
+
+      await page.getByRole('button', { name: 'Excluir', exact: true }).last().click()
+      const gravadas = await page.evaluate(() => window.__ESCRITAS__ ?? [])
+      const exclusao = gravadas.find((e) => e.chave === 'transactions.excluirVarios')
+      expect(exclusao?.args[0]).toEqual(['t1', 't2'])
+      // Nada de excluirSerie: em lote a promessa é a mais estreita possível.
+      expect(gravadas.some((e) => e.chave === 'transactions.excluirSerie')).toBe(false)
+      await expect(page.getByText('2 lançamentos excluídos')).toBeVisible()
+    })
+
+    test('categorizar em lote diz em quantos vale antes de aplicar', async ({ page }) => {
+      await marcar(page, 'Notebook')
+      await page.getByRole('button', { name: 'Categoria' }).click()
+      await expect(page.getByText('Vale para 1 lançamento marcado.')).toBeVisible()
+      await page.getByRole('button', { name: /Mercado/ }).click()
+
+      const gravadas = await page.evaluate(() => window.__ESCRITAS__ ?? [])
+      const edicao = gravadas.find((e) => e.chave === 'transactions.atualizarVarios')
+      expect(edicao?.args[0]).toEqual(['t2'])
+      await expect(page.getByText('1 lançamento alterado')).toBeVisible()
+    })
+
+    test('duplicar avisa que a cópia de parcela sai solta, e dá desfazer', async ({ page }) => {
+      await prepararApp(page, {
+        ...fixtureMes(),
+        ...assinaturasPadrao(),
+        // O servidor devolve as cópias com id próprio: é delas que o desfazer
+        // precisa, e é por isso que o dublê precisa dizer o que voltou.
+        'transactions.criarVarios': [
+          {
+            id: 'copia1',
+            user_id: 'u',
+            data: '2025-08-10',
+            descricao: 'Notebook',
+            payment_method_id: null,
+            category_id: null,
+            valor_centavos: 33333,
+            tipo: 'gasto',
+            created_at: '',
+            fingerprint: null,
+            parcelamento_id: null,
+            parcela: null,
+            parcelas_total: null,
+          },
+        ],
+      })
+      await page.goto('/mes?aba=gastos')
+      await marcar(page, 'Notebook')
+      await page.getByRole('button', { name: 'Duplicar' }).click()
+
+      await expect(page.getByText('1 lançamento duplicado')).toBeVisible()
+      await expect(page.getByText(/cópias de parcela saem soltas/)).toBeVisible()
+
+      await page.getByRole('button', { name: 'Desfazer' }).click()
+      const gravadas = await page.evaluate(() => window.__ESCRITAS__ ?? [])
+      const desfazer = gravadas.find((e) => e.chave === 'transactions.excluirVarios')
+      expect(desfazer?.args[0]).toEqual(['copia1'])
+    })
+  })
+
   test('a fatura do mês aparece com valor e vencimento', async ({ page }) => {
     await page.goto('/mes?aba=resumo')
     await expect(page.getByText('Faturas que vencem neste mês')).toBeVisible()
@@ -222,6 +344,32 @@ test.describe('controle mensal', () => {
   })
 })
 
+/**
+ * Mede todo alvo visível da tela e o quanto ela rola de lado.
+ *
+ * A altura sai do `<label>` que envolve o controle quando existe: uma caixa de
+ * seleção de 16px dentro de um card de 68px é um alvo de 68px, e medir a caixa
+ * sozinha reprovaria um layout correto.
+ */
+async function medirAlvos(page: import('@playwright/test').Page) {
+  return page.evaluate(() => {
+    const alvos = [
+      ...document.querySelectorAll('button, a, input, [role="switch"], [role="checkbox"]'),
+    ].filter((e) => e.checkVisibility())
+    return {
+      pequenos: alvos
+        .map((e) => ({
+          t: (e.textContent || e.getAttribute('aria-label') || '').trim().slice(0, 24),
+          h: Math.round(((e.closest('label') as HTMLElement) ?? e).getBoundingClientRect().height),
+        }))
+        // O X de fechar de sheet/diálogo é do shadcn e some junto com o
+        // overlay; não é alvo de navegação.
+        .filter((x) => x.h > 0 && x.h < 44 && !/fechar/i.test(x.t)),
+      estouro: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    }
+  })
+}
+
 test.describe('alvos de toque e layout', () => {
   test('nenhum alvo abaixo de 44px no celular, e nada rola de lado', async ({ page, isMobile }) => {
     // 03/08 põe o painel de lembretes na tela: o alvo que só aparece perto de
@@ -241,25 +389,32 @@ test.describe('alvos de toque e layout', () => {
       await expect(page.getByRole('heading').first()).toBeVisible()
       await page.waitForTimeout(300)
 
-      const r = await page.evaluate(() => {
-        const alvos = [
-          ...document.querySelectorAll('button, a, input, [role="switch"], [role="checkbox"]'),
-        ].filter((e) => e.checkVisibility())
-        return {
-          pequenos: alvos
-            .map((e) => ({
-              t: (e.textContent || e.getAttribute('aria-label') || '').trim().slice(0, 24),
-              h: Math.round(((e.closest('label') as HTMLElement) ?? e).getBoundingClientRect().height),
-            }))
-            // O X de fechar de sheet/diálogo é do shadcn e some junto com o
-            // overlay; não é alvo de navegação.
-            .filter((x) => x.h > 0 && x.h < 44 && !/fechar/i.test(x.t)),
-          estouro: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        }
-      })
+      const r = await medirAlvos(page)
       expect(r.estouro, `${rota} rola de lado`).toBe(0)
       if (isMobile) expect(r.pequenos, `${rota}`).toEqual([])
     }
+  })
+
+  /**
+   * A MESMA medição, com a seleção ligada.
+   *
+   * O modo de marcação troca cada card por um <label> com caixa dentro e põe
+   * uma barra de cinco botões presa ao rodapé — nada disso existe no DOM com a
+   * seleção desligada, então a varredura acima passa por ele sem olhar. É o
+   * mesmo vão que deixou /ajuda com alvos de 23px durante meses.
+   */
+  test('nenhum alvo abaixo de 44px com a seleção ligada', async ({ page, isMobile }) => {
+    await prepararApp(page, fixtureMes())
+    await page.goto('/mes?aba=gastos')
+    await expect(page.getByRole('heading', { name: 'Controle mensal' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Marcar', exact: true }).click()
+    await page.getByRole('checkbox', { name: 'Marcar Mercado Dia' }).locator('visible=true').click()
+    await expect(page.getByRole('group', { name: 'Ações para os lançamentos marcados' })).toBeVisible()
+
+    const r = await medirAlvos(page)
+    expect(r.estouro, 'a barra de seleção faz a página rolar de lado').toBe(0)
+    if (isMobile) expect(r.pequenos, 'alvos pequenos no modo de marcação').toEqual([])
   })
 })
 

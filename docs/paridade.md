@@ -103,7 +103,13 @@ preço cheio, não o preço).
 | Ser avisado de que o lançamento é de outro mês                               | O mesmo aviso, na mesma folha                                                                  |
 | Lançar ENTRADA pela mesma folha — botão "Entrada" no topo dela               | O mesmo botão, com 44px                                                                        |
 | Ver "3/12" na linha do gasto                                                 | A mesma etiqueta no card                                                                       |
+| Ver "fat. set" no gasto que vai para uma fatura                              | A mesma etiqueta no card                                                                       |
 | Editar/excluir parcela — pergunta "só esta ou as N?"                         | O mesmo diálogo, com os botões empilhados e 44px cada                                          |
+| Marcar vários lançamentos — botão "Marcar" no cabeçalho da tabela            | O mesmo botão, e o card inteiro vira alvo da marcação                                          |
+| Ver quantos, quanto somam e de que recorte saíram                            | A mesma barra, presa acima da navegação (o FAB se recolhe)                                     |
+| Categorizar em lote / trocar a forma em lote                                 | As mesmas ações, na mesma barra                                                                |
+| Duplicar os marcados, com desfazer                                           | O mesmo                                                                                        |
+| Excluir os marcados — confirmação que diz o escopo, e desfazer               | O mesmo diálogo, com botões de 44px                                                            |
 
 ## Comparativo anual
 

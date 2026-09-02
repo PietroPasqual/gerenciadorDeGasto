@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { CheckSquare, Plus, Trash2 } from 'lucide-react'
 import { rotuloParcela } from '@/lib/parcelamento'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Cabecalho, Linha, Total } from '@/components/common/linha-planilha'
 import { GradeEditavel } from '@/components/common/grade-editavel'
@@ -11,8 +12,10 @@ import { SelectSimples } from '@/components/common/select-simples'
 import { EstadoVazio } from '@/components/common/estados'
 import { LIMITE_VIRTUALIZACAO, ListaVirtual } from '@/components/common/lista-virtual'
 import { formatCentavos } from '@/lib/money'
-import { formatDataISO } from '@/lib/dates'
+import { formatDataISO, nomeCurtoDoMes, nomeDoMes } from '@/lib/dates'
 import { totalDeItens } from '@/lib/calculations'
+import { faturaDoLancamento } from '@/lib/consequencias'
+import { cn } from '@/lib/utils'
 import { primeiroDiaISO, paraDataISO, periodoAtual } from '@/lib/dates'
 import type { Category, PaymentMethod, Transaction } from '@/lib/database.types'
 
@@ -40,6 +43,11 @@ export function TabelaGastos({
   filtro,
   temFiltroAtivo = false,
   onAbrirNovo,
+  modoSelecao = false,
+  selecionados,
+  onAlternarModo,
+  onAlternarSelecao,
+  barraSelecao,
 }: {
   /** Abre a folha de lançamento no PC — no celular esse papel é do FAB. */
   onAbrirNovo?: () => void
@@ -69,6 +77,17 @@ export function TabelaGastos({
   filtro?: React.ReactNode
   /** Muda o estado vazio: "nada encontrado" não é "nada lançado". */
   temFiltroAtivo?: boolean
+  /**
+   * Modo de marcação. A tabela não guarda a seleção: quem guarda é a página,
+   * porque ela também precisa podar o que saiu do filtro e esconder o FAB
+   * enquanto a barra de ações está na tela.
+   */
+  modoSelecao?: boolean
+  selecionados?: ReadonlySet<string>
+  onAlternarModo?: () => void
+  onAlternarSelecao?: (id: string) => void
+  /** A barra de ações em lote, montada pela página. */
+  barraSelecao?: React.ReactNode
 }) {
   const [descricao, setDescricao] = useState('')
   const [data, setData] = useState(() => dataPadrao(ano, mes))
@@ -99,12 +118,19 @@ export function TabelaGastos({
   const cardDoGasto = (gasto: Transaction) => {
     const categoria = categorias.find((c) => c.id === gasto.category_id)
     const forma = formasPagamento.find((f) => f.id === gasto.payment_method_id)
-    return (
-      <button
-        type="button"
-        onClick={() => onAbrirEdicao?.(gasto)}
-        className="flex w-full flex-col gap-1 rounded-xl border border-border px-3 py-2.5 text-left transition-colors active:bg-realce"
-      >
+    const marcado = selecionados?.has(gasto.id) ?? false
+    const fatura = faturaDoLancamento(gasto, formasPagamento)
+
+    /**
+     * O miolo do card, igual nos dois modos.
+     *
+     * O invólucro é que muda: em modo normal é um <button> que abre a folha de
+     * edição; marcando, é um <label> com a caixa dentro. Não dá para ter os
+     * dois — uma caixa de seleção dentro de um botão é HTML inválido, e o
+     * clique acabaria disputado entre marcar e abrir.
+     */
+    const miolo = (
+      <>
         <span className="flex items-baseline justify-between gap-3">
           <span className="min-w-0 flex-1 truncate text-corpo font-medium">{gasto.descricao}</span>
           <span className="tabular shrink-0 text-corpo font-semibold">
@@ -117,6 +143,12 @@ export function TabelaGastos({
             <>
               <span aria-hidden>·</span>
               <EtiquetaParcela parcela={gasto.parcela} total={gasto.parcelas_total} />
+            </>
+          )}
+          {fatura && (
+            <>
+              <span aria-hidden>·</span>
+              <EtiquetaFatura periodo={fatura} />
             </>
           )}
           {forma && (
@@ -139,6 +171,34 @@ export function TabelaGastos({
             </>
           )}
         </span>
+      </>
+    )
+
+    const moldura = 'flex w-full flex-col gap-1 rounded-xl border px-3 py-2.5 text-left transition-colors'
+
+    if (modoSelecao) {
+      return (
+        <label className={cn(moldura, marcado ? 'border-primary bg-primary-soft' : 'border-border')}>
+          <span className="flex items-start gap-3">
+            <Checkbox
+              checked={marcado}
+              onCheckedChange={() => onAlternarSelecao?.(gasto.id)}
+              aria-label={`Marcar ${gasto.descricao}`}
+              className="mt-0.5 shrink-0"
+            />
+            <span className="flex min-w-0 flex-1 flex-col gap-1">{miolo}</span>
+          </span>
+        </label>
+      )
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={() => onAbrirEdicao?.(gasto)}
+        className={cn(moldura, 'border-border active:bg-realce')}
+      >
+        {miolo}
       </button>
     )
   }
@@ -149,27 +209,45 @@ export function TabelaGastos({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
             <CardTitle>Gastos do mês</CardTitle>
-            <CardDescription className="hidden md:block">
-              Digite na última linha e pressione Enter. Use Tab/Enter para andar entre as células.
-            </CardDescription>
-            <CardDescription className="md:hidden">Toque num gasto para editar.</CardDescription>
+            {modoSelecao ? (
+              <CardDescription>Marque os lançamentos e escolha a ação lá embaixo.</CardDescription>
+            ) : (
+              <>
+                <CardDescription className="hidden md:block">
+                  Digite na última linha e pressione Enter. Use Tab/Enter para andar entre as células.
+                </CardDescription>
+                <CardDescription className="md:hidden">Toque num gasto para editar.</CardDescription>
+              </>
+            )}
           </div>
           {/* Só no PC: no celular este caminho é o FAB, que é `sm:hidden` ao
               contrário deste botão. Ele existe porque a linha de adição da
               tabela não tem campo de parcelas — sem ele, lançar uma compra
               parcelada era impossível no desktop, e a tabela de paridade
               afirmava um caminho que não existia. O E2E desta fase é que pegou. */}
-          {onAbrirNovo && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="hidden shrink-0 sm:inline-flex"
-              onClick={onAbrirNovo}
-            >
-              <Plus className="mr-1.5 h-4 w-4" aria-hidden />
-              Lançar gasto
-            </Button>
-          )}
+          <div className="flex shrink-0 items-center gap-2">
+            {/* Marcar existe nos dois tamanhos, e no mesmo canto: é o começo de
+                toda ação em lote, e escondê-lo no celular deixaria "alterar
+                vários" sendo função só de PC. */}
+            {onAlternarModo && gastos.length > 0 && (
+              <Button
+                variant={modoSelecao ? 'default' : 'outline'}
+                size="sm"
+                className="alvo-toque"
+                onClick={onAlternarModo}
+                aria-pressed={modoSelecao}
+              >
+                <CheckSquare className="mr-1.5 h-4 w-4" aria-hidden />
+                {modoSelecao ? 'Cancelar' : 'Marcar'}
+              </Button>
+            )}
+            {onAbrirNovo && (
+              <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={onAbrirNovo}>
+                <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+                Lançar gasto
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -243,6 +321,14 @@ export function TabelaGastos({
                 >
                   <div className="flex items-center gap-2 pr-9 md:contents md:pr-0">
                     <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                      {modoSelecao && (
+                        <Checkbox
+                          checked={selecionados?.has(gasto.id) ?? false}
+                          onCheckedChange={() => onAlternarSelecao?.(gasto.id)}
+                          aria-label={`Marcar ${gasto.descricao}`}
+                          className="ml-1 shrink-0"
+                        />
+                      )}
                       <Input
                         data-celula
                         aria-label="Descrição do gasto"
@@ -256,6 +342,7 @@ export function TabelaGastos({
                       {gasto.parcelas_total !== null && gasto.parcela !== null && (
                         <EtiquetaParcela parcela={gasto.parcela} total={gasto.parcelas_total} />
                       )}
+                      <EtiquetaFaturaDaLinha gasto={gasto} formasPagamento={formasPagamento} />
                     </div>
                     <MoneyInput
                       data-celula
@@ -312,9 +399,11 @@ export function TabelaGastos({
         )}
 
         {/* Adição rápida (estilo planilha) */}
-        {/* Adição inline é do desktop; no celular quem lança é o FAB (M2). */}
+        {/* Adição inline é do desktop; no celular quem lança é o FAB (M2).
+            Enquanto se marca ela some: uma linha em branco no meio da seleção
+            só serviria para alguém marcar sem querer e não entender o número. */}
         <div
-          className={`hidden grid-cols-1 gap-1.5 rounded-xl border border-dashed border-border p-3 md:grid md:gap-2 md:border-0 md:p-0 md:pt-1 ${TEMPLATE}`}
+          className={`${modoSelecao ? 'hidden' : 'hidden md:grid'} grid-cols-1 gap-1.5 rounded-xl border border-dashed border-border p-3 md:gap-2 md:border-0 md:p-0 md:pt-1 ${TEMPLATE}`}
         >
           <div className="flex items-center gap-2 md:contents">
             <Input
@@ -369,9 +458,44 @@ export function TabelaGastos({
         </div>
 
         <Total rotulo="Total de gastos do mês" valor={formatCentavos(totalDeItens(gastos))} />
+
+        {barraSelecao}
       </CardContent>
     </Card>
   )
+}
+
+/**
+ * "fat. out" ao lado da descrição.
+ *
+ * É o status que faltava na linha: um gasto no crédito acontece num mês e sai
+ * da conta em outro, e sem isto a lista de agosto mostra R$ 300 que o saldo de
+ * agosto não desconta — sem nada explicando a diferença. O mês vem abreviado
+ * porque a coluna é estreita; o mês por extenso fica no `title`, junto com o
+ * ano, que é o que resolve dezembro virando janeiro.
+ */
+function EtiquetaFatura({ periodo }: { periodo: { ano: number; mes: number } }) {
+  return (
+    <span
+      className="shrink-0 rounded-md bg-superficie px-1.5 py-0.5 text-xs font-medium text-muted-foreground"
+      title={`Sai na fatura de ${nomeDoMes(periodo.mes)} de ${periodo.ano}`}
+    >
+      fat. {nomeCurtoDoMes(periodo.mes).toLowerCase()}
+    </span>
+  )
+}
+
+/** A mesma etiqueta na linha do PC, que só tem o gasto e as formas em mãos. */
+function EtiquetaFaturaDaLinha({
+  gasto,
+  formasPagamento,
+}: {
+  gasto: Transaction
+  formasPagamento: PaymentMethod[]
+}) {
+  const fatura = faturaDoLancamento(gasto, formasPagamento)
+  if (!fatura) return null
+  return <EtiquetaFatura periodo={fatura} />
 }
 
 /**

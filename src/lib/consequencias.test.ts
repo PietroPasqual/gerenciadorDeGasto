@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { formatCentavos } from './money'
 import {
   consequenciasDoRascunho,
+  faturaDoLancamento,
   type Consequencia,
   type FormaDoRascunho,
   type Rascunho,
@@ -219,5 +220,36 @@ describe('as frases não escapam do formato', () => {
       expect(c.titulo.trim().length).toBeGreaterThan(0)
       expect(['neutro', 'atencao']).toContain(c.tom)
     }
+  })
+})
+
+describe('faturaDoLancamento', () => {
+  const gasto = (data: string, payment_method_id: string | null) => ({
+    data,
+    valor_centavos: 1000,
+    payment_method_id,
+  })
+
+  it('devolve a fatura do cartão', () => {
+    expect(faturaDoLancamento(gasto('2026-09-10', 'cartao'), FORMAS)).toEqual({ ano: 2026, mes: 10 })
+  })
+
+  it('vira o ano quando precisa', () => {
+    expect(faturaDoLancamento(gasto('2026-11-26', 'cartao'), FORMAS)).toEqual({ ano: 2027, mes: 1 })
+  })
+
+  it('sem fatura devolve null — o gasto pesa no próprio mês', () => {
+    expect(faturaDoLancamento(gasto('2026-09-10', 'debito'), FORMAS)).toBeNull()
+    expect(faturaDoLancamento(gasto('2026-09-10', null), FORMAS)).toBeNull()
+    expect(faturaDoLancamento(gasto('2026-09-10', 'cartao-cru'), FORMAS)).toBeNull()
+  })
+
+  it('concorda com o que a folha prometeu antes de salvar', () => {
+    // O mesmo lançamento pelos dois caminhos: se um dia divergirem, é aqui que
+    // aparece — e divergir é o pior defeito possível numa tela que promete o
+    // futuro e depois mostra o presente.
+    const lista = calcular({ data: '2026-09-26', formaId: 'cartao' }, { ano: 2026, mes: 9 })
+    expect(pegar(lista, 'fatura')?.titulo).toContain('Novembro')
+    expect(faturaDoLancamento(gasto('2026-09-26', 'cartao'), FORMAS)).toEqual({ ano: 2026, mes: 11 })
   })
 })

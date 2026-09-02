@@ -55,6 +55,26 @@ function periodoDaData(dataISO: string): Periodo {
 }
 
 /**
+ * Em que fatura um lançamento JÁ SALVO cai — `null` quando ele pesa no próprio
+ * mês, que é o caso da maioria.
+ *
+ * A mesma pergunta que `consequenciasDoRascunho` responde antes de salvar,
+ * respondida para a lista. Vive aqui, e não numa segunda função em outro
+ * arquivo, porque as duas telas precisam concordar: um gasto que a folha
+ * prometeu para a fatura de novembro não pode aparecer na lista dizendo
+ * outra coisa.
+ */
+export function faturaDoLancamento(
+  gasto: { data: string; valor_centavos: number; payment_method_id: string | null },
+  formas: FormaComFatura[],
+): Periodo | null {
+  if (!vaiParaFatura(gasto, formas)) return null
+  const forma = formas.find((f) => f.id === gasto.payment_method_id)
+  if (!forma || forma.dia_fechamento === null) return null
+  return faturaDaCompra(gasto.data, forma.dia_fechamento)
+}
+
+/**
  * As consequências, na ordem em que valem a pena ser lidas.
  *
  * O aviso vem primeiro porque é o único que pode fazer alguém desistir de

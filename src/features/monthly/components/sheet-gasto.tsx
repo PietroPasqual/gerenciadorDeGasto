@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Check, ChevronDown, Minus, Plus } from 'lucide-react'
+import { ChevronDown, Minus, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,6 +9,7 @@ import { paraDataISO, periodoAtual, primeiroDiaISO } from '@/lib/dates'
 import { MAX_PARCELAS } from '@/lib/parcelamento'
 import { consequenciasDoRascunho } from '@/lib/consequencias'
 import { cn } from '@/lib/utils'
+import { ChipsEscolha } from '@/components/common/chips-escolha'
 import { BlocoConsequencias } from './bloco-consequencias'
 import type { Category, PaymentMethod, Transaction } from '@/lib/database.types'
 
@@ -234,13 +235,13 @@ export function SheetGasto({
               dado que nenhuma tela exibe depois. */}
           {!ehEntrada && (
             <>
-              <Chips
+              <ChipsEscolha
                 rotulo="Forma de pagamento"
                 opcoes={formasPagamento}
                 selecionado={formaId}
                 onSelecionar={setFormaId}
               />
-              <Chips
+              <ChipsEscolha
                 rotulo="Categoria"
                 opcoes={categorias}
                 selecionado={categoriaId}
@@ -292,56 +293,6 @@ export function SheetGasto({
         </div>
       </SheetContent>
     </Sheet>
-  )
-}
-
-/** Lista de chips de escolha única — inclui "Sem definir" para poder limpar. */
-function Chips({
-  rotulo,
-  opcoes,
-  selecionado,
-  onSelecionar,
-  comCor,
-}: {
-  rotulo: string
-  opcoes: Array<{ id: string; nome: string; cor?: string }>
-  selecionado: string | null
-  onSelecionar: (id: string | null) => void
-  comCor?: boolean
-}) {
-  return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium">{rotulo}</p>
-      <div className="flex flex-wrap gap-2">
-        {opcoes.map((o) => {
-          const ativo = selecionado === o.id
-          return (
-            <button
-              key={o.id}
-              type="button"
-              onClick={() => onSelecionar(ativo ? null : o.id)}
-              aria-pressed={ativo}
-              className={cn(
-                'flex min-h-[2.75rem] items-center gap-2 rounded-full border px-4 text-corpo transition-colors',
-                ativo
-                  ? 'border-primary bg-primary-soft font-medium text-accent-foreground'
-                  : 'border-border hover:bg-accent',
-              )}
-            >
-              {comCor && o.cor && (
-                <span
-                  aria-hidden
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: o.cor }}
-                />
-              )}
-              {o.nome}
-              {ativo && <Check className="h-4 w-4 shrink-0" />}
-            </button>
-          )
-        })}
-      </div>
-    </div>
   )
 }
 

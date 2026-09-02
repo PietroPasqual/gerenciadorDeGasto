@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { formatCentavos } from './money'
 import {
   MESES_MINIMOS_DE_RITMO,
+  previsaoDeConclusao,
+  textoDaPrevisao,
   projecaoDaMeta,
   ritmoMensal,
   temPrazo,
@@ -174,5 +176,84 @@ describe('projecaoDaMeta', () => {
     const p = projetar({ valor_meta_centavos: 1000000, prazo_ano: 2026, prazo_mes: 2 }, 580000)
     // Todo valor citado é formatCentavos de um campo da própria projeção.
     expect(textoDoPrazo(p!, { ano: 2026, mes: 2 })).toContain(formatCentavos(p!.faltaCentavos))
+  })
+})
+
+describe('previsaoDeConclusao (meta sem prazo)', () => {
+  const semPrazo = { valor_meta_centavos: 1000000, prazo_ano: null, prazo_mes: null }
+
+  const prever = (guardadoTotal: number, aportesDoAno = aportes(), anoDosAportes = 2025) =>
+    previsaoDeConclusao({
+      meta: semPrazo,
+      guardadoTotal,
+      aportesDoAno,
+      anoDosAportes,
+      hoje: HOJE,
+    })
+
+  it('cala para meta COM prazo — quem responde ali é a projeção', () => {
+    expect(
+      previsaoDeConclusao({
+        meta: { valor_meta_centavos: 1000000, prazo_ano: 2026, prazo_mes: 3 },
+        guardadoTotal: 0,
+        aportesDoAno: aportes(),
+        anoDosAportes: 2025,
+        hoje: HOJE,
+      }),
+    ).toBeNull()
+  })
+
+  it('cala quando a meta já foi alcançada', () => {
+    expect(prever(1000000)).toBeNull()
+    expect(prever(1200000)).toBeNull()
+  })
+
+  it('cala quando não há alvo para alcançar', () => {
+    expect(
+      previsaoDeConclusao({
+        meta: { valor_meta_centavos: 0, prazo_ano: null, prazo_mes: null },
+        guardadoTotal: 0,
+        aportesDoAno: aportes(200000, 200000, 200000),
+        anoDosAportes: 2025,
+        hoje: HOJE,
+      }),
+    ).toBeNull()
+  })
+
+  it('diz quanto falta mesmo sem ritmo — subtração não é extrapolação', () => {
+    const p = prever(300000)
+    expect(p?.faltaCentavos).toBe(700000)
+    expect(p?.ritmoMensal).toBeNull()
+    expect(p?.chegaEm).toBeNull()
+    expect(textoDaPrevisao(p!)).toBe(`Faltam ${formatCentavos(700000)} para a meta.`)
+  })
+
+  it('com ritmo, projeta o mês de chegada', () => {
+    // Cinco meses decorridos até agosto? HOJE é 15/08/2025, então agosto é o
+    // 8º mês: R$ 800,00/mês guardados em jan-ago dá ritmo de R$ 800,00.
+    const p = prever(0, aportes(80000, 80000, 80000, 80000, 80000, 80000, 80000, 80000))
+    expect(p?.ritmoMensal).toBe(80000)
+    // Faltam R$ 10.000,00 a R$ 800,00/mês = 13 meses a partir de agosto/2025.
+    expect(p?.chegaEm).toEqual({ ano: 2026, mes: 8 })
+    expect(textoDaPrevisao(p!)).toContain('No ritmo deste ano')
+    expect(textoDaPrevisao(p!)).toContain('ago/26')
+  })
+
+  it('aportes de outro ano não viram "o seu ritmo atual"', () => {
+    const p = prever(0, aportes(80000, 80000, 80000, 80000, 80000), 2024)
+    expect(p?.ritmoMensal).toBeNull()
+  })
+
+  it('a frase do ritmo é a MESMA nas duas telas', () => {
+    // Se um dia divergirem, a meta com prazo e a sem prazo passam a explicar a
+    // mesma conta com palavras diferentes.
+    const comRitmo = prever(0, aportes(80000, 80000, 80000, 80000, 80000, 80000, 80000, 80000))
+    const projecao = projetar(
+      { valor_meta_centavos: 1000000, prazo_ano: 2027, prazo_mes: 12 },
+      0,
+      aportes(80000, 80000, 80000, 80000, 80000, 80000, 80000, 80000),
+    )
+    const trecho = textoDoRitmo(projecao!)
+    expect(textoDaPrevisao(comRitmo!)).toContain(trecho!)
   })
 })

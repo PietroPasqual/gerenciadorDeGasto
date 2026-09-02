@@ -143,7 +143,9 @@ preço cheio, não o preço).
 | Prazo da meta — chip **Sem prazo / Até dez/26** embaixo do nome (Config.) | O mesmo chip, com 44px, no card da meta                                      |
 | "Faltam R$ 4.200 em 7 meses — R$ 600 por mês" no card da meta             | O mesmo texto, no mesmo card                                                 |
 | "No ritmo deste ano (R$ 800 por mês), chega em dez/25"                    | O mesmo — e some nos dois quando a base é pequena demais                     |
-| Meta sem prazo: nenhuma projeção, tudo como antes da `0019`               | O mesmo                                                                      |
+| Meta sem prazo: "Faltam R$ X" e, com base, o mês de chegada               | O mesmo — e some a segunda frase quando a base é pequena                     |
+| "Guardar em <meta>" — botão no card, folha com os 12 meses                | O mesmo botão, com 44px, e a mesma folha                                     |
+| "Resgatar ou transferir" — botão no cabeçalho da grade                    | O mesmo botão; é a MESMA folha do controle mensal                            |
 
 ## Configurações
 

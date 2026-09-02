@@ -21,6 +21,14 @@ export type TipoMovimento = 'resgate' | 'transferencia'
  *
  * O saldo de cada meta aparece o tempo todo: sem ele, "resgatar R$ 500" é um
  * palpite, e o erro só apareceria depois de o banco recusar.
+ *
+ * MORA EM `features/goals` e é usada pelas DUAS telas.
+ *
+ * Ela nasceu no controle mensal, onde o aporte é lançado, e ficou inalcançável
+ * de /metas — a tela em que alguém pensa "quero tirar dinheiro daqui". Mover o
+ * arquivo para junto das metas e importá-lo dos dois lados é o que garante que
+ * corrigir o comportamento corrija nos dois; duplicar a folha significaria
+ * corrigir duas vezes, e a segunda sempre atrasa.
  */
 export function SheetMovimentoMeta({
   aberta,

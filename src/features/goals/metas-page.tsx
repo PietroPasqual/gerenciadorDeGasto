@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronRight } from 'lucide-react'
+import { ArrowRightLeft, ChevronRight, PiggyBank } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,13 +13,21 @@ import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
 import { NumeroAnimado } from '@/components/common/numero-animado'
 import { formatCentavos } from '@/lib/money'
-import { MESES_CURTOS, nomeDoMes } from '@/lib/dates'
+import { MESES_CURTOS, nomeDoMes, periodoAtual } from '@/lib/dates'
 import { progressoDaMeta } from '@/lib/calculations'
-import { projecaoDaMeta, textoDoPrazo, textoDoRitmo } from '@/lib/meta-prazo'
+import {
+  previsaoDeConclusao,
+  projecaoDaMeta,
+  textoDaPrevisao,
+  textoDoPrazo,
+  textoDoRitmo,
+} from '@/lib/meta-prazo'
 import { usePeriodoStore } from '@/store/periodo'
 import { cn } from '@/lib/utils'
 import { FaixaRolavel } from '@/components/common/faixa-rolavel'
 import { SheetMeta } from './components/sheet-meta'
+import { SheetAporteRapido } from './components/sheet-aporte-rapido'
+import { SheetMovimentoMeta } from './components/sheet-movimento-meta'
 import { Wishlist } from './components/wishlist'
 import { useEhMobile } from '@/lib/hooks'
 import { useMetas } from './use-metas'
@@ -80,6 +88,8 @@ export function MetasPage() {
             aportes={dados.aportes}
             resumo={dados.resumo}
             onSalvarAporte={acoes.salvarAporte}
+            onResgatar={acoes.resgatar}
+            onTransferir={acoes.transferir}
           />
         </>
       ) : null}
@@ -94,12 +104,16 @@ function GradeMetas({
   aportes,
   resumo,
   onSalvarAporte,
+  onResgatar,
+  onTransferir,
 }: {
   ano: number
   metas: Array<import('@/lib/database.types').Goal>
   aportes: Array<import('@/lib/database.types').GoalContribution>
   resumo: Array<import('@/lib/database.types').ResumoMeta>
   onSalvarAporte: (goalId: string, mes: number, valor: number) => void
+  onResgatar: (goalId: string, centavos: number) => void
+  onTransferir: (origem: string, destino: string, centavos: number) => void
 }) {
   const valorDe = (goalId: string, mes: number) =>
     aportes.find((a) => a.goal_id === goalId && a.mes === mes)?.valor_centavos ?? 0
@@ -122,6 +136,17 @@ function GradeMetas({
    */
   const ehEstreito = useEhMobile(1024)
   const [metaAberta, setMetaAberta] = useState<{ id: string; nome: string } | null>(null)
+  const [guardandoEm, setGuardandoEm] = useState<{ id: string; nome: string } | null>(null)
+  const [movimentoAberto, setMovimentoAberto] = useState(false)
+
+  /**
+   * O saldo de cada meta — o teto do que dá para resgatar.
+   *
+   * Vem de `guardado_total` do agregado, que é a mesma soma que o controle
+   * mensal usa (`saldosMetas` da 0013): todos os meses, e não só o ano aberto.
+   * Quem guardou em março de 2024 pode resgatar hoje.
+   */
+  const saldos = Object.fromEntries(resumo.map((r) => [r.goal_id, r.guardado_total]))
 
   if (metas.length === 0) {
     return (
@@ -148,10 +173,26 @@ function GradeMetas({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle>Quanto guardei em {ano}</CardTitle>
-        <CardDescription>
-          Edite qualquer célula: o valor é o mesmo que aparece em “Investimentos do mês”.
-        </CardDescription>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <CardTitle>Quanto guardei em {ano}</CardTitle>
+            <CardDescription>
+              Edite qualquer célula: o valor é o mesmo que aparece em “Investimentos do mês”.
+            </CardDescription>
+          </div>
+          {/* Tirar e mover dinheiro entre metas vivia só no controle mensal —
+              inalcançável da tela em que alguém pensa "quero tirar daqui". É a
+              MESMA folha, importada, e não uma cópia. */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="alvo-toque shrink-0"
+            onClick={() => setMovimentoAberto(true)}
+          >
+            <ArrowRightLeft className="mr-1.5 h-4 w-4" aria-hidden />
+            Resgatar ou transferir
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Progresso geral de cada meta (valor acumulado de todos os anos).
@@ -167,6 +208,17 @@ function GradeMetas({
             const alvo = linha?.valor_meta_centavos ?? meta.valor_meta_centavos
             const { percentual, bruto } = progressoDaMeta(guardadoTotal, alvo)
             const projecao = projecaoDaMeta({
+              meta: { ...meta, valor_meta_centavos: alvo },
+              guardadoTotal,
+              aportesDoAno: aportesPorMes(meta.id),
+              anoDosAportes: ano,
+            })
+            /**
+             * A meta SEM prazo também tem uma resposta honesta para "quando eu
+             * chego lá?" — e ela usa a mesma base do ritmo. Uma das duas é
+             * sempre `null`: `projecaoDaMeta` só existe com prazo, esta só sem.
+             */
+            const previsao = previsaoDeConclusao({
               meta: { ...meta, valor_meta_centavos: alvo },
               guardadoTotal,
               aportesDoAno: aportesPorMes(meta.id),
@@ -215,21 +267,46 @@ function GradeMetas({
                     )}
                   </div>
                 )}
+                {previsao && (
+                  <p className="border-t border-border/70 pt-1.5 text-xs text-muted-foreground">
+                    {textoDaPrevisao(previsao)}
+                  </p>
+                )}
               </>
             )
 
-            return ehEstreito ? (
-              <button
-                key={meta.id}
-                type="button"
-                onClick={() => setMetaAberta({ id: meta.id, nome: meta.nome })}
-                className="space-y-1.5 rounded-xl border border-border p-3 text-left transition-colors active:bg-realce"
-              >
-                {conteudo}
-              </button>
-            ) : (
+            /**
+             * "Guardar" fica FORA do bloco que abre os doze meses.
+             *
+             * No celular o card inteiro é um botão que abre a grade daquela
+             * meta, e botão dentro de botão é HTML inválido — além de deixar
+             * ambíguo o que o toque faz. Aqui o card é um `<div>`, o conteúdo
+             * é que vira botão quando precisa, e "Guardar" é sempre um alvo
+             * próprio, do mesmo tamanho nos dois tamanhos de tela.
+             */
+            return (
               <div key={meta.id} className="space-y-1.5 rounded-xl border border-border p-3">
-                {conteudo}
+                {ehEstreito ? (
+                  <button
+                    type="button"
+                    onClick={() => setMetaAberta({ id: meta.id, nome: meta.nome })}
+                    aria-label={`Ver e editar os doze meses de ${meta.nome}`}
+                    className="w-full space-y-1.5 rounded-lg text-left transition-colors active:bg-realce"
+                  >
+                    {conteudo}
+                  </button>
+                ) : (
+                  conteudo
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="alvo-toque w-full"
+                  onClick={() => setGuardandoEm({ id: meta.id, nome: meta.nome })}
+                >
+                  <PiggyBank className="mr-1.5 h-4 w-4" aria-hidden />
+                  Guardar em {meta.nome}
+                </Button>
               </div>
             )
           })}
@@ -350,6 +427,28 @@ function GradeMetas({
           meta={metaAberta}
           valorDoMes={valorDe}
           onSalvar={onSalvarAporte}
+        />
+
+        <SheetAporteRapido
+          meta={guardandoEm}
+          ano={ano}
+          valorDoMes={(mes) => (guardandoEm ? valorDe(guardandoEm.id, mes) : 0)}
+          onFechar={() => setGuardandoEm(null)}
+          onSalvar={onSalvarAporte}
+        />
+
+        <SheetMovimentoMeta
+          aberta={movimentoAberto}
+          onOpenChange={setMovimentoAberto}
+          metas={metas}
+          saldos={saldos}
+          // O movimento é sempre de HOJE, e não do ano no seletor: tirar
+          // dinheiro é um fato do presente. A folha só mostra o mês; quem
+          // grava é `acoes.resgatar`, que usa o relógio.
+          ano={periodoAtual().ano}
+          mes={periodoAtual().mes}
+          onResgatar={onResgatar}
+          onTransferir={onTransferir}
         />
       </CardContent>
     </Card>

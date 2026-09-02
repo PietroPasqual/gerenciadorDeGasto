@@ -520,6 +520,96 @@ test.describe('comparativo anual', () => {
   })
 })
 
+test.describe('guardar, resgatar e transferir na tela de metas', () => {
+  /** Agosto de 2025, com o seletor de ano na mesma casa do relógio. */
+  async function abrirMetas(page: import('@playwright/test').Page) {
+    await fixarHoje(page, '2025-08-15T10:00:00')
+    await prepararApp(page, {
+      ...appCompleto(),
+      'goals.listarMetas': [
+        { id: 'g1', user_id: 'u', nome: 'Reserva', valor_meta_centavos: 1000000, ordem: 1, created_at: '' },
+        { id: 'g2', user_id: 'u', nome: 'Viagem', valor_meta_centavos: 500000, ordem: 2, created_at: '' },
+      ],
+      'goals.listarAportesDoAno': [
+        { id: 'a1', user_id: 'u', goal_id: 'g1', ano: 2025, mes: 8, valor_centavos: 50000, created_at: '' },
+      ],
+      'reports.obterResumoMetas': [
+        {
+          goal_id: 'g1',
+          nome: 'Reserva',
+          valor_meta_centavos: 1000000,
+          guardado_ano: 50000,
+          guardado_total: 50000,
+          percentual: 5,
+        },
+        {
+          goal_id: 'g2',
+          nome: 'Viagem',
+          valor_meta_centavos: 500000,
+          guardado_ano: 0,
+          guardado_total: 0,
+          percentual: 0,
+        },
+      ],
+    })
+    await page.addInitScript(() =>
+      localStorage.setItem(
+        'gdg-periodo',
+        JSON.stringify({ state: { ano: 2025, mes: 8, anoComparativo: 2025 }, version: 0 }),
+      ),
+    )
+    await page.goto('/metas')
+    await expect(page.getByRole('heading', { name: /Quanto guardei/ })).toBeVisible()
+  }
+
+  test('"Guardar" abre no mês de hoje, já com o que está lá', async ({ page }) => {
+    await abrirMetas(page)
+    await page.getByRole('button', { name: 'Guardar em Reserva' }).click()
+
+    await expect(page.getByRole('heading', { name: 'Guardar em Reserva' })).toBeVisible()
+    // Agosto já tem R$ 500,00, e o campo abre com eles: `salvarAporte`
+    // SUBSTITUI o mês, e um campo vazio apagaria o valor sem avisar.
+    const campo = page.getByLabel('Valor guardado em Agosto')
+    await expect(campo).toHaveValue(/500,00/)
+    await expect(page.getByText(/substitui o que estiver guardado/)).toBeVisible()
+  })
+
+  test('trocar o mês troca o valor que está em jogo', async ({ page }) => {
+    await abrirMetas(page)
+    await page.getByRole('button', { name: 'Guardar em Reserva' }).click()
+    // Setembro não tem nada guardado.
+    await page.getByRole('button', { name: /^Setembro/ }).click()
+    await expect(page.getByLabel('Valor guardado em Setembro')).toHaveValue(/0,00/)
+  })
+
+  test('salvar grava o aporte no mês escolhido', async ({ page }) => {
+    await abrirMetas(page)
+    await page.getByRole('button', { name: 'Guardar em Reserva' }).click()
+    await page.getByRole('button', { name: /^Setembro/ }).click()
+    await page.getByLabel('Valor guardado em Setembro').fill('30000')
+    await page.getByRole('button', { name: 'Salvar', exact: true }).click()
+
+    const gravadas = await page.evaluate(() => window.__ESCRITAS__ ?? [])
+    const aporte = gravadas.find((e) => e.chave === 'goals.salvarAporte')
+    expect(aporte?.args[0]).toMatchObject({ goal_id: 'g1', ano: 2025, mes: 9, valor_centavos: 30000 })
+  })
+
+  test('resgatar e transferir existem AQUI, com o saldo à vista', async ({ page }) => {
+    await abrirMetas(page)
+    await page.getByRole('button', { name: 'Resgatar ou transferir' }).click()
+    // O saldo é o teto do resgate, e ele precisa aparecer antes de digitar.
+    await expect(page.locator('text=/R\\$\\s*500,00/').locator('visible=true').first()).toBeVisible()
+
+    // Rótulo exato: "Valor" sozinho também casa com os campos da wishlist,
+    // que continuam no DOM atrás da folha.
+    await page.getByLabel('Valor do movimento').fill('20000')
+    await page.getByRole('button', { name: /^Resgatar R\$/ }).click()
+
+    const gravadas = await page.evaluate(() => window.__ESCRITAS__ ?? [])
+    expect(gravadas.some((e) => e.chave === 'goals.resgatarDaMeta')).toBe(true)
+  })
+})
+
 test.describe('wishlist', () => {
   test.beforeEach(async ({ page }) => {
     await prepararApp(page, fixtureMes())
@@ -918,13 +1008,40 @@ test.describe('meta com prazo', () => {
     await expect(page.getByText(/No ritmo deste ano .*, chega em/)).toBeVisible()
   })
 
-  test('meta sem prazo continua sem projeção nenhuma', async ({ page }) => {
+  /**
+   * A 0019 deixou a meta sem prazo intocada, e este teste guardava isso. A
+   * fase 6 pede projeção de conclusão "quando houver base suficiente", e a
+   * base é a mesma do ritmo — então a meta sem prazo passou a responder
+   * "quando eu chego lá?". O que ela NÃO pode fazer é falar de prazo, que ela
+   * não tem; é essa metade que continua guardada aqui.
+   */
+  test('meta sem prazo prevê a conclusão, mas nunca fala em prazo', async ({ page }) => {
     await fixarHoje(page, '2025-08-15T10:00:00')
     await prepararApp(page, metaComPrazo({ prazo_ano: null, prazo_mes: null }))
     await page.goto('/metas')
 
     await expect(page.getByText('Reserva').first()).toBeVisible()
-    await expect(page.getByText(/Faltam .* meses/)).toHaveCount(0)
+    await expect(page.getByText(/em \d+ meses/)).toHaveCount(0)
+    await expect(page.getByText(/O prazo era/)).toHaveCount(0)
+
+    // R$ 6.000,00 de R$ 10.000,00, guardando R$ 800,00 por mês.
+    await expect(page.getByText(/Faltam .* para a meta/)).toBeVisible()
+    await expect(page.getByText(/No ritmo deste ano/)).toBeVisible()
+  })
+
+  test('meta sem prazo e sem base diz o que falta, e não chuta a data', async ({ page }) => {
+    // Fevereiro: menos meses decorridos do que o mínimo de ritmo. "No seu
+    // ritmo você chega em 2041" seria extrapolação de um mês.
+    await fixarHoje(page, '2025-02-10T10:00:00')
+    await prepararApp(page, {
+      ...metaComPrazo({ prazo_ano: null, prazo_mes: null }),
+      'goals.listarAportesDoAno': [
+        { id: 'a1', user_id: 'u', goal_id: 'g1', ano: 2025, mes: 1, valor_centavos: 80000, created_at: '' },
+      ],
+    })
+    await page.goto('/metas')
+
+    await expect(page.getByText(/Faltam .* para a meta/)).toBeVisible()
     await expect(page.getByText(/No ritmo deste ano/)).toHaveCount(0)
   })
 

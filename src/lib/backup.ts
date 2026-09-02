@@ -215,6 +215,16 @@ export const CAMPOS_DO_PERFIL = [
   'orcamento_centavos',
   'preferencias_lembrete',
   'assinaturas_ignoradas',
+  // O painel montado pela pessoa (0023). Entra pelo mesmo critério do `tema`:
+  // é PREFERÊNCIA, e refazer o arranjo a mão depois de restaurar um backup é
+  // perder trabalho que o arquivo tinha como carregar.
+  //
+  // O que NÃO entra, e continua fora de propósito, é `onboarding_em` e
+  // `onboarding_vistos`: aquilo é estado de "já passei por aqui", não gosto, e
+  // restaurá-lo faria o guia reaparecer — ou sumir — por causa de um arquivo.
+  'painel_ordem',
+  'painel_ocultos',
+  'painel_capa',
 ] as const
 
 export interface Backup {
@@ -227,7 +237,7 @@ export interface Backup {
    */
   origem?: { userId?: string; nome?: string }
   dados: Partial<Record<TabelaBackup, Linha[]>>
-  /** Nome, tema, orçamento e preferências. Restaurado só se a pessoa pedir. */
+  /** Nome, tema, orçamento, preferências e painel. Restaurado só se a pessoa pedir. */
   perfil?: Linha
 }
 

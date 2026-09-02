@@ -436,4 +436,34 @@ test.describe('acessibilidade no navegador', () => {
       expect(problemas.join('\n'), 'contraste abaixo de AA').toBe('')
     })
   }
+
+  /**
+   * O painel EM MODO DE EDIÇÃO, nos quatro temas.
+   *
+   * A varredura de `/painel` acima abre a tela em repouso, e o modo de edição
+   * é a maior safra de superfície nova da fase 4: a moldura tracejada de cada
+   * widget, a caixa de personalização, e um seletor com seis amostras de
+   * gradiente. Nada disso existe até alguém clicar em "Personalizar", então
+   * nenhuma varredura por rota o alcança — é o mesmo formato do vão que
+   * deixou /ajuda com alvos de 23px por meses.
+   *
+   * O tique da capa escolhida é o ponto de atenção: ele fica sobre um
+   * gradiente, e a única razão de passar é o disco opaco de --background que
+   * o componente põe atrás dele.
+   */
+  for (const tema of TEMAS) {
+    test(`painel personalizável no tema ${tema}, claro e escuro`, async ({ page }) => {
+      const problemas: string[] = []
+      for (const escuro of [false, true]) {
+        await abrir(page, '/painel', tema, escuro)
+        await page.getByRole('button', { name: 'Personalizar' }).click()
+        await expect(page.getByRole('group', { name: 'Capa do painel' })).toBeVisible()
+
+        const v = await rodarAxe(page)
+        if (v.length)
+          problemas.push(relatar('/painel personalizando', `${tema}/${escuro ? 'escuro' : 'claro'}`, v))
+      }
+      expect(problemas.join('\n'), 'axe encontrou violações ao personalizar o painel').toBe('')
+    })
+  }
 })

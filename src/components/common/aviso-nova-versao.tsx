@@ -39,9 +39,14 @@ export function AvisoNovaVersao() {
   return (
     <div
       role="status"
-      // Acima da barra inferior do celular (que é fixa) e fora do caminho do
-      // polegar; no desktop, canto inferior esquerdo, longe dos toasts.
-      className="fixed bottom-[5.5rem] left-1/2 z-40 w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border border-border bg-card p-3 shadow-lg sm:bottom-4 sm:left-4 sm:translate-x-0"
+      // Acima do dock e fora do caminho do polegar; no desktop escorrega para
+      // o canto esquerdo, longe dos toasts.
+      //
+      // A altura é --dock-reserva em TODAS as larguras, e não só no celular:
+      // até a fase 3 a navegação fixa existia só embaixo de sm, e um
+      // `sm:bottom-4` bastava. O dock está lá em cima também, e num desktop
+      // estreito o aviso ficaria por baixo dele.
+      className="fixed bottom-dock-reserva left-1/2 z-40 mb-2 w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border border-border bg-card p-3 shadow-lg sm:left-4 sm:translate-x-0"
     >
       {offline ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">

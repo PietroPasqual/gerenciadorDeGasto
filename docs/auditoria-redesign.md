@@ -138,8 +138,8 @@ O que **não existe** e a fase 1 do prompt pede:
 | -------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Superfícies nível 0/1/2    | só `background`/`card`/`popover`/`muted`; `muted` acumula dois papéis                                |
 | Duração e easing           | cravados: `0.35s ease-out` no Tailwind, `0.6s` no `flash-salvo`, mais os de Framer Motion espalhados |
-| Blur permitido             | não existe — necessário para o dock e o scrim da capa                                                |
-| Gradiente                  | não existe                                                                                           |
+| Blur permitido             | criado na fase 3 (`--vidro`, classe `.vidro`) — o dock consome                                       |
+| Gradiente                  | criado na fase 4 (`--capa-*`, `--capa-scrim`) — a capa do painel consome                             |
 | Alvo de toque              | `min-h-11` repetido à mão; `min-h-[2.75rem]` aparece 10 vezes                                        |
 | Largura máxima de conteúdo | só `container` com `2xl: 1400px`                                                                     |
 | Paleta de gráfico          | `PALETA` cravada em `donut.tsx`, fora do sistema de temas                                            |
@@ -186,20 +186,42 @@ Antes de qualquer pixel novo, fechar o que mede:
    falta.
 5. Só então landing, shell, painel e o resto.
 
-## 6. Itens que precisam de decisão do proprietário
+## 6. Itens que precisavam de decisão do proprietário
+
+Os quatro primeiros foram **decididos e implementados** nas fases 3 e 4. Ficam
+registrados com a decisão e o que ela custou.
 
 1. **"Dark-first" contradiz "sem transformar o modo claro em versão
-   secundária".** O prompt pede as duas coisas em seções diferentes (§3 e §4).
-   O app hoje é claro-primeiro com escuro combinável, e os dois estão
-   calibrados. Qual das duas leituras vale?
-2. **Capas do painel.** O prompt exige capas originais, otimizadas em
-   AVIF/WebP, sem hotlink. Quem produz esses arquivos? Sem eles, resta o modo
-   sem imagem e o fallback em gradiente.
-3. **Dock flutuante no lugar da barra inferior.** É troca de navegação num app
-   já em uso. Vale o risco?
-4. **Widgets personalizáveis** implicam guardar layout por usuário — decidir
-   entre `localStorage` (por aparelho) e perfil no Supabase (por conta), com
-   regra de precedência explícita.
+   secundária".** → **Dark-first**, e a contradição era aparente: o padrão
+   decide quem atende a ausência de escolha, não quem é de primeira classe. Os
+   dois modos continuam calibrados no `themes.css` e medidos nos quatro temas
+   pelo e2e de contraste. Quem já usava o claro nem percebe — o `persist`
+   hidrata antes do padrão. O que a decisão exigiu de novo foi o script
+   síncrono do `index.html`: sem ele, o dark-first troca o flash branco de
+   antes por um flash preto na cara de quem pediu o claro.
+2. **Capas do painel — quem produz os arquivos?** → **Ninguém, e não são
+   arquivos.** As capas são gradientes montados a partir das variáveis do tema.
+   Não é o "fallback" da pergunta: é a resposta. Acompanham os quatro temas e o
+   claro/escuro sem um arquivo por variante, não custam byte de rede, entram no
+   cache do service worker de graça e não prometem nada que o produto não
+   cumpra. O perfil guarda o NOME da capa, então redesenhar ou aposentar uma
+   não invalida o que está gravado.
+3. **Dock flutuante no lugar da barra inferior — vale o risco?** → **Sim**, e o
+   risco foi contido mantendo a informação no lugar: os mesmos destinos, na
+   mesma ordem que a barra inferior já usava, com o mesmo "Mais". Mudou o
+   desenho, não o que reaprender. Em troca, as TRÊS navegações viraram uma: o
+   `nav[aria-label="Navegação principal"]` agora é único no DOM, e não só
+   visível-um-de-cada-vez — o teste de paridade passou a cobrar as duas coisas.
+   Ganho não previsto: a paleta de comandos só abria por ⌘K e portanto não
+   existia no celular; agora abre pelo "Mais".
+4. **Widgets personalizáveis — `localStorage` ou perfil?** → **Perfil**, e a
+   regra de precedência não precisou existir, porque não há duas fontes:
+   `painel_ordem`, `painel_ocultos` e `painel_capa` moram só na 0023. O
+   critério é de quem é a preferência — "quero o saldo antes do donut" é da
+   PESSOA, e ela quer isso no telefone e no computador. A posição do dock foi
+   para o `localStorage` pelo mesmo critério aplicado ao contrário: "à
+   esquerda" é boa ideia num monitor e péssima num celular, e é a única
+   preferência do app que é do aparelho.
 5. Os quatro itens de alto risco da fase 8 do prompt (contas e carteiras,
    conta compartilhada, escrita offline, Open Finance) permanecem **sem
    autorização** e com nota escrita para três deles.

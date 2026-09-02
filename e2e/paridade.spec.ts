@@ -62,20 +62,76 @@ test.describe('entrar', () => {
 })
 
 test.describe('navegação', () => {
-  test('exatamente uma navegação principal visível', async ({ page, isMobile }) => {
+  test('exatamente uma navegação principal, no DOM e na tela', async ({ page, isMobile }) => {
     await prepararApp(page, fixtureMes())
     await page.goto('/mes')
     await expect(page.getByRole('heading', { name: 'Controle mensal' })).toBeVisible()
 
-    const visiveis = await page.evaluate(
-      () =>
-        [...document.querySelectorAll('nav[aria-label="Navegação principal"]')].filter((n) =>
-          n.checkVisibility(),
-        ).length,
-    )
-    // Existem três no DOM (barra lateral, abas do header, barra inferior) e o
-    // documento avisa que contar o DOM engana. Visível tem que ser uma só.
+    const { noDom, visiveis } = await page.evaluate(() => {
+      const todas = [...document.querySelectorAll('nav[aria-label="Navegação principal"]')]
+      return { noDom: todas.length, visiveis: todas.filter((n) => n.checkVisibility()).length }
+    })
+
+    // Antes da fase 3 eram TRÊS no DOM — barra lateral, abas do header e barra
+    // inferior —, cada uma escondida nas larguras das outras, e este teste só
+    // conseguia cobrar que uma estivesse visível. Com o dock, o DOM também
+    // passa a ter uma só: se alguém ressuscitar uma segunda navegação para
+    // alguma largura, isto quebra antes de a divergência entre as duas
+    // aparecer numa tela.
+    expect(noDom, isMobile ? 'celular' : 'pc').toBe(1)
     expect(visiveis, isMobile ? 'celular' : 'pc').toBe(1)
+  })
+
+  test('o dock flutua sobre o conteúdo sem cobrir o fim da página', async ({ page }) => {
+    await prepararApp(page, fixtureMes())
+    await page.goto('/mes?aba=gastos')
+    await expect(page.getByRole('heading', { name: 'Controle mensal' })).toBeVisible()
+
+    const dock = page.locator('nav[aria-label="Navegação principal"]')
+    const caixa = await dock.boundingBox()
+    expect(caixa, 'o dock precisa estar na tela').not.toBeNull()
+
+    // A moldura que posiciona o dock cobre a largura TODA da tela. Se ela
+    // recebesse cliques, uma faixa invisível engoliria o toque na última
+    // linha de qualquer lista — daí o `pointer-events-none` nela e o
+    // `pointer-events-auto` só na barra.
+    //
+    // `elementFromPoint` já pula quem tem pointer-events: none, então
+    // perguntar a cor do que ele devolve não prova nada: a prova é QUEM ele
+    // devolve. Na borda esquerda, longe da barra, não pode ser a moldura; no
+    // centro do dock, tem que ser a barra.
+    const alvos = await page.evaluate(
+      ({ borda, centro }) => {
+        const nav = document.querySelector('nav[aria-label="Navegação principal"]')
+        const moldura = nav?.parentElement ?? null
+        const naBorda = document.elementFromPoint(borda.x, borda.y)
+        const noCentro = document.elementFromPoint(centro.x, centro.y)
+        return {
+          molduraNaBorda: !!moldura && (naBorda === moldura || moldura.contains(naBorda)),
+          dockNoCentro: !!nav && (noCentro === nav || nav.contains(noCentro)),
+        }
+      },
+      {
+        borda: { x: 4, y: (caixa?.y ?? 0) + (caixa?.height ?? 0) / 2 },
+        centro: {
+          x: (caixa?.x ?? 0) + (caixa?.width ?? 0) / 2,
+          y: (caixa?.y ?? 0) + (caixa?.height ?? 0) / 2,
+        },
+      },
+    )
+    expect(alvos.molduraNaBorda, 'a moldura do dock não pode interceptar cliques').toBe(false)
+    expect(alvos.dockNoCentro, 'o dock em si precisa continuar clicável').toBe(true)
+
+    // E o conteúdo reserva espaço: rolado até o fim, o último bloco da página
+    // termina ACIMA do topo do dock, e não por baixo dele. É o que o
+    // --dock-reserva garante, e é o que um `pb` cravado à mão deixava de
+    // garantir toda vez que a altura da navegação mudava.
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+    const fimDoConteudo = await page.evaluate(() => {
+      const ultimo = document.querySelector('main')?.lastElementChild
+      return ultimo ? ultimo.getBoundingClientRect().bottom : 0
+    })
+    expect(fimDoConteudo).toBeLessThanOrEqual((caixa?.y ?? 0) + 1)
   })
 
   test('as seis telas são alcançáveis nos dois tamanhos', async ({ page }) => {
@@ -91,6 +147,90 @@ test.describe('navegação', () => {
       await page.goto(rota)
       await expect(page.getByRole('heading', { name: titulo }).first()).toBeVisible()
     }
+  })
+})
+
+/**
+ * O painel personalizável (fase 4).
+ *
+ * A aritmética de ordem e visibilidade tem teste próprio em
+ * `src/lib/painel.test.ts`, e a tela tem um de componente em
+ * `dashboard-page.test.tsx`. O que só aqui se vê é o que jsdom não pinta: que
+ * a capa REALMENTE desenha um gradiente, e que os alvos de personalizar
+ * respeitam os 44px no celular — as duas coisas que o axe só mede em
+ * navegador de verdade.
+ */
+test.describe('painel personalizável', () => {
+  test.beforeEach(async ({ page }) => {
+    await prepararApp(page, fixtureMes())
+    await page.goto('/painel')
+    await expect(page.getByRole('heading', { name: /olá/i })).toBeVisible()
+  })
+
+  test('a capa desenha um gradiente de verdade, e sem texto por cima', async ({ page }) => {
+    // A capa é decoração: `aria-hidden`, e nenhum texto sobre ela. O gradiente
+    // varia de luminosidade ao longo da faixa, e texto ali teria contraste
+    // diferente em cada ponto — que é a armadilha que derrubou o comparativo
+    // anual para 2,54:1 e está anotada no themes.css.
+    const gradiente = await page.evaluate(() => {
+      const capa = [...document.querySelectorAll('main [aria-hidden="true"] > div')].find((d) =>
+        getComputedStyle(d).backgroundImage.includes('gradient'),
+      )
+      if (!capa) return null
+      return {
+        imagem: getComputedStyle(capa).backgroundImage,
+        texto: (capa.parentElement?.textContent ?? '').trim(),
+      }
+    })
+    expect(gradiente, 'a capa precisa desenhar um gradiente').not.toBeNull()
+    expect(gradiente?.imagem).toContain('gradient')
+    expect(gradiente?.texto, 'nada de texto sobre a capa').toBe('')
+  })
+
+  test('personalizar, mover e esconder — tudo na própria tela', async ({ page }) => {
+    await page.getByRole('button', { name: 'Personalizar' }).click()
+
+    // Mover é uma operação sobre um card que está À VISTA: a pessoa vê o
+    // bloco trocar de lugar embaixo do dedo que o moveu. Foi por isso que a
+    // personalização ficou no painel e não numa página de configurações.
+    await page.getByRole('button', { name: 'Mover Gastos por categoria para baixo' }).click()
+
+    const ordem = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('main section[aria-label]')].map((s) => s.getAttribute('aria-label')),
+      )
+    await expect
+      .poll(ordem)
+      .toEqual([
+        'Personalizar o painel',
+        'Observações do mês',
+        'Gastos por categoria',
+        'Resumo do mês',
+        'Atalhos',
+      ])
+
+    await page.getByRole('button', { name: 'Esconder Atalhos' }).click()
+    await expect.poll(ordem).not.toContain('Atalhos')
+
+    // E o que sai da tela é oferecido de volta, senão esconder seria caminho
+    // só de ida.
+    const bandeja = page.getByRole('region', { name: 'Personalizar o painel' })
+    await expect(bandeja.getByRole('button', { name: 'Atalhos' })).toBeVisible()
+
+    const gravadas = await page.evaluate(() => window.__ESCRITAS__ ?? [])
+    expect(gravadas.some((e) => e.chave.includes('atualizarPerfil'))).toBe(true)
+  })
+
+  test('nenhum alvo da personalização fica abaixo de 44px no celular', async ({ page, isMobile }) => {
+    // O modo de edição cria oito setas e um seletor de seis capas de uma vez
+    // — a maior safra de alvos novos que o app ganhou numa fase só, e
+    // exatamente o tipo de tela que caiu no vão que deixou /ajuda com 23px.
+    await page.getByRole('button', { name: 'Personalizar' }).click()
+    await expect(page.getByRole('group', { name: 'Capa do painel' })).toBeVisible()
+
+    const r = await medirAlvos(page)
+    if (isMobile) expect(r.pequenos, 'alvos pequenos ao personalizar o painel').toEqual([])
+    expect(r.estouro, 'personalizar o painel faz a página rolar de lado').toBe(0)
   })
 })
 
@@ -586,12 +726,33 @@ test.describe('guardar, resgatar e transferir na tela de metas', () => {
     await abrirMetas(page)
     await page.getByRole('button', { name: 'Guardar em Reserva' }).click()
     await page.getByRole('button', { name: /^Setembro/ }).click()
+
+    // ESPERA o campo trocar de mês antes de digitar.
+    //
+    // Sem isto o teste reprovava uma vez a cada cinco, e não por lentidão: a
+    // folha abre em Agosto, que tem R$ 500,00 guardados, e trocar para
+    // Setembro zera o campo num render seguinte. Quando o `fill` chegava
+    // antes desse render, os dígitos entravam no MoneyInput ainda carregado e
+    // o aporte gravado saía 5000030000 em vez de 30000 — número errado, não
+    // ausência de gravação. É o mesmo `toHaveValue` que o teste logo acima já
+    // faz, e que aqui faltava.
+    await expect(page.getByLabel('Valor guardado em Setembro')).toHaveValue(/0,00/)
     await page.getByLabel('Valor guardado em Setembro').fill('30000')
     await page.getByRole('button', { name: 'Salvar', exact: true }).click()
 
-    const gravadas = await page.evaluate(() => window.__ESCRITAS__ ?? [])
-    const aporte = gravadas.find((e) => e.chave === 'goals.salvarAporte')
-    expect(aporte?.args[0]).toMatchObject({ goal_id: 'g1', ano: 2025, mes: 9, valor_centavos: 30000 })
+    // ESPERA a escrita aparecer, em vez de ler o array uma vez só.
+    //
+    // O salvamento é assíncrono; ler `__ESCRITAS__` logo depois do clique
+    // dependia de a ida e volta do `page.evaluate` demorar mais que o handler.
+    // Na maioria das vezes demorava, e o teste reprovava uma vez a cada quatro
+    // ou cinco execuções — inclusive antes da fase 3, o que descarta o dock
+    // como causa. `expect.poll` troca a corrida por uma condição.
+    await expect
+      .poll(async () => {
+        const gravadas = await page.evaluate(() => window.__ESCRITAS__ ?? [])
+        return gravadas.find((e) => e.chave === 'goals.salvarAporte')?.args[0] ?? null
+      })
+      .toMatchObject({ goal_id: 'g1', ano: 2025, mes: 9, valor_centavos: 30000 })
   })
 
   test('resgatar e transferir existem AQUI, com o saldo à vista', async ({ page }) => {

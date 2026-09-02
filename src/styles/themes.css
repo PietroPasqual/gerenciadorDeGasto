@@ -91,6 +91,112 @@
      que foi empurrado. Um easing só, para o app inteiro. */
   --mov-easing: cubic-bezier(0.22, 1, 0.36, 1);
 
+  /* VIDRO — a superfície translúcida do dock e dos cabeçalhos grudados
+
+     A fase 3 trocou três navegações por um dock que flutua POR CIMA do
+     conteúdo. Uma barra opaca ali corta a página em duas; uma translúcida
+     mostra que o conteúdo continua embaixo e é o que faz o dock parecer
+     solto em vez de encaixado.
+
+     Aqui a translucidez é o CONTEÚDO da superfície, não um `opacity` aplicado
+     por cima do texto — é a distinção que a regra 2 do topo faz. O texto do
+     dock é pintado depois, com a cor de sempre e o contraste de sempre.
+
+     O alfa é 0,88 e não 0,6 porque atrás do dock passa texto do app, e o que
+     estiver ali entra na conta do contraste. A pior composição é o
+     muted-foreground do rótulo inativo sobre o vidro com texto do app por
+     trás: no claro dá ~4,8:1 (card branco puxado para 88% de luminosidade
+     pelo texto escuro de trás), acima do mínimo de 4,5. Baixar o alfa derruba
+     esse número — mexeu aqui, refaça a medição no e2e de contraste.
+
+     `--vidro-opaco` é o mesmo tom sem canal alfa. O @supports do index.css
+     troca um pelo outro onde não há backdrop-filter: sem o blur, a
+     translucidez deixa de ser vidro e vira só texto embaralhado. */
+  --vidro: hsl(var(--card) / 0.88);
+  --vidro-opaco: hsl(var(--card));
+  --vidro-blur: 16px;
+  --vidro-borda: hsl(var(--border) / 0.7);
+
+  /* DOCK
+
+     Medidas do dock flutuante, num lugar só porque três componentes as leem:
+     o próprio dock, o respiro que o <main> reserva embaixo para a última
+     linha não ficar coberta, e o FAB, que precisa subir acima dele. */
+  --dock-altura: 3.5rem;
+  --dock-raio: 1.5rem;
+  --dock-margem: 0.75rem;
+  /* O respiro que o conteúdo reserva para não terminar embaixo do dock.
+     Ele é derivado, e não um número escolhido de novo, porque era exatamente
+     assim que o `pb-28` da barra inferior antiga saía do lugar toda vez que a
+     altura da barra mudava.
+
+     O env() entra AQUI dentro e não em quem usa: o dock se afasta da borda por
+     `max(--dock-margem, env(safe-area-inset-bottom))` — na barra de gestos do
+     iPhone quem manda é o inset —, e a reserva tem que crescer junto.
+
+     A versão `-lado` é a mesma conta sem o inset de baixo, para quando o dock
+     está encostado na esquerda ou na direita. */
+  --dock-reserva: calc(
+    var(--dock-altura) + var(--dock-margem) + max(var(--dock-margem), env(safe-area-inset-bottom))
+  );
+  --dock-reserva-lado: calc(var(--dock-altura) + var(--dock-margem) * 2);
+  /* Degrau próprio, acima da escala de card: o dock flutua sobre o conteúdo,
+     e a --sombra-2 (feita para um card parado sobre o fundo) não o descola do
+     texto que passa correndo por baixo. */
+  --sombra-dock: 0 8px 28px hsl(var(--primary) / 0.16), 0 2px 8px hsl(var(--primary) / 0.1);
+
+  /* CAPA
+
+     O painel abre com uma faixa decorativa. Não há arquivo de imagem nenhum
+     no projeto — e capa de banco de imagens seria promessa que o produto não
+     cumpre —, então a capa é gradiente, montado a partir das variáveis do
+     tema. Consequência boa: ela acompanha os quatro temas e o claro/escuro
+     sem nenhum arquivo por variante, e não custa um byte de rede.
+
+     O scrim dissolve a base da faixa no fundo da página. Sem ele a capa
+     termina numa linha reta no meio da tela, e o título que fica logo abaixo
+     parece de outra seção. */
+  --capa-altura: 9rem;
+  --capa-scrim: linear-gradient(to bottom, hsl(var(--background) / 0) 45%, hsl(var(--background)) 100%);
+
+  /* Os gradientes de capa. São nomeados aqui, e não escolhidos no componente,
+     porque quem escolhe é a pessoa (fase 4) e o valor gravado no perfil é o
+     NOME — assim mudar o desenho de uma capa não invalida o que já está
+     salvo, e um nome desconhecido cai no primeiro da lista.
+
+     Todos derivam de --primary e companhia: no tema verde a capa é verde, no
+     escuro ela escurece junto. */
+  --capa-aurora: linear-gradient(
+    135deg,
+    hsl(var(--primary)) 0%,
+    hsl(var(--accent)) 55%,
+    hsl(var(--primary-soft)) 100%
+  );
+  --capa-brasa: linear-gradient(
+    135deg,
+    hsl(var(--warning)) 0%,
+    hsl(var(--primary)) 60%,
+    hsl(var(--accent)) 100%
+  );
+  --capa-mata: linear-gradient(
+    135deg,
+    hsl(var(--success)) 0%,
+    hsl(var(--primary)) 65%,
+    hsl(var(--accent)) 100%
+  );
+  --capa-noite: linear-gradient(
+    135deg,
+    hsl(var(--foreground)) 0%,
+    hsl(var(--primary-strong)) 70%,
+    hsl(var(--primary)) 100%
+  );
+  --capa-sereno: linear-gradient(
+    135deg,
+    hsl(var(--primary-soft)) 0%,
+    hsl(var(--accent)) 50%,
+    hsl(var(--muted)) 100%
+  );
+
   /* Densidade das linhas de planilha (seletor compacto/confortável, D3). */
   --altura-linha: 2.75rem;
 
@@ -189,6 +295,9 @@
      mais claro que o fundo, então a sombra fica só como profundidade. */
   --sombra-1: 0 1px 2px hsl(0 0% 0% / 0.35);
   --sombra-2: 0 6px 16px hsl(0 0% 0% / 0.45);
+  /* No escuro o dock se separa por ser mais claro que o fundo, como os cards;
+     a sombra vira só profundidade, e preta, não tingida. */
+  --sombra-dock: 0 10px 32px hsl(0 0% 0% / 0.55);
 
   --background: 260 18% 10%;
   --foreground: 260 15% 94%;

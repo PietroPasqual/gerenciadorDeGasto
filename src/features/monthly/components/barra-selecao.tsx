@@ -62,9 +62,26 @@ export function BarraSelecao({
         // punhado de botões soltos no meio da tabela.
         role="group"
         aria-label="Ações para os lançamentos marcados"
+        // STICKY EM TODA LARGURA, e não `fixed` no celular.
+        //
+        // Fixed tira a barra do fluxo: ela não ocupa espaço, então a última
+        // linha marcável da tabela ficava POR BAIXO dela e não havia como
+        // tocá-la. Enquanto a página reservava `pb-28` embaixo, a folga
+        // escondia o defeito; a fase 3 trocou esse número por uma reserva
+        // derivada da altura do dock (que é menor, e é a certa), e a barra
+        // passou a cobrir o que devia deixar clicar.
+        //
+        // Sticky resolve pela raiz: a barra continua colada no rodapé
+        // enquanto a lista rola, e ocupa o próprio espaço no fim do card —
+        // seja qual for a altura dela, que muda com o texto do resumo. Não há
+        // número a calibrar, e o `sm:` deixa de ser um layout à parte.
+        //
+        // A distância do rodapé no celular é --dock-reserva, a mesma que o
+        // conteúdo e o FAB usam, para a barra parar acima do dock. O inset de
+        // baixo já vem dentro dela; repeti-lo aqui empurraria duas vezes.
         className={
-          'fixed inset-x-2 bottom-[4.75rem] z-30 space-y-2 rounded-2xl border border-border bg-card p-3 shadow-2 ' +
-          'mb-[env(safe-area-inset-bottom)] sm:sticky sm:inset-x-auto sm:bottom-2 sm:mb-0'
+          'sticky bottom-dock-reserva z-30 mb-2 space-y-2 rounded-2xl border border-border bg-card p-3 shadow-2 ' +
+          'sm:bottom-2 sm:mb-0'
         }
       >
         <div className="flex items-start justify-between gap-2">

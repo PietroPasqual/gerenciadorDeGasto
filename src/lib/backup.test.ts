@@ -242,8 +242,18 @@ describe('o perfil é o único lugar em que restaurar substitui', () => {
       orcamento_centavos: 500000,
       preferencias_lembrete: { dias_antes: 5 },
       assinaturas_ignoradas: ['netflix com'],
+      painel_ordem: ['saldo', 'categorias'],
+      painel_ocultos: ['atalhos'],
+      painel_capa: 'mata',
+      // Estado, e não preferência: o guia de primeiro acesso não pode
+      // reaparecer nem sumir por causa de um arquivo restaurado. Está aqui
+      // para o teste provar que a extração o DEIXA de fora.
+      onboarding_em: '2025-01-01T00:00:00Z',
+      onboarding_vistos: ['categorias'],
     })
     expect(Object.keys(p!).sort()).toEqual([...CAMPOS_DO_PERFIL].sort())
+    expect(p).not.toHaveProperty('onboarding_em')
+    expect(p).not.toHaveProperty('onboarding_vistos')
     expect(p).not.toHaveProperty('id')
     expect(p).not.toHaveProperty('created_at')
   })

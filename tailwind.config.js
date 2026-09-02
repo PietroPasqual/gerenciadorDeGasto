@@ -61,16 +61,34 @@ export default {
           foreground: 'hsl(var(--popover-foreground))',
         },
       },
+      // A borda do vidro. O FUNDO dele nao esta aqui: fundo e blur andam
+      // juntos com o fallback de quem nao tem backdrop-filter, e os tres
+      // moram na classe `.vidro` do index.css. Um `bg-vidro` solto seria um
+      // convite a usar a translucidez sem o embaçamento, que e o caso em que
+      // o texto da pagina aparece atras do texto do dock.
+      borderColor: { vidro: 'var(--vidro-borda)' },
+      // O scrim que dissolve a base da capa no fundo da pagina.
+      backgroundImage: { scrim: 'var(--capa-scrim)' },
       boxShadow: {
         // Escala de elevacao unica do app; sombra tingida com o primary.
         1: 'var(--sombra-1)',
         2: 'var(--sombra-2)',
+        // O dock flutua acima de tudo: precisa de uma sombra que o descole do
+        // conteudo que passa por baixo dele, e a escala de card nao chega la.
+        dock: 'var(--sombra-dock)',
       },
       spacing: {
         linha: 'var(--altura-linha)',
         // Densidade (D3) — ver src/styles/themes.css.
         'linha-y': 'var(--linha-y)',
         card: 'var(--card-padding)',
+        // Dock e capa (fases 3 e 4) — ver src/styles/themes.css.
+        dock: 'var(--dock-altura)',
+        'dock-margem': 'var(--dock-margem)',
+        // O respiro que o <main> deixa para nao terminar embaixo do dock.
+        'dock-reserva': 'var(--dock-reserva)',
+        'dock-reserva-lado': 'var(--dock-reserva-lado)',
+        capa: 'var(--capa-altura)',
       },
       height: {
         campo: 'var(--campo-altura)',
@@ -97,6 +115,7 @@ export default {
         micro: '0.6875rem',
       },
       borderRadius: {
+        dock: 'var(--dock-raio)',
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 4px)',
         sm: 'calc(var(--radius) - 8px)',

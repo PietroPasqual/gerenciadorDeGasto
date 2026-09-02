@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR" class="light">
+<html lang="pt-BR" class="dark" data-tema="rosa">
   <head>
     <meta charset="UTF-8" />
     <!-- viewport-fit=cover: sem isso o env(safe-area-inset-*) vale 0 no iOS e
@@ -51,8 +51,50 @@
     <!-- Cor da barra do navegador. O valor aqui é só o do primeiro quadro: o
          tema é escolhido DENTRO do app (4 cores x claro/escuro), coisa que o
          prefers-color-scheme não sabe. Quem manda de verdade é o store de
-         tema, que reescreve este content ao aplicar (src/store/tema.ts). -->
-    <meta id="theme-color" name="theme-color" content="#FEFBFB" />
+         tema, que reescreve este content ao aplicar (src/store/tema.ts).
+         O valor é o --background do escuro, que é o padrão do app e é o mesmo
+         nos quatro temas (os blocos .dark[data-tema] só mexem em primary e
+         accent). -->
+    <meta id="theme-color" name="theme-color" content="#18151E" />
+
+    <!-- Tema antes do primeiro pixel.
+
+         O <html> acima nasce escuro porque escuro é o padrão do app. Mas quem
+         escolheu o claro — ou o tema azul — tem essa escolha no localStorage, e
+         o store só a aplica quando o pacote JS termina de carregar. Entre uma
+         coisa e outra existem quadros pintados com o tema errado: era um flash
+         branco antes, e vira um flash preto agora, que é pior, porque agora ele
+         cai justamente sobre quem pediu o claro.
+
+         Este script é síncrono e roda antes da primeira pintura, e é o único
+         lugar do app que lê a chave do persist do zustand na mão. Ele duplica
+         DE PROPÓSITO o que `aplicar()` faz em src/store/tema.ts: para não
+         duplicar seria preciso carregar o store aqui, e carregar o store é
+         exatamente o que demora.
+
+         Ele não decide nada — só antecipa. Se a leitura falhar (modo privativo
+         derruba o localStorage em alguns navegadores), fica o padrão do app e o
+         store corrige logo em seguida. -->
+    <script>
+      ;(function () {
+        var escuro = true
+        var tema = 'rosa'
+        try {
+          var bruto = localStorage.getItem('gdg-tema')
+          if (bruto) {
+            var salvo = JSON.parse(bruto).state || {}
+            if (typeof salvo.escuro === 'boolean') escuro = salvo.escuro
+            if (typeof salvo.tema === 'string') tema = salvo.tema
+          }
+        } catch (e) {
+          /* sem localStorage: fica o padrão do app */
+        }
+        var raiz = document.documentElement
+        raiz.classList.toggle('dark', escuro)
+        raiz.classList.toggle('light', !escuro)
+        raiz.setAttribute('data-tema', tema)
+      })()
+    </script>
 
     <!-- As fontes agora vêm do próprio domínio, via @fontsource em
          src/index.css. Buscá-las no Google bloqueava o primeiro render e

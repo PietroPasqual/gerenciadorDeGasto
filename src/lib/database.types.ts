@@ -186,6 +186,8 @@ export interface Database {
           concluido: boolean
           concluido_em: string | null
           created_at: string
+          /** 0021 — a meta em que se está juntando para isto. NULL = só vontade. */
+          goal_id: string | null
         }
         Insert: {
           id?: string
@@ -196,6 +198,7 @@ export interface Database {
           concluido?: boolean
           concluido_em?: string | null
           created_at?: string
+          goal_id?: string | null
         }
         Update: {
           nome?: string
@@ -203,6 +206,7 @@ export interface Database {
           prioridade?: number
           concluido?: boolean
           concluido_em?: string | null
+          goal_id?: string | null
         }
         Relationships: []
       }

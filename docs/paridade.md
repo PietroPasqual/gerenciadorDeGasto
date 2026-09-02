@@ -135,7 +135,11 @@ preço cheio, não o preço).
 | Editar os 12 meses de cada meta — grade meta × mês                        | Tocar no card da meta → sheet com os doze meses em campos de tamanho de dedo |
 | Total guardado por mês — rodapé da grade                                  | Faixa deslizante com os doze meses                                           |
 | Progresso de cada meta                                                    | O mesmo card                                                                 |
-| Wishlist: nome, valor, prioridade e "conquistado" — linha de 5 colunas    | Card de três faixas, com as estrelas em 44px                                 |
+| Wishlist: nome, valor, prioridade e estado — linha de 5 colunas           | Card de faixas, com as estrelas e o estado em 44px                           |
+| Ver o estado do desejo: quero comprar / estou juntando / conquistado      | O mesmo botão, na última faixa do card                                       |
+| Ligar um desejo a uma meta — folha com as três opções                     | A mesma folha                                                                |
+| Ver quanto a meta ligada já tem, e quanto isso cobre do desejo            | O mesmo                                                                      |
+| Ser avisado quando a mesma meta banca dois desejos                        | O mesmo aviso, na mesma folha                                                |
 | Prazo da meta — chip **Sem prazo / Até dez/26** embaixo do nome (Config.) | O mesmo chip, com 44px, no card da meta                                      |
 | "Faltam R$ 4.200 em 7 meses — R$ 600 por mês" no card da meta             | O mesmo texto, no mesmo card                                                 |
 | "No ritmo deste ano (R$ 800 por mês), chega em dez/25"                    | O mesmo — e some nos dois quando a base é pequena demais                     |

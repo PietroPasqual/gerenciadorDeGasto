@@ -520,6 +520,62 @@ test.describe('comparativo anual', () => {
   })
 })
 
+test.describe('wishlist', () => {
+  test.beforeEach(async ({ page }) => {
+    await prepararApp(page, fixtureMes())
+    await page.goto('/metas')
+    await expect(page.getByRole('heading', { name: 'Wishlist' })).toBeVisible()
+  })
+
+  test('os três estados aparecem, cada um com o seu rótulo', async ({ page }) => {
+    // Notebook não tem meta; Cadeira está ligada a "Reserva"; Fone foi conquistado.
+    await expect(page.getByRole('button', { name: /Estado de Notebook.*Quero comprar/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /Estado de Cadeira.*Estou juntando/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /Estado de Fone.*Conquistado/ })).toBeVisible()
+  })
+
+  test('quem está juntando mostra a meta e o quanto ela cobre', async ({ page }) => {
+    // Reserva tem R$ 500,00; a cadeira custa R$ 2.000,00 -> 25%.
+    const botao = page.getByRole('button', { name: /Estado de Cadeira/ })
+    await expect(botao).toContainText('Reserva')
+    await expect(botao).toContainText('25%')
+  })
+
+  test('a lista não se apresenta como dinheiro comprometido', async ({ page }) => {
+    // "Falta juntar" somava tudo o que estava pendente e lia vontade como
+    // compromisso. A frase não pode voltar.
+    await expect(page.getByText('Falta juntar')).toHaveCount(0)
+    await expect(page.getByText(/A lista não reserva dinheiro/)).toBeVisible()
+    // O que sobrou é o preço somado dos desejos SEM meta — R$ 4.000,00 do
+    // notebook, e não os R$ 6.000,00 de tudo que está pendente.
+    await expect(page.getByText(/R\$\s*4\.000,00 em desejos/)).toBeVisible()
+  })
+
+  test('ligar um desejo a uma meta grava a ligação', async ({ page }) => {
+    await page.getByRole('button', { name: /Estado de Notebook/ }).click()
+    await expect(page.getByText(/Ligar a uma meta é o que faz o dinheiro guardado aparecer/)).toBeVisible()
+
+    await page.getByRole('button', { name: /Reserva/ }).click()
+    const gravadas = await page.evaluate(() => window.__ESCRITAS__ ?? [])
+    const escrita = gravadas.find((e) => e.chave === 'wishlist.atualizarItemWishlist')
+    expect(escrita?.args[0]).toBe('w1')
+    expect(escrita?.args[1]).toMatchObject({ goal_id: 'g1', concluido: false })
+  })
+
+  test('a meta que banca dois desejos avisa que o dinheiro é o mesmo', async ({ page }) => {
+    const base = relatoriosPadrao()
+    await prepararApp(page, {
+      ...fixtureMes(),
+      'wishlist.listarWishlist': (base['wishlist.listarWishlist'] as Array<Record<string, unknown>>).map(
+        (item) => (item.id === 'w1' ? { ...item, goal_id: 'g1' } : item),
+      ),
+    })
+    await page.goto('/metas')
+    await page.getByRole('button', { name: /Estado de Notebook/ }).click()
+    await expect(page.getByText(/o mesmo dinheiro para os dois/)).toBeVisible()
+  })
+})
+
 test.describe('ajuda', () => {
   test.beforeEach(async ({ page }) => {
     await prepararApp(page, fixtureMes())

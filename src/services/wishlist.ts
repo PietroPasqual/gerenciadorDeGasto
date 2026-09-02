@@ -33,7 +33,7 @@ export async function criarItemWishlist(dados: {
 
 export async function atualizarItemWishlist(
   id: string,
-  mudancas: Partial<Pick<WishlistItem, 'nome' | 'valor_centavos' | 'prioridade' | 'concluido'>>,
+  mudancas: Partial<Pick<WishlistItem, 'nome' | 'valor_centavos' | 'prioridade' | 'concluido' | 'goal_id'>>,
 ): Promise<WishlistItem> {
   const payload: TablesUpdate<'wishlist_items'> = { ...mudancas }
   if (mudancas.concluido !== undefined) {

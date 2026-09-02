@@ -75,6 +75,9 @@ export function useMetas(ano: number) {
       concluido: false,
       concluido_em: null,
       created_at: new Date().toISOString(),
+      // Todo desejo nasce como "quero comprar": ligar a uma meta é uma
+      // decisão à parte, e é ela que faz o item passar a ter dinheiro atrás.
+      goal_id: null,
     }
     return executarOtimista({
       snapshot: snapshot(),

@@ -260,6 +260,45 @@ test.describe('acessibilidade no navegador', () => {
   })
 
   /**
+   * A folha de estado do desejo, COM o aviso de meta compartilhada.
+   *
+   * O aviso usa `bg-warning/10` — um fundo tingido que só existe quando a
+   * mesma meta banca dois desejos, situação que a fixture padrão não produz.
+   * Sem esta passada ele nunca teria sido medido, como o aviso da folha de
+   * lançamento antes dela.
+   */
+  test('contraste da folha de estado do desejo', async ({ page }) => {
+    const problemas: string[] = []
+    for (const escuro of [false, true]) {
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      const base = appCompleto()
+      await prepararApp(page, {
+        ...base,
+        ...assinaturasPadrao(),
+        // Os dois desejos pendentes na MESMA meta: é o que faz o aviso existir.
+        'wishlist.listarWishlist': (base['wishlist.listarWishlist'] as Array<Record<string, unknown>>).map(
+          (item) => (item.concluido ? item : { ...item, goal_id: 'g1' }),
+        ),
+      })
+      await page.addInitScript(
+        (e) =>
+          localStorage.setItem(
+            'gdg-tema',
+            JSON.stringify({ state: { tema: 'rosa', escuro: e }, version: 0 }),
+          ),
+        escuro,
+      )
+      await page.goto('/metas')
+      await page.getByRole('button', { name: /Estado de Notebook/ }).click()
+      await expect(page.getByText(/o mesmo dinheiro para os dois/)).toBeVisible()
+      await page.waitForTimeout(250)
+      const v = await rodarAxe(page)
+      if (v.length) problemas.push(relatar('folha de estado do desejo', escuro ? 'escuro' : 'claro', v))
+    }
+    expect(problemas.join('\n'), 'violações na folha de estado do desejo').toBe('')
+  })
+
+  /**
    * A ajuda COM uma busca digitada.
    *
    * O realce (`<mark>`) só existe enquanto alguém está buscando: a varredura de

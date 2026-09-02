@@ -1,5 +1,7 @@
 import type { Goal, GoalContribution, ResumoMeta, WishlistItem } from '@/lib/database.types'
+import { toast } from 'sonner'
 import { useConsulta } from '@/lib/cache'
+import { periodoAtual } from '@/lib/dates'
 import { executarOtimista } from '@/lib/otimista'
 import { tempId } from '@/lib/utils'
 import * as metasSvc from '@/services/goals'
@@ -75,6 +77,9 @@ export function useMetas(ano: number) {
       concluido: false,
       concluido_em: null,
       created_at: new Date().toISOString(),
+      // Todo desejo nasce como "quero comprar": ligar a uma meta é uma
+      // decisão à parte, e é ela que faz o item passar a ter dinheiro atrás.
+      goal_id: null,
     }
     return executarOtimista({
       snapshot: snapshot(),
@@ -123,5 +128,50 @@ export function useMetas(ano: number) {
       mensagemErro: 'Não foi possível excluir o item',
     })
 
-  return { ...recurso, acoes: { salvarAporte, adicionarItem, editarItem, removerItem } }
+  /**
+   * Resgatar e transferir NÃO são otimistas, e a razão é a mesma do controle
+   * mensal: o trigger da 0013 recusa resgate maior que o saldo, e a mensagem
+   * dele é a que interessa. Mostrar o saldo caindo para depois voltar seria
+   * inventar um sucesso que o banco nunca deu.
+   *
+   * O mês do movimento é o mês CORRENTE, e não o ano aberto no seletor: tirar
+   * dinheiro é um fato de hoje, e registrá-lo num ano que a pessoa só está
+   * consultando reescreveria o histórico dela.
+   */
+  const movimentar = async (
+    executar: () => Promise<unknown>,
+    sucesso: string,
+    falha: string,
+  ): Promise<void> => {
+    try {
+      await executar()
+      await recurso.recarregar()
+      toast.success(sucesso)
+    } catch (erro) {
+      toast.error(falha, { description: erro instanceof Error ? erro.message : undefined })
+    }
+  }
+
+  const resgatar = (goalId: string, centavos: number) => {
+    const agora = periodoAtual()
+    return movimentar(
+      () => metasSvc.resgatarDaMeta(goalId, agora.ano, agora.mes, centavos),
+      'Resgate registrado',
+      'Não foi possível resgatar',
+    )
+  }
+
+  const transferir = (origem: string, destino: string, centavos: number) => {
+    const agora = periodoAtual()
+    return movimentar(
+      () => metasSvc.transferirEntreMetas(origem, destino, agora.ano, agora.mes, centavos),
+      'Transferência feita',
+      'Não foi possível transferir',
+    )
+  }
+
+  return {
+    ...recurso,
+    acoes: { salvarAporte, adicionarItem, editarItem, removerItem, resgatar, transferir },
+  }
 }

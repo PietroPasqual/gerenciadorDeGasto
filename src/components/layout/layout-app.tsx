@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Loader2, LogOut, MoreVertical, Moon, Sun } from 'lucide-react'
@@ -21,6 +21,18 @@ import { useAcoesPagina } from '@/store/acoes-pagina'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useTemaStore } from '@/store/tema'
+import { MOV } from '@/lib/movimento'
+import { deveAparecer } from '@/lib/onboarding'
+/**
+ * Carregado sob demanda, como as páginas.
+ *
+ * Estático, ele custava 8,4 kB no pacote inicial — o guia arrasta os serviços
+ * de categorias, entradas recorrentes e perfil — e esse peso cairia sobre
+ * todo mundo para servir a tela que só a conta nova vê, uma vez.
+ */
+const GuiaPrimeiroAcesso = lazy(() =>
+  import('@/features/onboarding/guia-primeiro-acesso').then((m) => ({ default: m.GuiaPrimeiroAcesso })),
+)
 
 export function LayoutApp() {
   const perfil = useAuthStore((s) => s.profile)
@@ -29,6 +41,28 @@ export function LayoutApp() {
   const alternarEscuro = useTemaStore((s) => s.alternarEscuro)
   const local = useLocation()
   const acoesPagina = useAcoesPagina()
+
+  /**
+   * O guia de primeiro acesso abre UMA VEZ por sessão, e só para quem nunca o
+   * encerrou — a 0022 marcou toda conta que já existia como encerrada, então
+   * quem tem um ano de lançamentos nunca vê isto.
+   *
+   * O `abriu` é o que impede o guia de voltar quando a pessoa sai dele para
+   * lançar o primeiro gasto: ela continua com `onboarding_em` nulo, de
+   * propósito (o passo não foi feito), mas ser reaberta no meio do caminho
+   * seria uma armadilha.
+   */
+  const [guiaAberto, setGuiaAberto] = useState(false)
+  const [abriu, setAbriu] = useState(false)
+
+  useEffect(() => {
+    if (abriu || !perfil) return
+    // A decisão é tomada na PRIMEIRA leitura do perfil e não é revista: uma
+    // gravação posterior que devolvesse um perfil parcial (uma tela salvando
+    // só um campo) reabriria o guia por cima do que a pessoa está fazendo.
+    setAbriu(true)
+    if (deveAparecer(perfil.onboarding_em)) setGuiaAberto(true)
+  }, [abriu, perfil])
 
   return (
     <div className="min-h-dvh bg-background lg:flex">
@@ -124,7 +158,7 @@ export function LayoutApp() {
           key={local.pathname}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
+          transition={{ duration: MOV.normal, ease: 'easeOut' }}
           // pb generoso no celular: a barra inferior é fixa e cobriria o fim da página.
           className="container space-y-6 py-6 pb-28 sm:py-8 sm:pb-8"
         >
@@ -146,6 +180,15 @@ export function LayoutApp() {
 
       <BarraInferior />
       <PaletaComandos />
+      {/* Montado só quando abre: o guia lê categorias, entradas recorrentes e
+          "existe algum lançamento?", e fazer essas três leituras em toda tela
+          para quem já encerrou seria pagar por um formulário que ninguém vai
+          ver. */}
+      {guiaAberto && (
+        <Suspense fallback={null}>
+          <GuiaPrimeiroAcesso aberto onFechar={() => setGuiaAberto(false)} />
+        </Suspense>
+      )}
     </div>
   )
 }

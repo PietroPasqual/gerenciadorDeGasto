@@ -73,6 +73,25 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* Alvo de toque, num lugar só.
+     
+     Duas regras convivem aqui:
+       44px onde se toca com o dedo — a regra do projeto, mais folgada;
+       24px onde há ponteiro fino — o mínimo do WCAG 2.2 (target-size).
+     
+     O piso de 24px existe porque `md:min-h-0` estava espalhado por onze
+     componentes e derrubava os chips a 20px no desktop: o axe marcava
+     `target-size` (serious) no mês inteiro. Zero nunca foi a intenção — a
+     intenção era "compacto", e compacto tem piso.
+     
+     `mouse:` e não `md:`, pelo mesmo motivo que o index.css já usa para as
+     ações de hover: um tablet em 1024px atende ao `md:` e não tem ponteiro
+     fino nenhum. Com `md:` ele receberia alvos de 24px para tocar com o dedo,
+     que é justamente o que a regra dos 44px existe para impedir. */
+  .alvo-toque {
+    @apply min-h-11 mouse:min-h-6;
+  }
+
   /* Ações da linha que só aparecem no hover (D5).
      Onde não há ponteiro fino (celular, tablet) elas ficam sempre visíveis —
      é o `mouse:` do tailwind.config.js que garante isso. Nunca escondemos com

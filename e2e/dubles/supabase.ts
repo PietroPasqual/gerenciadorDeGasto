@@ -13,6 +13,7 @@
 declare global {
   interface Window {
     __SESSAO__?: { user: { id: string; email: string } } | null
+    __ESCRITAS__?: Array<{ chave: string; args: unknown[] }>
   }
 }
 
@@ -32,6 +33,16 @@ export const supabase = {
         : { data: { session: sessao() }, error: null },
     signUp: async () => ({ data: { session: sessao() }, error: null }),
     signOut: async () => ({ error: null }),
+    // Registrada em `__ESCRITAS__` como as escritas de serviço: sem isso o
+    // teste da troca de senha só conseguiria ver o toast, e passaria mesmo com
+    // a chamada nunca acontecendo.
+    updateUser: async (dados: unknown) => {
+      if (typeof window !== 'undefined') {
+        window.__ESCRITAS__ = window.__ESCRITAS__ ?? []
+        window.__ESCRITAS__.push({ chave: 'supabase.auth.updateUser', args: [dados] })
+      }
+      return { data: { user: sessao()?.user ?? null }, error: null }
+    },
     resetPasswordForEmail: async () => ({ error: null }),
   },
 } as never

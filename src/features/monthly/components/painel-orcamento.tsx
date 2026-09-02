@@ -51,12 +51,7 @@ export function PainelOrcamento({
             <Target className="h-4 w-4 text-muted-foreground" aria-hidden />
             Orçamento do mês
           </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="min-h-11 shrink-0 md:min-h-0"
-            onClick={() => setAberta(true)}
-          >
+          <Button variant="ghost" size="sm" className="alvo-toque shrink-0" onClick={() => setAberta(true)}>
             {tetoCentavos > 0 ? 'Mudar teto' : 'Definir teto'}
           </Button>
         </div>

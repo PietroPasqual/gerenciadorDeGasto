@@ -138,6 +138,57 @@ export function projecaoDaMeta(params: {
   }
 }
 
+export interface PrevisaoDeConclusao {
+  faltaCentavos: number
+  /** Média mensal do ano corrente. `null` quando a base é pequena demais. */
+  ritmoMensal: number | null
+  /** No ritmo atual, o mês em que a meta fecha. `null` sem ritmo. */
+  chegaEm: Periodo | null
+}
+
+/**
+ * A previsão de uma meta SEM prazo.
+ *
+ * A 0019 deixou a meta sem prazo intocada de propósito: nada de projeção,
+ * exatamente como antes dela. Mas a fase 6 pede projeção de conclusão "apenas
+ * quando houver base suficiente", e a base é a mesma que o ritmo já usa. Uma
+ * meta sem prazo com seis meses de aporte tem uma resposta honesta para "e
+ * quando eu chego lá?", e calar era desperdiçar um número que já existia.
+ *
+ * O que NÃO muda: sem base, continua o silêncio. E isto não é `projecaoDaMeta`
+ * com um `if` a mais — aquela responde "dá para chegar no prazo?", que é outra
+ * pergunta e só existe com prazo.
+ *
+ * `null` quando a meta tem prazo (o outro caminho responde), quando ela já foi
+ * alcançada, ou quando não há alvo para alcançar.
+ */
+export function previsaoDeConclusao(params: {
+  meta: PrazoDaMeta & { valor_meta_centavos: number }
+  guardadoTotal: number
+  aportesDoAno: number[]
+  anoDosAportes: number
+  hoje?: Date
+}): PrevisaoDeConclusao | null {
+  const { meta, guardadoTotal, aportesDoAno, anoDosAportes } = params
+  if (temPrazo(meta)) return null
+  if (meta.valor_meta_centavos <= 0) return null
+
+  const falta = meta.valor_meta_centavos - guardadoTotal
+  if (falta <= 0) return null
+
+  const atual = periodoAtual(params.hoje ?? new Date())
+  // Só o ano corrente descreve o ritmo atual — mesmo motivo do `anoDosAportes`
+  // em `projecaoDaMeta`: a tela tem seletor de ano.
+  const ritmo = anoDosAportes === atual.ano ? ritmoMensal(aportesDoAno, atual.mes) : null
+
+  return {
+    faltaCentavos: falta,
+    ritmoMensal: ritmo,
+    chegaEm:
+      ritmo !== null && ritmo > 0 ? paraPeriodo(paraIndice(atual) + Math.ceil(falta / ritmo) - 1) : null,
+  }
+}
+
 function mesAno({ ano, mes }: Periodo): string {
   return `${nomeCurtoDoMes(mes).toLowerCase()}/${String(ano).slice(2)}`
 }
@@ -156,8 +207,26 @@ export function textoDoPrazo(p: ProjecaoMeta, prazo: Periodo): string {
   return `Faltam ${formatCentavos(p.faltaCentavos)} ${meses} — ${formatCentavos(p.porMes as number)} por mês.`
 }
 
+/** A frase do ritmo, escrita num lugar só para as duas telas não divergirem. */
+function fraseDoRitmo(ritmo: number, chegaEm: Periodo): string {
+  return `No ritmo deste ano (${formatCentavos(ritmo)} por mês), chega em ${mesAno(chegaEm)}.`
+}
+
 /** `null` quando não há base: silêncio é melhor que um número inventado. */
 export function textoDoRitmo(p: ProjecaoMeta): string | null {
   if (p.concluida || p.ritmoMensal === null || p.chegaEm === null) return null
-  return `No ritmo deste ano (${formatCentavos(p.ritmoMensal)} por mês), chega em ${mesAno(p.chegaEm)}.`
+  return fraseDoRitmo(p.ritmoMensal, p.chegaEm)
+}
+
+/**
+ * A frase da meta sem prazo: quanto falta, e — só com base — quando chega.
+ *
+ * "Faltam R$ 3.000,00" é subtração e aparece sempre. A segunda metade é
+ * extrapolação, diz isso na própria frase, e some quando não há de onde
+ * extrapolar.
+ */
+export function textoDaPrevisao(p: PrevisaoDeConclusao): string {
+  const falta = `Faltam ${formatCentavos(p.faltaCentavos)} para a meta.`
+  if (p.ritmoMensal === null || p.chegaEm === null) return falta
+  return `${falta} ${fraseDoRitmo(p.ritmoMensal, p.chegaEm)}`
 }

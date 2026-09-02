@@ -17,6 +17,9 @@ export async function obterInvestimentosPorMeta(...args: unknown[]) {
 export async function obterComparativoAnual(...args: unknown[]) {
   return doFixture('reports.obterComparativoAnual', args)
 }
+export async function obterGastosPorCategoriaAno(...args: unknown[]) {
+  return doFixture('reports.obterGastosPorCategoriaAno', args)
+}
 export async function obterResumoMetas(...args: unknown[]) {
   return doFixture('reports.obterResumoMetas', args)
 }

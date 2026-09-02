@@ -28,6 +28,10 @@ export interface Database {
           preferencias_lembrete: Json
           /** Chaves de destinatário dispensadas na sugestão de assinatura (ver 0018). */
           assinaturas_ignoradas: Json
+          /** Quando o primeiro acesso guiado foi encerrado. NULL = ainda não apareceu (ver 0022). */
+          onboarding_em: string | null
+          /** Passos do guia resolvidos sem mudar dado (ver 0022). */
+          onboarding_vistos: string[]
         }
         Insert: {
           id: string
@@ -37,6 +41,8 @@ export interface Database {
           orcamento_centavos?: number
           preferencias_lembrete?: Json
           assinaturas_ignoradas?: Json
+          onboarding_em?: string | null
+          onboarding_vistos?: string[]
         }
         Update: {
           id?: string
@@ -46,6 +52,8 @@ export interface Database {
           orcamento_centavos?: number
           preferencias_lembrete?: Json
           assinaturas_ignoradas?: Json
+          onboarding_em?: string | null
+          onboarding_vistos?: string[]
         }
         Relationships: []
       }
@@ -186,6 +194,8 @@ export interface Database {
           concluido: boolean
           concluido_em: string | null
           created_at: string
+          /** 0021 — a meta em que se está juntando para isto. NULL = só vontade. */
+          goal_id: string | null
         }
         Insert: {
           id?: string
@@ -196,6 +206,7 @@ export interface Database {
           concluido?: boolean
           concluido_em?: string | null
           created_at?: string
+          goal_id?: string | null
         }
         Update: {
           nome?: string
@@ -203,6 +214,7 @@ export interface Database {
           prioridade?: number
           concluido?: boolean
           concluido_em?: string | null
+          goal_id?: string | null
         }
         Relationships: []
       }
@@ -536,6 +548,17 @@ export interface Database {
         Args: { p_ano: number }
         Returns: { mes: number; entradas: number; saidas: number; diferenca: number }[]
       }
+      /** 0020 — a mesma medida de `gastos_por_categoria`, o ano inteiro de uma vez. */
+      gastos_por_categoria_ano: {
+        Args: { p_ano: number }
+        Returns: {
+          mes: number
+          category_id: string | null
+          nome: string
+          cor: string
+          gasto_centavos: number
+        }[]
+      }
       resumo_metas: {
         Args: { p_ano: number }
         Returns: {
@@ -585,4 +608,5 @@ export type GastoCategoria = Fn<'gastos_por_categoria'>[number]
 export type SaidaFormaPagamento = Fn<'saidas_por_forma_pagamento'>[number]
 export type InvestimentoMeta = Fn<'investimentos_por_meta'>[number]
 export type ComparativoAnualMes = Fn<'comparativo_anual'>[number]
+export type GastoCategoriaMes = Fn<'gastos_por_categoria_ano'>[number]
 export type ResumoMeta = Fn<'resumo_metas'>[number]

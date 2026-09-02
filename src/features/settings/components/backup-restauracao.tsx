@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
+import { LinkAjuda } from '@/components/common/link-ajuda'
 import { useEhMobile } from '@/lib/hooks'
 import { formatTimestamp } from '@/lib/dates'
 import { baixarJSON, lerBackup, nomeDoArquivo, totalDeLinhas, type Backup, type Plano } from '@/lib/backup'
@@ -115,6 +116,7 @@ export function BackupRestauracao() {
           Um arquivo JSON com tudo o que é seu. Serve para guardar uma cópia, levar para outra conta ou voltar
           atrás depois de uma importação que não deu certo.
         </CardDescription>
+        <LinkAjuda topico="backup">O que entra, o que fica e o que nunca é apagado</LinkAjuda>
       </CardHeader>
 
       <CardContent className="space-y-3">
@@ -180,7 +182,7 @@ export function BackupRestauracao() {
 
           <div className="max-h-[50vh] space-y-1 overflow-y-auto">
             {itensComAlgo.length === 0 ? (
-              <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+              <p className="rounded-lg bg-superficie px-3 py-2 text-sm text-muted-foreground">
                 O arquivo não tem nenhuma linha para restaurar.
               </p>
             ) : (

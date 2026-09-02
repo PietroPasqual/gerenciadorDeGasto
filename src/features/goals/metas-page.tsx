@@ -1,32 +1,56 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, CheckCircle2, ChevronRight, Circle, Plus, Trash2 } from 'lucide-react'
+import { ArrowRightLeft, ChevronRight, PiggyBank } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CabecalhoPagina } from '@/components/common/cabecalho-pagina'
 import { SeletorPeriodo } from '@/components/common/seletor-periodo'
 import { EstadoErro, EstadoVazio } from '@/components/common/estados'
-import { Cabecalho, Linha, Total } from '@/components/common/linha-planilha'
+import { Total } from '@/components/common/linha-planilha'
 import { GradeEditavel } from '@/components/common/grade-editavel'
 import { MoneyInput } from '@/components/common/money-input'
-import { Estrelas } from '@/components/common/estrelas'
 import { NumeroAnimado } from '@/components/common/numero-animado'
 import { formatCentavos } from '@/lib/money'
-import { MESES_CURTOS, nomeDoMes } from '@/lib/dates'
-import { progressoDaMeta, progressoWishlist, totalDeItens } from '@/lib/calculations'
-import { projecaoDaMeta, textoDoPrazo, textoDoRitmo } from '@/lib/meta-prazo'
+import { MESES_CURTOS, nomeDoMes, periodoAtual } from '@/lib/dates'
+import { progressoDaMeta } from '@/lib/calculations'
+import {
+  previsaoDeConclusao,
+  projecaoDaMeta,
+  textoDaPrevisao,
+  textoDoPrazo,
+  textoDoRitmo,
+} from '@/lib/meta-prazo'
 import { usePeriodoStore } from '@/store/periodo'
 import { cn } from '@/lib/utils'
+import { FaixaRolavel } from '@/components/common/faixa-rolavel'
 import { SheetMeta } from './components/sheet-meta'
+import { SheetAporteRapido } from './components/sheet-aporte-rapido'
+import { SheetMovimentoMeta } from './components/sheet-movimento-meta'
+import { Wishlist } from './components/wishlist'
 import { useEhMobile } from '@/lib/hooks'
 import { useMetas } from './use-metas'
 
 export function MetasPage() {
   const { anoComparativo, definirAnoComparativo } = usePeriodoStore()
   const { dados, carregando, erro, recarregar, acoes } = useMetas(anoComparativo)
+
+  /**
+   * As metas como a wishlist precisa vê-las: nome e quanto já tem.
+   *
+   * O `guardado_total` vem do agregado; sem ele (meta recém-criada, que ainda
+   * não apareceu no resumo) fica zero, que é a verdade — ela não tem aporte.
+   */
+  const metasLigaveis = useMemo(
+    () =>
+      (dados?.metas ?? []).map((meta) => ({
+        goal_id: meta.id,
+        nome: meta.nome,
+        guardado_total: dados?.resumo.find((r) => r.goal_id === meta.id)?.guardado_total ?? 0,
+      })),
+    [dados],
+  )
 
   return (
     <div className="space-y-6">
@@ -53,6 +77,7 @@ export function MetasPage() {
         <>
           <Wishlist
             itens={dados.wishlist}
+            metas={metasLigaveis}
             onAdicionar={acoes.adicionarItem}
             onEditar={acoes.editarItem}
             onRemover={acoes.removerItem}
@@ -63,252 +88,11 @@ export function MetasPage() {
             aportes={dados.aportes}
             resumo={dados.resumo}
             onSalvarAporte={acoes.salvarAporte}
+            onResgatar={acoes.resgatar}
+            onTransferir={acoes.transferir}
           />
         </>
       ) : null}
-    </div>
-  )
-}
-
-// ------------------------------------------------------------------ Wishlist
-const TEMPLATE_WISHLIST = 'md:grid-cols-[1fr,10rem,9rem,4rem,2.5rem]'
-
-function Wishlist({
-  itens,
-  onAdicionar,
-  onEditar,
-  onRemover,
-}: {
-  itens: Array<import('@/lib/database.types').WishlistItem>
-  onAdicionar: (nome: string, valor: number, prioridade: number) => void
-  onEditar: (id: string, mudancas: Partial<import('@/lib/database.types').WishlistItem>) => void
-  onRemover: (id: string) => void
-}) {
-  const [nome, setNome] = useState('')
-  const [valorCentavos, setValorCentavos] = useState(0)
-  const [prioridade, setPrioridade] = useState(3)
-
-  const progresso = progressoWishlist(itens)
-  const totalPendente = totalDeItens(itens.filter((i) => !i.concluido))
-
-  const adicionar = () => {
-    if (!nome.trim()) return
-    onAdicionar(nome.trim(), valorCentavos, prioridade)
-    setNome('')
-    setValorCentavos(0)
-    setPrioridade(3)
-  }
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle>Wishlist</CardTitle>
-        <CardDescription>Aquela lista de desejos — marque o que já conquistou.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Faixa que desliza no celular, três colunas de sm para cima — mesmo
-            tratamento dos indicadores do comparativo anual. Empilhados eram
-            200px antes do primeiro desejo aparecer. */}
-        <div
-          className={cn(
-            'sem-barra-rolagem -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1',
-            'sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:overflow-visible sm:px-0',
-          )}
-        >
-          <Indicador
-            Icone={CheckCircle2}
-            rotulo="Cumpridas"
-            valor={progresso.cumpridas}
-            className="text-success"
-          />
-          <Indicador Icone={Circle} rotulo="Pendentes" valor={progresso.pendentes} />
-          <div className="w-[62%] shrink-0 snap-start rounded-xl border border-border p-3 sm:w-auto sm:shrink">
-            <p className="text-sm text-muted-foreground">Falta juntar</p>
-            <p className="tabular text-lg font-semibold">{formatCentavos(totalPendente)}</p>
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Progresso da wishlist</span>
-            <span className="tabular font-medium">
-              {progresso.percentual.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}%
-            </span>
-          </div>
-          <Progress
-            value={progresso.percentual}
-            aria-label={`Progresso da wishlist: ${Math.round(progresso.percentual)}%`}
-          />
-        </div>
-
-        {itens.length === 0 ? (
-          <EstadoVazio titulo="Sua wishlist está vazia" descricao="Adicione o primeiro desejo abaixo." />
-        ) : (
-          <GradeEditavel className="space-y-2 md:space-y-0">
-            <Cabecalho template={TEMPLATE_WISHLIST}>
-              <span>Item</span>
-              <span className="text-right">Valor</span>
-              <span>Prioridade</span>
-              <span className="text-center">Conquistado</span>
-              <span className="sr-only">Ações</span>
-            </Cabecalho>
-
-            {/* CELULAR: card de três faixas — [✓ nome] / [valor 🗑] / [estrelas].
-                Antes eram quatro campos empilhados com rótulo cada (~260px por
-                desejo) e as estrelas tinham 20px de alvo. O nome fica sozinho
-                na 1ª faixa porque dividindo com a lixeira sobravam 158px e
-                "Notebook novo para trabalhar" virava "Notebook novo p". A ordem no DOM segue
-                as colunas do desktop (item, valor, prioridade, conquistado,
-                ações); no celular o `order` reposiciona sem duplicar markup, e
-                de md para cima o grid do `Linha` assume e os `order` somem. */}
-            {itens.map((item) => (
-              <Linha
-                key={item.id}
-                template={TEMPLATE_WISHLIST}
-                destacada={item.concluido}
-                className="flex flex-wrap items-center gap-x-2 gap-y-1.5 md:grid md:gap-2"
-              >
-                <Input
-                  data-celula
-                  aria-label="Nome do item"
-                  defaultValue={item.nome}
-                  onBlur={(e) => {
-                    if (e.target.value !== item.nome) onEditar(item.id, { nome: e.target.value })
-                  }}
-                  className={cn(
-                    'order-2 min-w-0 flex-1 border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:order-none md:font-normal',
-                    item.concluido && 'line-through opacity-70',
-                  )}
-                />
-                <MoneyInput
-                  data-celula
-                  aria-label="Valor do item"
-                  value={item.valor_centavos}
-                  onValueChange={(v) => onEditar(item.id, { valor_centavos: v })}
-                  className="order-3 min-w-0 flex-1 basis-[calc(100%-3.25rem)] border-transparent bg-transparent font-medium hover:border-input focus:bg-card md:order-none md:basis-auto md:font-normal"
-                />
-                <Estrelas
-                  valor={item.prioridade}
-                  onChange={(p) => onEditar(item.id, { prioridade: p })}
-                  className="order-5 basis-full md:order-none md:basis-auto"
-                  botaoClassName="h-11 w-11 md:h-auto md:w-auto"
-                />
-                <BotaoConcluido
-                  concluido={item.concluido}
-                  nome={item.nome}
-                  onAlternar={(concluido) => onEditar(item.id, { concluido })}
-                />
-                <div className="acoes-hover order-4 flex shrink-0 justify-end md:order-none">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onRemover(item.id)}
-                    aria-label={`Excluir ${item.nome}`}
-                  >
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </div>
-              </Linha>
-            ))}
-          </GradeEditavel>
-        )}
-
-        {/* Adição com a mesma forma do card: "+" e nome na 1ª faixa, valor na
-            2ª, estrelas na 3ª. */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 md:grid md:grid-cols-[1fr,10rem,9rem,2.5rem] md:gap-2">
-          <Input
-            placeholder="Novo desejo"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-            aria-label="Nome do novo desejo"
-            className="min-w-0 flex-1"
-          />
-          <MoneyInput
-            value={valorCentavos}
-            onValueChange={setValorCentavos}
-            onKeyDown={(e) => e.key === 'Enter' && adicionar()}
-            aria-label="Valor do novo desejo"
-            className="basis-full md:basis-auto"
-          />
-          <div className="flex basis-full items-center md:basis-auto">
-            <Estrelas
-              valor={prioridade}
-              onChange={setPrioridade}
-              botaoClassName="h-11 w-11 md:h-auto md:w-auto"
-            />
-          </div>
-          <Button
-            size="icon"
-            className="order-first shrink-0 md:order-none"
-            onClick={adicionar}
-            aria-label="Adicionar desejo"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-/**
- * "Conquistado" como botão único, do tamanho do dedo.
- *
- * Mesmo motivo do BotaoPago dos gastos fixos: o Checkbox do Radix tem 16px de
- * alvo e o <label htmlFor> em volta não repassa o clique. Aqui o alvo inteiro
- * É o controle, e role/aria-checked preservam a semântica.
- */
-function BotaoConcluido({
-  concluido,
-  nome,
-  onAlternar,
-}: {
-  concluido: boolean
-  nome: string
-  onAlternar: (concluido: boolean) => void
-}) {
-  return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={concluido}
-      aria-label={`Marcar ${nome} como conquistado`}
-      data-celula
-      onClick={() => onAlternar(!concluido)}
-      className="order-1 grid h-11 w-11 shrink-0 place-items-center rounded-lg md:order-none md:h-auto md:w-full"
-    >
-      <span
-        aria-hidden
-        className={cn(
-          'grid h-5 w-5 place-items-center rounded-md border transition-colors',
-          concluido ? 'border-primary bg-primary text-primary-foreground' : 'border-input',
-        )}
-      >
-        {concluido && <Check className="h-3.5 w-3.5" />}
-      </span>
-    </button>
-  )
-}
-
-function Indicador({
-  Icone,
-  rotulo,
-  valor,
-  className,
-}: {
-  Icone: React.ComponentType<{ className?: string }>
-  rotulo: string
-  valor: number
-  className?: string
-}) {
-  return (
-    <div className="flex w-[62%] shrink-0 snap-start items-center gap-3 rounded-xl border border-border p-3 sm:w-auto sm:shrink">
-      <Icone className={cn('h-5 w-5', className ?? 'text-muted-foreground')} />
-      <div>
-        <p className="text-sm text-muted-foreground">{rotulo}</p>
-        <p className="tabular text-lg font-semibold">{valor}</p>
-      </div>
     </div>
   )
 }
@@ -320,12 +104,16 @@ function GradeMetas({
   aportes,
   resumo,
   onSalvarAporte,
+  onResgatar,
+  onTransferir,
 }: {
   ano: number
   metas: Array<import('@/lib/database.types').Goal>
   aportes: Array<import('@/lib/database.types').GoalContribution>
   resumo: Array<import('@/lib/database.types').ResumoMeta>
   onSalvarAporte: (goalId: string, mes: number, valor: number) => void
+  onResgatar: (goalId: string, centavos: number) => void
+  onTransferir: (origem: string, destino: string, centavos: number) => void
 }) {
   const valorDe = (goalId: string, mes: number) =>
     aportes.find((a) => a.goal_id === goalId && a.mes === mes)?.valor_centavos ?? 0
@@ -348,6 +136,17 @@ function GradeMetas({
    */
   const ehEstreito = useEhMobile(1024)
   const [metaAberta, setMetaAberta] = useState<{ id: string; nome: string } | null>(null)
+  const [guardandoEm, setGuardandoEm] = useState<{ id: string; nome: string } | null>(null)
+  const [movimentoAberto, setMovimentoAberto] = useState(false)
+
+  /**
+   * O saldo de cada meta — o teto do que dá para resgatar.
+   *
+   * Vem de `guardado_total` do agregado, que é a mesma soma que o controle
+   * mensal usa (`saldosMetas` da 0013): todos os meses, e não só o ano aberto.
+   * Quem guardou em março de 2024 pode resgatar hoje.
+   */
+  const saldos = Object.fromEntries(resumo.map((r) => [r.goal_id, r.guardado_total]))
 
   if (metas.length === 0) {
     return (
@@ -374,10 +173,26 @@ function GradeMetas({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle>Quanto guardei em {ano}</CardTitle>
-        <CardDescription>
-          Edite qualquer célula: o valor é o mesmo que aparece em “Investimentos do mês”.
-        </CardDescription>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <CardTitle>Quanto guardei em {ano}</CardTitle>
+            <CardDescription>
+              Edite qualquer célula: o valor é o mesmo que aparece em “Investimentos do mês”.
+            </CardDescription>
+          </div>
+          {/* Tirar e mover dinheiro entre metas vivia só no controle mensal —
+              inalcançável da tela em que alguém pensa "quero tirar daqui". É a
+              MESMA folha, importada, e não uma cópia. */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="alvo-toque shrink-0"
+            onClick={() => setMovimentoAberto(true)}
+          >
+            <ArrowRightLeft className="mr-1.5 h-4 w-4" aria-hidden />
+            Resgatar ou transferir
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Progresso geral de cada meta (valor acumulado de todos os anos).
@@ -393,6 +208,17 @@ function GradeMetas({
             const alvo = linha?.valor_meta_centavos ?? meta.valor_meta_centavos
             const { percentual, bruto } = progressoDaMeta(guardadoTotal, alvo)
             const projecao = projecaoDaMeta({
+              meta: { ...meta, valor_meta_centavos: alvo },
+              guardadoTotal,
+              aportesDoAno: aportesPorMes(meta.id),
+              anoDosAportes: ano,
+            })
+            /**
+             * A meta SEM prazo também tem uma resposta honesta para "quando eu
+             * chego lá?" — e ela usa a mesma base do ritmo. Uma das duas é
+             * sempre `null`: `projecaoDaMeta` só existe com prazo, esta só sem.
+             */
+            const previsao = previsaoDeConclusao({
               meta: { ...meta, valor_meta_centavos: alvo },
               guardadoTotal,
               aportesDoAno: aportesPorMes(meta.id),
@@ -441,21 +267,46 @@ function GradeMetas({
                     )}
                   </div>
                 )}
+                {previsao && (
+                  <p className="border-t border-border/70 pt-1.5 text-xs text-muted-foreground">
+                    {textoDaPrevisao(previsao)}
+                  </p>
+                )}
               </>
             )
 
-            return ehEstreito ? (
-              <button
-                key={meta.id}
-                type="button"
-                onClick={() => setMetaAberta({ id: meta.id, nome: meta.nome })}
-                className="space-y-1.5 rounded-xl border border-border p-3 text-left transition-colors active:bg-accent/60"
-              >
-                {conteudo}
-              </button>
-            ) : (
+            /**
+             * "Guardar" fica FORA do bloco que abre os doze meses.
+             *
+             * No celular o card inteiro é um botão que abre a grade daquela
+             * meta, e botão dentro de botão é HTML inválido — além de deixar
+             * ambíguo o que o toque faz. Aqui o card é um `<div>`, o conteúdo
+             * é que vira botão quando precisa, e "Guardar" é sempre um alvo
+             * próprio, do mesmo tamanho nos dois tamanhos de tela.
+             */
+            return (
               <div key={meta.id} className="space-y-1.5 rounded-xl border border-border p-3">
-                {conteudo}
+                {ehEstreito ? (
+                  <button
+                    type="button"
+                    onClick={() => setMetaAberta({ id: meta.id, nome: meta.nome })}
+                    aria-label={`Ver e editar os doze meses de ${meta.nome}`}
+                    className="w-full space-y-1.5 rounded-lg text-left transition-colors active:bg-realce"
+                  >
+                    {conteudo}
+                  </button>
+                ) : (
+                  conteudo
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="alvo-toque w-full"
+                  onClick={() => setGuardandoEm({ id: meta.id, nome: meta.nome })}
+                >
+                  <PiggyBank className="mr-1.5 h-4 w-4" aria-hidden />
+                  Guardar em {meta.nome}
+                </Button>
               </div>
             )
           })}
@@ -467,11 +318,11 @@ function GradeMetas({
             <div className="tabela-scroll">
               <table className="w-full min-w-[52rem] text-sm">
                 <caption className="sr-only">Valores guardados por meta em cada mês de {ano}</caption>
-                <thead className="bg-muted/60">
+                <thead className="bg-superficie">
                   <tr>
                     <th
                       scope="col"
-                      className="sticky left-0 z-10 bg-muted/60 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                      className="sticky left-0 z-10 bg-superficie px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                     >
                       Meta
                     </th>
@@ -521,11 +372,11 @@ function GradeMetas({
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-muted/40">
+                <tfoot className="bg-superficie">
                   <tr>
                     <th
                       scope="row"
-                      className="sticky left-0 z-10 bg-muted/40 px-3 py-2 text-left text-xs font-semibold uppercase text-muted-foreground"
+                      className="sticky left-0 z-10 bg-superficie px-3 py-2 text-left text-xs font-semibold uppercase text-muted-foreground"
                     >
                       Total do mês
                     </th>
@@ -548,19 +399,19 @@ function GradeMetas({
             faixa que desliza, com os doze meses do ano. */}
         {ehEstreito && (
           <div>
-            <p className="mb-1.5 text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="mb-1.5 text-micro font-medium uppercase tracking-wide text-muted-foreground">
               Total guardado por mês
             </p>
-            <div className="sem-barra-rolagem -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+            <FaixaRolavel rotulo="Total guardado por mês" className="-mx-1 flex gap-1.5 px-1 pb-1">
               {MESES_CURTOS.map((nome, indice) => (
                 <div key={nome} className="shrink-0 rounded-xl border border-border px-3 py-2 text-center">
-                  <p className="text-[0.7rem] uppercase text-muted-foreground">{nome}</p>
+                  <p className="text-micro uppercase text-muted-foreground">{nome}</p>
                   <p className="tabular whitespace-nowrap text-sm font-medium">
                     {formatCentavos(totalDoMes(indice + 1))}
                   </p>
                 </div>
               ))}
-            </div>
+            </FaixaRolavel>
           </div>
         )}
 
@@ -576,6 +427,28 @@ function GradeMetas({
           meta={metaAberta}
           valorDoMes={valorDe}
           onSalvar={onSalvarAporte}
+        />
+
+        <SheetAporteRapido
+          meta={guardandoEm}
+          ano={ano}
+          valorDoMes={(mes) => (guardandoEm ? valorDe(guardandoEm.id, mes) : 0)}
+          onFechar={() => setGuardandoEm(null)}
+          onSalvar={onSalvarAporte}
+        />
+
+        <SheetMovimentoMeta
+          aberta={movimentoAberto}
+          onOpenChange={setMovimentoAberto}
+          metas={metas}
+          saldos={saldos}
+          // O movimento é sempre de HOJE, e não do ano no seletor: tirar
+          // dinheiro é um fato do presente. A folha só mostra o mês; quem
+          // grava é `acoes.resgatar`, que usa o relógio.
+          ano={periodoAtual().ano}
+          mes={periodoAtual().mes}
+          onResgatar={onResgatar}
+          onTransferir={onTransferir}
         />
       </CardContent>
     </Card>

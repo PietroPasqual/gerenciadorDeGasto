@@ -28,7 +28,7 @@ const TabsTrigger = React.forwardRef<
     className={cn(
       // min-h de 44px no celular: a aba é o que troca de seção inteira, e
       // com py-1.5 ela tinha 28px de alvo.
-      'inline-flex min-h-[2.75rem] items-center justify-center whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-all md:min-h-0',
+      'alvo-toque inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-all',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       'data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm',
       className,

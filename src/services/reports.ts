@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import type {
   ComparativoAnualMes,
   GastoCategoria,
+  GastoCategoriaMes,
   InvestimentoMeta,
   ResumoMensal,
   ResumoMeta,
@@ -38,6 +39,22 @@ export async function obterInvestimentosPorMeta(ano: number, mes: number): Promi
 
 export async function obterComparativoAnual(ano: number): Promise<ComparativoAnualMes[]> {
   return unwrap(await supabase.rpc('comparativo_anual', { p_ano: ano })) ?? []
+}
+
+/**
+ * Uma linha por (mês, categoria) do ano — a matéria-prima do "esta categoria
+ * está subindo?".
+ *
+ * Uma chamada e não doze: `gastos_por_categoria` responde por mês, e pedir os
+ * doze meses seriam doze idas ao servidor para desenhar uma linha, num app que
+ * roda no celular com a rede de quem estiver usando. A 0020 devolve o ano de
+ * uma vez, com a MESMA regra da mensal — e um teste contra Postgres de verdade
+ * confere que as duas concordam mês a mês.
+ *
+ * Meses sem movimento não vêm: quem consome preenche o zero.
+ */
+export async function obterGastosPorCategoriaAno(ano: number): Promise<GastoCategoriaMes[]> {
+  return unwrap(await supabase.rpc('gastos_por_categoria_ano', { p_ano: ano })) ?? []
 }
 
 export async function obterResumoMetas(ano: number): Promise<ResumoMeta[]> {

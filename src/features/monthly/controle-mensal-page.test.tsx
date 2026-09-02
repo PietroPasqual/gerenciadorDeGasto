@@ -100,7 +100,6 @@ vi.mock('@/services/recurring-incomes', () => ({
   excluirEntradaRecorrente: vi.fn(),
 }))
 vi.mock('@/services/goals', () => ({
-  MAX_METAS: 10,
   salvarAporte: vi.fn(),
   resgatarDaMeta: vi.fn(),
   transferirEntreMetas: vi.fn(),

@@ -65,51 +65,68 @@ preço cheio, não o preço).
 
 ## Controle mensal
 
-| No PC                                                            | No celular                                                                                     |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Trocar de mês — setas ‹ › e combo                                | Faixa de pílulas dos 12 meses **e** swipe horizontal no conteúdo                               |
-| Trocar de ano — combo                                            | Combo no início da faixa de meses                                                              |
-| Ver os sete blocos do mês                                        | Seis abas roláveis (Resumo · Entradas · Fixos · Gastos · Investir · Análise), com a aba na URL |
-| Ver entradas/saídas/saldo — card lateral                         | Faixa fixa abaixo das abas, sempre à vista                                                     |
-| Importar CSV — botão no cabeçalho                                | Menu **⋯** do topo                                                                             |
-| Preencher em bloco (categoria + forma) — botão no cabeçalho      | Menu **⋯** do topo                                                                             |
-| Exportar CSV — botão no cabeçalho                                | Menu **⋯** do topo                                                                             |
-| Lançar gasto — linha de adição da tabela                         | Botão flutuante **+** → sheet, com o valor já em foco                                          |
-| Conferir o CSV antes de gravar — diálogo central                 | A mesma conferência em sheet de baixo para cima                                                |
-| Editar gasto — células da linha                                  | Tocar no card → mesma sheet                                                                    |
-| Excluir gasto — lixeira da linha (aparece no hover)              | Botão **Excluir** dentro da sheet                                                              |
-| Marcar gasto fixo como pago — caixa na linha                     | Botão "pago" no card (alvo de 44px)                                                            |
-| Desde/até quando o fixo é pago — chip embaixo do nome → sheet    | O mesmo chip e a mesma sheet                                                                   |
-| Entradas, aportes por meta e aportes avulsos — linha inline      | A mesma linha em duas faixas: nome em cima, valor + ação embaixo                               |
-| Gastos por categoria e por forma de pagamento                    | Aba **Análise**                                                                                |
-| Entrada recorrente (salário) — bloco na aba Entradas             | O mesmo bloco, na aba **Entradas**                                                             |
-| Desde/até quando a entrada é recebida — chip → sheet             | O mesmo chip e a mesma sheet, com 44px de alvo                                                 |
-| Aviso de recorrente e avulsa com a mesma descrição no mês        | O mesmo aviso                                                                                  |
-| Ver "X novos · Y já existiam" antes de gravar a importação       | A mesma contagem no topo da sheet de conferência                                               |
-| Corrigir a categoria e guardar a regra — toast com "Lembrar"     | O mesmo toast, na faixa de baixo perto do polegar                                              |
-| Buscar lançamento por descrição — campo acima da tabela          | O mesmo campo, com 44px de altura                                                              |
-| Filtrar por tipo, categoria, forma e faixa de valor              | A mesma sheet, aberta pelo botão de filtros                                                    |
-| Ver "Mostrando N de M" e limpar filtros                          | O mesmo                                                                                        |
-| Filtro na URL, para o voltar desfazer a busca                    | O mesmo                                                                                        |
-| Orçamento do mês e "quanto sobra por dia" — cartão na aba Resumo | O mesmo cartão, na aba **Resumo**                                                              |
-| Definir/mudar o teto de gastos — botão no cartão                 | O mesmo botão, com 44px, abrindo a mesma sheet                                                 |
-| Ver as faturas que vencem no mês — cartão na aba Resumo          | O mesmo cartão, na aba **Resumo**                                                              |
-| Marcar fatura como paga — botão no cartão da fatura              | O mesmo botão, com 44px de altura                                                              |
-| Ver "Gastei" e "Sai da conta" separados                          | Os dois na faixa fixa: a faixa mostra "Sai da conta", e o cartão de Resumo mostra os dois      |
-| Lançar compra parcelada — campo "Parcelas" na linha de adição    | O mesmo campo na sheet do FAB, com − e + de 44px                                               |
-| Ver "3/12" na linha do gasto                                     | A mesma etiqueta no card                                                                       |
-| Editar/excluir parcela — pergunta "só esta ou as N?"             | O mesmo diálogo, com os botões empilhados e 44px cada                                          |
+| No PC                                                                        | No celular                                                                                     |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Trocar de mês — setas ‹ › e combo                                            | Faixa de pílulas dos 12 meses **e** swipe horizontal no conteúdo                               |
+| Trocar de ano — combo                                                        | Combo no início da faixa de meses                                                              |
+| Ver os sete blocos do mês                                                    | Seis abas roláveis (Resumo · Entradas · Fixos · Gastos · Investir · Análise), com a aba na URL |
+| Ver entradas/saídas/saldo — card lateral                                     | Faixa fixa abaixo das abas, sempre à vista                                                     |
+| Importar CSV — botão no cabeçalho                                            | Menu **⋯** do topo                                                                             |
+| Preencher em bloco (categoria + forma) — botão no cabeçalho                  | Menu **⋯** do topo                                                                             |
+| Exportar CSV — botão no cabeçalho                                            | Menu **⋯** do topo                                                                             |
+| Lançar gasto — linha de adição da tabela                                     | Botão flutuante **+** → sheet, com o valor já em foco                                          |
+| Conferir o CSV antes de gravar — diálogo central                             | A mesma conferência em sheet de baixo para cima                                                |
+| Editar gasto — células da linha                                              | Tocar no card → mesma sheet                                                                    |
+| Excluir gasto — lixeira da linha (aparece no hover)                          | Botão **Excluir** dentro da sheet                                                              |
+| Marcar gasto fixo como pago — caixa na linha                                 | Botão "pago" no card (alvo de 44px)                                                            |
+| Desde/até quando o fixo é pago — chip embaixo do nome → sheet                | O mesmo chip e a mesma sheet                                                                   |
+| Entradas, aportes por meta e aportes avulsos — linha inline                  | A mesma linha em duas faixas: nome em cima, valor + ação embaixo                               |
+| Gastos por categoria e por forma de pagamento                                | Aba **Análise**                                                                                |
+| Entrada recorrente (salário) — bloco na aba Entradas                         | O mesmo bloco, na aba **Entradas**                                                             |
+| Desde/até quando a entrada é recebida — chip → sheet                         | O mesmo chip e a mesma sheet, com 44px de alvo                                                 |
+| Aviso de recorrente e avulsa com a mesma descrição no mês                    | O mesmo aviso                                                                                  |
+| Ver "X novos · Y já existiam" antes de gravar a importação                   | A mesma contagem no topo da sheet de conferência                                               |
+| Corrigir a categoria e guardar a regra — toast com "Lembrar"                 | O mesmo toast, na faixa de baixo perto do polegar                                              |
+| Buscar lançamento por descrição — campo acima da tabela                      | O mesmo campo, com 44px de altura                                                              |
+| Filtrar por tipo, categoria, forma e faixa de valor                          | A mesma sheet, aberta pelo botão de filtros                                                    |
+| Ver "Mostrando N de M" e limpar filtros                                      | O mesmo                                                                                        |
+| Filtro na URL, para o voltar desfazer a busca                                | O mesmo                                                                                        |
+| Orçamento do mês e "quanto sobra por dia" — cartão na aba Resumo             | O mesmo cartão, na aba **Resumo**                                                              |
+| Definir/mudar o teto de gastos — botão no cartão                             | O mesmo botão, com 44px, abrindo a mesma sheet                                                 |
+| Ver as faturas que vencem no mês — cartão na aba Resumo                      | O mesmo cartão, na aba **Resumo**                                                              |
+| Marcar fatura como paga — botão no cartão da fatura                          | O mesmo botão, com 44px de altura                                                              |
+| Ver "Gastei" e "Sai da conta" separados                                      | Os dois na faixa fixa: a faixa mostra "Sai da conta", e o cartão de Resumo mostra os dois      |
+| Lançar compra parcelada — "Parcelar compra" na folha de lançamento           | A mesma folha e o mesmo campo, com − e + de 44px                                               |
+| Ver em que fatura a compra cai, antes de salvar                              | O mesmo bloco, na mesma folha                                                                  |
+| Ver competência × caixa antes de salvar ("gasto de agosto, sai em setembro") | O mesmo                                                                                        |
+| Ver como as parcelas se dividem, antes de salvar                             | O mesmo                                                                                        |
+| Ser avisado de que o lançamento é de outro mês                               | O mesmo aviso, na mesma folha                                                                  |
+| Lançar ENTRADA pela mesma folha — botão "Entrada" no topo dela               | O mesmo botão, com 44px                                                                        |
+| Ver "3/12" na linha do gasto                                                 | A mesma etiqueta no card                                                                       |
+| Ver "fat. set" no gasto que vai para uma fatura                              | A mesma etiqueta no card                                                                       |
+| Editar/excluir parcela — pergunta "só esta ou as N?"                         | O mesmo diálogo, com os botões empilhados e 44px cada                                          |
+| Marcar vários lançamentos — botão "Marcar" no cabeçalho da tabela            | O mesmo botão, e o card inteiro vira alvo da marcação                                          |
+| Ver quantos, quanto somam e de que recorte saíram                            | A mesma barra, presa acima da navegação (o FAB se recolhe)                                     |
+| Categorizar em lote / trocar a forma em lote                                 | As mesmas ações, na mesma barra                                                                |
+| Duplicar os marcados, com desfazer                                           | O mesmo                                                                                        |
+| Excluir os marcados — confirmação que diz o escopo, e desfazer               | O mesmo diálogo, com botões de 44px                                                            |
 
 ## Comparativo anual
 
 | No PC                                                               | No celular                                              |
 | ------------------------------------------------------------------- | ------------------------------------------------------- |
 | Ver os 12 meses — tabela de 4 colunas                               | Cards de duas linhas (mês + diferença / entrou + saiu)  |
-| Totais e médias do ano — três cards lado a lado                     | Faixa que desliza, com snap                             |
+| Totais e médias do REALIZADO — três cards lado a lado               | Faixa que desliza, com snap                             |
 | Abrir um mês no controle mensal — clicar no nome                    | Tocar no card inteiro                                   |
 | Abrir um mês — clique na linha da tabela **ou** no ponto do gráfico | Toque no card do mês **ou** tocando no ponto do gráfico |
 | Exportar CSV — botão no cabeçalho                                   | Menu **⋯**                                              |
 | Gráfico entrada × gastos, com média e tooltip                       | O mesmo gráfico                                         |
+| Ver realizado e previsto separados, com o previsto escrito          | Os mesmos cartões, na faixa que desliza                 |
+| Ver a variação vs o ano anterior, com a base entre parênteses       | O mesmo                                                 |
+| Ler de onde saiu a comparação, o que é previsão e a tendência       | O mesmo bloco de leitura                                |
+| Ver a faixa de "previsto" no gráfico                                | O mesmo                                                 |
+| Ver uma categoria ao longo dos 12 meses — chips + barras            | Os mesmos chips, na faixa que rola de lado              |
+| Ler que aquele bloco conta por competência, e não por caixa         | O mesmo aviso e o mesmo link para a ajuda               |
 
 ## Metas
 
@@ -118,17 +135,23 @@ preço cheio, não o preço).
 | Editar os 12 meses de cada meta — grade meta × mês                        | Tocar no card da meta → sheet com os doze meses em campos de tamanho de dedo |
 | Total guardado por mês — rodapé da grade                                  | Faixa deslizante com os doze meses                                           |
 | Progresso de cada meta                                                    | O mesmo card                                                                 |
-| Wishlist: nome, valor, prioridade e "conquistado" — linha de 5 colunas    | Card de três faixas, com as estrelas em 44px                                 |
+| Wishlist: nome, valor, prioridade e estado — linha de 5 colunas           | Card de faixas, com as estrelas e o estado em 44px                           |
+| Ver o estado do desejo: quero comprar / estou juntando / conquistado      | O mesmo botão, na última faixa do card                                       |
+| Ligar um desejo a uma meta — folha com as três opções                     | A mesma folha                                                                |
+| Ver quanto a meta ligada já tem, e quanto isso cobre do desejo            | O mesmo                                                                      |
+| Ser avisado quando a mesma meta banca dois desejos                        | O mesmo aviso, na mesma folha                                                |
 | Prazo da meta — chip **Sem prazo / Até dez/26** embaixo do nome (Config.) | O mesmo chip, com 44px, no card da meta                                      |
 | "Faltam R$ 4.200 em 7 meses — R$ 600 por mês" no card da meta             | O mesmo texto, no mesmo card                                                 |
 | "No ritmo deste ano (R$ 800 por mês), chega em dez/25"                    | O mesmo — e some nos dois quando a base é pequena demais                     |
-| Meta sem prazo: nenhuma projeção, tudo como antes da `0019`               | O mesmo                                                                      |
+| Meta sem prazo: "Faltam R$ X" e, com base, o mês de chegada               | O mesmo — e some a segunda frase quando a base é pequena                     |
+| "Guardar em <meta>" — botão no card, folha com os 12 meses                | O mesmo botão, com 44px, e a mesma folha                                     |
+| "Resgatar ou transferir" — botão no cabeçalho da grade                    | O mesmo botão; é a MESMA folha do controle mensal                            |
 
 ## Configurações
 
 | No PC                                                           | No celular                                                                                   |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Ver as seis seções — coluna única com índice e scroll-spy (lg+) | Seis abas numa tira rolável                                                                  |
+| Ver as oito seções — coluna única com índice e scroll-spy (lg+) | Oito abas numa tira rolável, com apelido curto onde o nome não cabe                          |
 | Criar categoria / forma / meta — linha de adição                | Botão de largura total → sheet                                                               |
 | Editar — células inline                                         | Tocar no card → sheet                                                                        |
 | Reordenar — setas ↑ ↓ na linha (aparecem no hover)              | **Subir** / **Descer** dentro da sheet                                                       |
@@ -136,9 +159,13 @@ preço cheio, não o preço).
 | Escolher a cor da categoria                                     | A mesma paleta de 16 tons (no PC atrás de um botão, no celular aberta na sheet)              |
 | Tema de cor, com miniatura de cada um                           | O mesmo                                                                                      |
 | Modo escuro                                                     | O mesmo                                                                                      |
-| Nome do perfil                                                  | O mesmo                                                                                      |
+| Nome do perfil — seção **Perfil**, separada de Aparência        | O mesmo                                                                                      |
 | Ligar e desligar cada tipo de lembrete — seção **Lembretes**    | O mesmo, com a linha inteira em 44px como alvo do interruptor                                |
 | Escolher a antecedência do aviso (0 a 15 dias)                  | O mesmo campo, com 44px de altura                                                            |
+| Ver onde a importação mora, e ir até lá — seção **Dados**       | O mesmo card e o mesmo link                                                                  |
+| Ver o e-mail da conta — seção **Segurança e sessão**            | O mesmo                                                                                      |
+| Trocar a senha, com as duas validações antes de enviar          | O mesmo formulário, com campos de 44px                                                       |
+| Sair da conta a partir das configurações                        | O mesmo botão (a moldura do app também tem o dela)                                           |
 
 ## Cartão de crédito
 
@@ -212,6 +239,43 @@ ainda não entrou.
 | Aviso de "sem internet" — canto inferior esquerdo         | O mesmo aviso, centralizado acima da barra inferior                 |
 | Aviso de versão nova, com botão "Atualizar"               | O mesmo, com o botão em 44px                                        |
 | Atalho para lançar gasto — paleta de comandos (⌘K) ou FAB | Atalho **Lançar gasto** ao segurar o ícone do app, que abre a folha |
+
+## Ajuda
+
+O manual é dado (`src/features/help/conteudo.ts`), não JSX: é isso que dá o que
+buscar. Os assuntos ficam sempre abertos — sanfona fechada mata o Ctrl+F do
+navegador, que é a busca que a pessoa já sabe usar.
+
+Cada assunto tem endereço próprio (`/ajuda#fatura`), e é por ele que as outras
+telas mandam para cá. Um teste varre a árvore atrás de todo `<LinkAjuda>` e
+confere que o destino existe: link de ajuda quebrado é pior que link nenhum,
+porque a página abre e não responde.
+
+| No PC                                                      | No celular                        |
+| ---------------------------------------------------------- | --------------------------------- |
+| Buscar na ajuda — campo no topo                            | O mesmo campo, com 48px de altura |
+| Ver o termo realçado no texto, com acento                  | O mesmo                           |
+| Índice dos assuntos em pílulas                             | As mesmas pílulas, com 44px       |
+| Abrir um assunto por link (`/ajuda#fatura`), destacado     | O mesmo                           |
+| "Como a fatura é calculada" — no painel de faturas         | O mesmo link, no mesmo painel     |
+| 'Por que "Gastei" e "Sai da conta" são diferentes'         | O mesmo link, no cartão de resumo |
+| "O que o fechamento e o vencimento mudam" — configurações  | O mesmo                           |
+| "O que entra, o que fica e o que nunca é apagado" — backup | O mesmo                           |
+
+## Primeiro acesso guiado
+
+Ver `docs/onboarding.md`. Uma folha só, igual nos dois tamanhos: o estado de
+cada passo é lido do dado real, então não há progresso para divergir entre
+aparelhos.
+
+| No PC                                                       | No celular                       |
+| ----------------------------------------------------------- | -------------------------------- |
+| O guia abre sozinho na conta nova, uma vez                  | O mesmo                          |
+| Ver progresso ("3 de 7") e a barra                          | O mesmo                          |
+| Andar pelos sete passos em qualquer ordem — trilha de chips | A mesma trilha, rolando de lado  |
+| Pular um passo, ou encerrar o guia                          | Os mesmos botões, com 44px       |
+| Lançar o primeiro gasto — leva à folha de verdade           | O mesmo link, para a mesma folha |
+| Reabrir o guia — Configurações → Perfil                     | O mesmo botão                    |
 
 ## Quando alguma tela quebra
 

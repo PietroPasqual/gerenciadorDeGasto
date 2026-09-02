@@ -27,7 +27,7 @@ const FUNDO: Record<Tom, string> = {
 const BORDA: Record<Tom, string> = {
   atencao: 'border-destructive/25 bg-destructive/[0.04]',
   bom: 'border-success/25 bg-success/[0.04]',
-  neutro: 'border-border bg-muted/30',
+  neutro: 'border-border bg-superficie',
 }
 
 /**

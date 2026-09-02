@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { MOV } from '@/lib/movimento'
 
 export function CabecalhoPagina({
   titulo,
@@ -13,7 +14,7 @@ export function CabecalhoPagina({
     <motion.header
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: MOV.normal }}
       className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
     >
       <div className="space-y-1">

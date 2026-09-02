@@ -46,7 +46,7 @@ export function BarraInferior() {
 
   const classeItem = (ativo: boolean) =>
     cn(
-      'flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[0.6875rem] transition-colors',
+      'flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-micro transition-colors',
       ativo ? 'bg-primary-soft font-medium text-accent-foreground' : 'text-muted-foreground',
     )
 

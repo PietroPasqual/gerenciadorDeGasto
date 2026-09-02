@@ -2,6 +2,7 @@ import { CalendarClock, CheckCircle2, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EstadoVazio } from '@/components/common/estados'
+import { LinkAjuda } from '@/components/common/link-ajuda'
 import { formatCentavos } from '@/lib/money'
 import { formatDataISO, paraDataISO } from '@/lib/dates'
 import { vencimentoAdiado, vencimentoDaFatura } from '@/lib/fatura'
@@ -56,6 +57,11 @@ export function PainelFaturas({
             ))}
           </ul>
         )}
+
+        {/* A explicação longa mora na ajuda; o que a pessoa precisa saber para
+            entender ESTE bloco já está escrito nele. Sair da tela aqui não
+            custa nada — não há nada preenchido para perder. */}
+        <LinkAjuda topico="fatura">Como a fatura é calculada</LinkAjuda>
       </CardContent>
     </Card>
   )

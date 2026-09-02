@@ -48,7 +48,7 @@ export function BarraLateral({ className }: { className?: string }) {
           onClick={() =>
             window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))
           }
-          className="flex w-full items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/50"
+          className="flex w-full items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-realce"
         >
           <Search className="h-4 w-4 shrink-0" />
           <span className="flex-1 text-left">Buscar…</span>

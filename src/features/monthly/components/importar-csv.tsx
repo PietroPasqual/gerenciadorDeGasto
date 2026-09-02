@@ -246,7 +246,7 @@ export function ImportarCSV({
           <button
             type="button"
             onClick={() => entradaRef.current?.click()}
-            className="flex min-h-[9rem] w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-muted/40 px-4 text-center transition-colors hover:border-primary hover:bg-primary-soft"
+            className="flex min-h-[9rem] w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-superficie px-4 text-center transition-colors hover:border-primary hover:bg-primary-soft"
           >
             <FileUp className="h-8 w-8 text-muted-foreground" />
             <span className="font-medium">Escolher arquivo CSV</span>
@@ -262,7 +262,7 @@ export function ImportarCSV({
         </>
       ) : (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/50 px-3 py-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-superficie px-3 py-2">
             <span className="truncate text-sm font-medium">{nomeArquivo}</span>
             {/* Sem size="sm" no celular: os 36px dele ficam abaixo do alvo
                 mínimo de toque. No desktop pode encolher. */}
@@ -319,7 +319,7 @@ export function ImportarCSV({
           {/* Com débito e crédito em colunas separadas, a direção já está
               decidida pelo arquivo — perguntar sobre o sinal aqui só confundiria. */}
           {duasColunas ? (
-            <p className="rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            <p className="rounded-lg bg-superficie px-3 py-2 text-sm text-muted-foreground">
               Este arquivo tem colunas separadas de débito e crédito, então cada linha já vem com a direção
               definida.
             </p>
@@ -422,7 +422,7 @@ export function ImportarCSV({
               débitos de cartão do mesmo valor) e o saldo do banco conta as
               duas. Só avisamos, para a contagem não parecer erro. */}
           {repetidosNoArquivo > 0 && (
-            <p className="rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            <p className="rounded-lg bg-superficie px-3 py-2 text-sm text-muted-foreground">
               {repetidosNoArquivo === 1
                 ? '1 linha aparece duas vezes no arquivo e será importada, porque o extrato a contou duas vezes.'
                 : `${repetidosNoArquivo} linhas aparecem repetidas dentro do arquivo e serão importadas, porque o extrato as contou todas.`}
@@ -558,7 +558,7 @@ function Conferencia({
       )}
 
       {previa.problemas.length > 0 && (
-        <details className="rounded-lg bg-muted/50 p-3 text-sm">
+        <details className="rounded-lg bg-superficie p-3 text-sm">
           <summary className="cursor-pointer font-medium">
             {previa.problemas.length}{' '}
             {previa.problemas.length === 1 ? 'linha será ignorada' : 'linhas serão ignoradas'}

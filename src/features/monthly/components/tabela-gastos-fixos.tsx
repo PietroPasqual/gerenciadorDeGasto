@@ -109,7 +109,13 @@ export function TabelaGastosFixos({
                   key={gasto.id}
                   template={TEMPLATE}
                   destacada={pago && vigente}
-                  className={cn('relative gap-1.5 md:static', !vigente && 'opacity-55')}
+                  className={cn(
+                    'relative gap-1.5 md:static',
+                    // Fundo tingido, nunca opacidade: ela multiplica o texto e
+                    // derrubava a linha para 2,31:1 (mín. 4,5:1). O que diz
+                    // "fora de vigência" é o chip riscado, que é texto.
+                    !vigente && 'bg-superficie',
+                  )}
                 >
                   {/* 1ª linha no celular: nome, valor e o "pago?" */}
                   <div className="flex items-center gap-2 pr-9 md:contents md:pr-0">
@@ -137,7 +143,7 @@ export function TabelaGastosFixos({
                           'flex items-center gap-1 rounded-md px-3 text-xs text-muted-foreground hover:text-foreground',
                           // 44px de alvo no celular; no desktop o ponteiro é
                           // preciso e a linha da planilha não pode inchar.
-                          '-mt-1 min-h-[2.75rem] md:mt-0 md:min-h-0 md:py-0.5',
+                          'alvo-toque -mt-1 md:mt-0 md:py-0.5',
                         )}
                       >
                         <CalendarRange className="h-3 w-3 shrink-0" />
@@ -274,9 +280,9 @@ function BotaoPago({
       data-celula
       disabled={desabilitado}
       onClick={() => onAlternar(id, !pago)}
-      className="flex min-h-[2.75rem] shrink-0 items-center gap-1.5 rounded-lg px-1 md:min-h-0 md:justify-center md:px-0"
+      className="alvo-toque flex shrink-0 items-center gap-1.5 rounded-lg px-1 md:justify-center md:px-0"
     >
-      <span className="text-[0.7rem] uppercase tracking-wide text-muted-foreground md:hidden">pago</span>
+      <span className="text-micro uppercase tracking-wide text-muted-foreground md:hidden">pago</span>
       <span
         aria-hidden
         className={cn(

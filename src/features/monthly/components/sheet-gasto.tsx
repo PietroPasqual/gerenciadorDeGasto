@@ -1,16 +1,20 @@
 import * as React from 'react'
-import { Check, Minus, Plus } from 'lucide-react'
+import { ChevronDown, Minus, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { centavosParaTexto, formatCentavos } from '@/lib/money'
-import { formatDataISO, paraDataISO, periodoAtual, primeiroDiaISO } from '@/lib/dates'
-import { MAX_PARCELAS, datasDasParcelas, dividirEmParcelas } from '@/lib/parcelamento'
+import { centavosParaTexto } from '@/lib/money'
+import { paraDataISO, periodoAtual, primeiroDiaISO } from '@/lib/dates'
+import { MAX_PARCELAS } from '@/lib/parcelamento'
+import { consequenciasDoRascunho } from '@/lib/consequencias'
 import { cn } from '@/lib/utils'
+import { ChipsEscolha } from '@/components/common/chips-escolha'
+import { BlocoConsequencias } from './bloco-consequencias'
 import type { Category, PaymentMethod, Transaction } from '@/lib/database.types'
 
 export interface DadosGasto {
+  tipo: 'gasto' | 'entrada'
   data: string
   descricao: string
   payment_method_id: string | null
@@ -27,11 +31,15 @@ function dataPadrao(ano: number, mes: number) {
 }
 
 /**
- * Lançar/editar um gasto no celular.
+ * Lançar/editar no celular — e, no PC, o caminho do botão "Lançar gasto".
  *
  * A ordem dos campos é a do polegar, não a da tabela: o valor vem primeiro e
  * já com foco, porque é a única coisa que a pessoa sempre sabe na hora. Forma
  * e categoria são chips e não <select> — um toque em vez de abrir uma lista.
+ *
+ * Logo acima do botão fica o que vai acontecer ao salvar: em que fatura a
+ * compra cai, como ela se divide, e se o lançamento é de outro mês. Antes
+ * isso só se descobria depois, olhando os totais mudarem.
  */
 export function SheetGasto({
   aberta,
@@ -57,6 +65,7 @@ export function SheetGasto({
 }) {
   const editando = Boolean(gasto)
 
+  const [tipo, setTipo] = React.useState<'gasto' | 'entrada'>('gasto')
   const [valorTexto, setValorTexto] = React.useState('')
   const [descricao, setDescricao] = React.useState('')
   const [data, setData] = React.useState(() => dataPadrao(ano, mes))
@@ -65,17 +74,22 @@ export function SheetGasto({
   // 1 = à vista. Só aparece em lançamento novo: parcelar um gasto que já
   // existe seria apagá-lo e criar N no lugar, e isso a pessoa faz explicitamente.
   const [parcelas, setParcelas] = React.useState(1)
+  // Parcelar é a exceção — quase toda compra é à vista. O campo fica recolhido
+  // para o formulário caber na tela sem rolagem no caso comum.
+  const [parcelando, setParcelando] = React.useState(false)
   const valorRef = React.useRef<HTMLInputElement>(null)
 
   // Ao abrir, recarrega o formulário a partir do gasto (ou zera, se for novo).
   React.useEffect(() => {
     if (!aberta) return
+    setTipo(gasto?.tipo ?? 'gasto')
     setValorTexto(gasto ? centavosParaTexto(gasto.valor_centavos) : '')
     setDescricao(gasto?.descricao ?? '')
     setData(gasto?.data.slice(0, 10) ?? dataPadrao(ano, mes))
     setFormaId(gasto?.payment_method_id ?? null)
     setCategoriaId(gasto?.category_id ?? null)
     setParcelas(1)
+    setParcelando(false)
     // O teclado numérico já sobe: é o campo que a pessoa veio preencher.
     const t = setTimeout(() => valorRef.current?.focus(), 120)
     return () => clearTimeout(t)
@@ -86,13 +100,39 @@ export function SheetGasto({
     return digitos ? Number(digitos) : 0
   }, [valorTexto])
 
+  const ehEntrada = tipo === 'entrada'
+  // Parcelar é coisa de gasto: dinheiro que entra entra inteiro.
+  const parcelasEfetivas = !editando && !ehEntrada && parcelando ? parcelas : 1
+
+  /**
+   * As mesmas funções que o app usa depois de salvar (`vaiParaFatura`,
+   * `faturaDaCompra`, `dividirEmParcelas`) — a prévia não tem regra própria,
+   * senão ela e o resultado acabariam discordando.
+   */
+  const consequencias = React.useMemo(
+    () =>
+      consequenciasDoRascunho(
+        {
+          tipo,
+          data,
+          valorCentavos: centavos,
+          parcelas: parcelasEfetivas,
+          formaId: ehEntrada ? null : formaId,
+        },
+        formasPagamento,
+        { ano, mes },
+      ),
+    [tipo, data, centavos, parcelasEfetivas, formaId, ehEntrada, formasPagamento, ano, mes],
+  )
+
   const montar = (): DadosGasto => ({
+    tipo,
     data: data || dataPadrao(ano, mes),
-    descricao: descricao.trim() || 'Gasto',
-    payment_method_id: formaId,
-    category_id: categoriaId,
+    descricao: descricao.trim() || (ehEntrada ? 'Entrada' : 'Gasto'),
+    payment_method_id: ehEntrada ? null : formaId,
+    category_id: ehEntrada ? null : categoriaId,
     valor_centavos: centavos,
-    parcelas: parcelas > 1 ? parcelas : undefined,
+    parcelas: parcelasEfetivas > 1 ? parcelasEfetivas : undefined,
   })
 
   const salvar = (continuar: boolean) => {
@@ -103,18 +143,51 @@ export function SheetGasto({
       // o caso comum, e repetir a escolha a cada item cansa.
       setValorTexto('')
       setDescricao('')
+      setParcelando(false)
+      setParcelas(1)
       valorRef.current?.focus()
     } else {
       onOpenChange(false)
     }
   }
 
+  const titulo = editando ? 'Editar gasto' : ehEntrada ? 'Nova entrada' : 'Novo gasto'
+
   return (
     <Sheet open={aberta} onOpenChange={onOpenChange}>
-      <SheetContent aria-describedby={undefined}>
-        <SheetTitle className="mb-4">{editando ? 'Editar gasto' : 'Novo gasto'}</SheetTitle>
+      <SheetContent aria-describedby={undefined} className="overflow-y-auto">
+        <SheetTitle className="mb-4">{titulo}</SheetTitle>
 
         <div className="space-y-5">
+          {/* Trocar gasto por entrada só faz sentido antes de existir: mudar o
+              tipo de um lançamento salvo mexeria no saldo dos dois lados de
+              uma vez, e isso é apagar e relançar, não editar. */}
+          {!editando && (
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  { valor: 'gasto', rotulo: 'Gasto' },
+                  { valor: 'entrada', rotulo: 'Entrada' },
+                ] as const
+              ).map((o) => (
+                <button
+                  key={o.valor}
+                  type="button"
+                  onClick={() => setTipo(o.valor)}
+                  aria-pressed={tipo === o.valor}
+                  className={cn(
+                    'min-h-11 rounded-xl border text-corpo transition-colors',
+                    tipo === o.valor
+                      ? 'border-primary bg-primary-soft font-medium text-accent-foreground'
+                      : 'border-border hover:bg-accent',
+                  )}
+                >
+                  {o.rotulo}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Valor: o campo grande, primeiro, com o teclado numérico já aberto */}
           <div className="space-y-1.5">
             <Label htmlFor="sheet-valor">Valor</Label>
@@ -141,7 +214,7 @@ export function SheetGasto({
               id="sheet-descricao"
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Ex.: Mercado"
+              placeholder={ehEntrada ? 'Ex.: Freela' : 'Ex.: Mercado'}
               className="h-12 text-base"
             />
           </div>
@@ -157,50 +230,65 @@ export function SheetGasto({
             />
           </div>
 
-          <Chips
-            rotulo="Forma de pagamento"
-            opcoes={formasPagamento}
-            selecionado={formaId}
-            onSelecionar={setFormaId}
-          />
-          <Chips
-            rotulo="Categoria"
-            opcoes={categorias}
-            selecionado={categoriaId}
-            onSelecionar={setCategoriaId}
-            comCor
-          />
+          {/* Entrada com data é só descrição, valor e dia — é o que a tabela de
+              Entradas mostra dela. Oferecer forma e categoria aqui criaria um
+              dado que nenhuma tela exibe depois. */}
+          {!ehEntrada && (
+            <>
+              <ChipsEscolha
+                rotulo="Forma de pagamento"
+                opcoes={formasPagamento}
+                selecionado={formaId}
+                onSelecionar={setFormaId}
+              />
+              <ChipsEscolha
+                rotulo="Categoria"
+                opcoes={categorias}
+                selecionado={categoriaId}
+                onSelecionar={setCategoriaId}
+                comCor
+              />
+            </>
+          )}
 
-          {!editando && (
+          {!editando && !ehEntrada && (
             <CampoParcelas
+              aberto={parcelando}
+              onAbrirChange={(a) => {
+                setParcelando(a)
+                if (!a) setParcelas(1)
+                else if (parcelas < 2) setParcelas(2)
+              }}
               parcelas={parcelas}
               onChange={setParcelas}
-              totalCentavos={centavos}
-              primeiraDataISO={data || dataPadrao(ano, mes)}
             />
           )}
 
-          <div className="sticky bottom-0 -mx-5 space-y-2 border-t border-border bg-card px-5 pb-1 pt-3">
-            <Button className="h-12 w-full text-base" onClick={() => salvar(false)}>
-              {editando ? 'Salvar alterações' : 'Salvar'}
-            </Button>
-            {!editando && (
-              <Button variant="outline" className="h-12 w-full text-base" onClick={() => salvar(true)}>
-                Salvar e lançar outro
+          <div className="sticky bottom-0 -mx-5 space-y-3 border-t border-border bg-card px-5 pb-1 pt-3">
+            <BlocoConsequencias consequencias={consequencias} />
+
+            <div className="space-y-2">
+              <Button className="h-12 w-full text-base" onClick={() => salvar(false)}>
+                {editando ? 'Salvar alterações' : 'Salvar'}
               </Button>
-            )}
-            {editando && onExcluir && (
-              <Button
-                variant="ghost"
-                className="h-12 w-full text-base text-destructive hover:text-destructive"
-                onClick={() => {
-                  onExcluir()
-                  onOpenChange(false)
-                }}
-              >
-                Excluir gasto
-              </Button>
-            )}
+              {!editando && (
+                <Button variant="outline" className="h-12 w-full text-base" onClick={() => salvar(true)}>
+                  Salvar e lançar outro
+                </Button>
+              )}
+              {editando && onExcluir && (
+                <Button
+                  variant="ghost"
+                  className="h-12 w-full text-base text-destructive hover:text-destructive"
+                  onClick={() => {
+                    onExcluir()
+                    onOpenChange(false)
+                  }}
+                >
+                  Excluir gasto
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </SheetContent>
@@ -208,140 +296,83 @@ export function SheetGasto({
   )
 }
 
-/** Lista de chips de escolha única — inclui "Sem definir" para poder limpar. */
-function Chips({
-  rotulo,
-  opcoes,
-  selecionado,
-  onSelecionar,
-  comCor,
-}: {
-  rotulo: string
-  opcoes: Array<{ id: string; nome: string; cor?: string }>
-  selecionado: string | null
-  onSelecionar: (id: string | null) => void
-  comCor?: boolean
-}) {
-  return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium">{rotulo}</p>
-      <div className="flex flex-wrap gap-2">
-        {opcoes.map((o) => {
-          const ativo = selecionado === o.id
-          return (
-            <button
-              key={o.id}
-              type="button"
-              onClick={() => onSelecionar(ativo ? null : o.id)}
-              aria-pressed={ativo}
-              className={cn(
-                'flex min-h-[2.75rem] items-center gap-2 rounded-full border px-4 text-corpo transition-colors',
-                ativo
-                  ? 'border-primary bg-primary-soft font-medium text-accent-foreground'
-                  : 'border-border hover:bg-accent',
-              )}
-            >
-              {comCor && o.cor && (
-                <span
-                  aria-hidden
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: o.cor }}
-                />
-              )}
-              {o.nome}
-              {ativo && <Check className="h-4 w-4 shrink-0" />}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 /**
- * Em quantas vezes.
+ * Em quantas vezes — recolhido até alguém pedir.
  *
- * O valor digitado continua sendo o TOTAL da compra, não o da parcela — é como
- * a maquininha pergunta ("R$ 1.200 em 12x") e como a pessoa pensa. A prévia
- * mostra o valor de cada parcela justamente porque a divisão nem sempre é
- * redonda, e ver "1x de R$ 33,34 e 2x de R$ 33,33" antes de salvar evita a
- * dúvida de um centavo depois.
+ * O valor digitado continua sendo o TOTAL da compra, não o da parcela: é como
+ * a maquininha pergunta ("R$ 1.200 em 12x") e como a pessoa pensa. Quanto fica
+ * cada parcela e até quando a série vai são consequências, e por isso elas são
+ * ditas no bloco acima do botão, junto com a fatura — não aqui, onde ficariam
+ * a três campos de distância do resto do mesmo assunto.
  */
 function CampoParcelas({
+  aberto,
+  onAbrirChange,
   parcelas,
   onChange,
-  totalCentavos,
-  primeiraDataISO,
 }: {
+  aberto: boolean
+  onAbrirChange: (aberto: boolean) => void
   parcelas: number
   onChange: (n: number) => void
-  totalCentavos: number
-  primeiraDataISO: string
 }) {
-  const valores = totalCentavos > 0 && parcelas > 1 ? dividirEmParcelas(totalCentavos, parcelas) : []
-  const datas = parcelas > 1 ? datasDasParcelas(primeiraDataISO, parcelas) : []
-  const primeiraDiferente = valores.length > 1 && valores[0] !== valores[1]
-
   return (
     <div className="space-y-2">
-      <Label htmlFor="sheet-parcelas">Parcelas</Label>
-      <div className="flex items-center gap-2">
-        {/* Alvos de 44px: no celular estes são os botões, não o campo. */}
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="h-11 w-11 shrink-0"
-          disabled={parcelas <= 1}
-          onClick={() => onChange(Math.max(1, parcelas - 1))}
-          aria-label="Menos uma parcela"
-        >
-          <Minus className="h-4 w-4" />
-        </Button>
-        <Input
-          id="sheet-parcelas"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={MAX_PARCELAS}
-          value={parcelas}
-          onChange={(e) => {
-            const n = Number(e.target.value)
-            onChange(Number.isFinite(n) ? Math.min(MAX_PARCELAS, Math.max(1, Math.round(n))) : 1)
-          }}
-          className="h-11 flex-1 text-center text-base"
+      <button
+        type="button"
+        onClick={() => onAbrirChange(!aberto)}
+        aria-expanded={aberto}
+        aria-controls="sheet-parcelas-campo"
+        className="alvo-toque flex w-full items-center justify-between rounded-xl border border-border px-4 text-corpo transition-colors hover:bg-accent"
+      >
+        <span>Parcelar compra</span>
+        <ChevronDown
+          className={cn('h-4 w-4 shrink-0 transition-transform', aberto && 'rotate-180')}
+          aria-hidden
         />
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="h-11 w-11 shrink-0"
-          disabled={parcelas >= MAX_PARCELAS}
-          onClick={() => onChange(Math.min(MAX_PARCELAS, parcelas + 1))}
-          aria-label="Mais uma parcela"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
+      </button>
 
-      <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
-        {parcelas <= 1 ? (
-          'À vista — o valor sai todo de uma vez.'
-        ) : valores.length === 0 ? (
-          `${parcelas}x — preencha o valor total da compra para ver cada parcela.`
-        ) : primeiraDiferente ? (
-          <>
-            1x de <strong>{formatCentavos(valores[0])}</strong> e {parcelas - 1}x de{' '}
-            <strong>{formatCentavos(valores[1])}</strong>. A sobra de centavos vai na primeira, que é como o
-            cartão faz. Última em {formatDataISO(datas[datas.length - 1])}.
-          </>
-        ) : (
-          <>
-            {parcelas}x de <strong>{formatCentavos(valores[0])}</strong>. Última em{' '}
-            {formatDataISO(datas[datas.length - 1])}.
-          </>
-        )}
-      </p>
+      {aberto && (
+        <div id="sheet-parcelas-campo" className="flex items-center gap-2">
+          {/* Alvos de 44px: no celular estes são os botões, não o campo. */}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-11 w-11 shrink-0"
+            disabled={parcelas <= 2}
+            onClick={() => onChange(Math.max(2, parcelas - 1))}
+            aria-label="Menos uma parcela"
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <Input
+            id="sheet-parcelas"
+            type="number"
+            inputMode="numeric"
+            min={2}
+            max={MAX_PARCELAS}
+            value={parcelas}
+            aria-label="Número de parcelas"
+            onChange={(e) => {
+              const n = Number(e.target.value)
+              onChange(Number.isFinite(n) ? Math.min(MAX_PARCELAS, Math.max(2, Math.round(n))) : 2)
+            }}
+            className="h-11 flex-1 text-center text-base"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-11 w-11 shrink-0"
+            disabled={parcelas >= MAX_PARCELAS}
+            onClick={() => onChange(Math.min(MAX_PARCELAS, parcelas + 1))}
+            aria-label="Mais uma parcela"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

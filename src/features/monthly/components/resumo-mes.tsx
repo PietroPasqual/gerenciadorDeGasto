@@ -1,6 +1,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { ArrowDownRight, ArrowUpRight, CreditCard, PiggyBank, Wallet } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { LinkAjuda } from '@/components/common/link-ajuda'
 import { NumeroAnimado } from '@/components/common/numero-animado'
 import { formatCentavos } from '@/lib/money'
 import { nomeDoMes } from '@/lib/dates'
@@ -96,13 +97,24 @@ export function ResumoMes({
               )}
             </p>
           )}
+          {/* Só quando os dois números diferem: é aí que a pergunta "por que
+              gastei X e sai Y?" nasce, e é aí que o link responde. */}
+          {temFatura && (
+            <LinkAjuda topico="competencia-e-caixa" className="text-xs">
+              Por que "Gastei" e "Sai da conta" são diferentes
+            </LinkAjuda>
+          )}
         </div>
 
-        <div className="rounded-xl bg-muted/50 p-4">
+        <div className="rounded-xl bg-superficie p-4">
           {/* Empilhado e não lado a lado: na coluna de 3/12 (D2) sobravam 82px
               para o texto e "do total que entrou" quebrava em quatro linhas. */}
           <div className="flex flex-col items-center gap-2 text-center">
-            <div className="relative h-24 w-24 shrink-0">
+            {/* O anel é decorativo: o percentual que ele desenha já está em
+                texto no <span> logo abaixo, e o valor investido embaixo dele.
+                Fora da árvore de acessibilidade, o leitor de tela lê o número
+                em vez de dois caminhos SVG sem nome (axe `svg-img-alt`). */}
+            <div aria-hidden className="relative h-24 w-24 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -113,6 +125,9 @@ export function ResumoMes({
                     startAngle={90}
                     endAngle={-270}
                     stroke="none"
+                    // Ver donut.tsx: sem isto o <g> raiz fica tabulável dentro
+                    // do aria-hidden.
+                    rootTabIndex={-1}
                   >
                     <Cell fill="hsl(var(--primary))" />
                     <Cell fill="hsl(var(--muted))" />

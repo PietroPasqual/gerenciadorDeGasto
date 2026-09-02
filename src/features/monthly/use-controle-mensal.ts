@@ -397,6 +397,84 @@ export function useControleMensal(ano: number, mes: number) {
   }
 
   // ------------------------------------------------------------------
+  // Ações em lote (fase 5.2)
+  //
+  // Todas seguem a mesma regra: a UI já mostrou quantos são e o que vai ser
+  // atingido, então aqui não há nenhuma pergunta — só a escrita, otimista, com
+  // o mês inteiro no snapshot para o rollback devolver tudo de uma vez. Um
+  // rollback parcial seria pior que o erro: metade dos lançamentos com a
+  // categoria nova e metade sem, sem nada na tela dizendo quais.
+
+  const editarVarios = async (
+    ids: string[],
+    mudancas: Partial<Pick<Transaction, 'category_id' | 'payment_method_id'>>,
+  ) => {
+    if (ids.length === 0) return
+    const alvo = new Set(ids)
+    await executarOtimista({
+      snapshot: snapshot(),
+      aplicar: () =>
+        mutar((d) => ({
+          ...d,
+          lancamentos: d.lancamentos.map((l) => (alvo.has(l.id) ? { ...l, ...mudancas } : l)),
+        })),
+      restaurar: (s) => definirDados(s),
+      acao: () => lancamentosSvc.atualizarVarios(ids, mudancas),
+      mensagemErro: 'Não foi possível salvar os lançamentos',
+    })
+  }
+
+  const removerVarios = async (ids: string[]) => {
+    if (ids.length === 0) return
+    const alvo = new Set(ids)
+    await executarOtimista({
+      snapshot: snapshot(),
+      aplicar: () => mutar((d) => ({ ...d, lancamentos: d.lancamentos.filter((l) => !alvo.has(l.id)) })),
+      restaurar: (s) => definirDados(s),
+      acao: () => lancamentosSvc.excluirVarios(ids),
+      mensagemErro: 'Não foi possível excluir os lançamentos',
+    })
+  }
+
+  /**
+   * Cria vários lançamentos de uma vez, devolvendo o que o banco gravou.
+   *
+   * Serve a duas coisas que são a mesma operação: duplicar os marcados, e
+   * desfazer a exclusão em lote (que é recriar exatamente o que saiu).
+   *
+   * Sem `aplicar` otimista de propósito. As linhas só existem depois que o
+   * banco devolve os ids reais, e ids provisórios aqui fariam o desfazer do
+   * desfazer tentar excluir algo que nunca existiu. O custo é a lista aparecer
+   * um instante depois — aceitável para uma ação que já é deliberada.
+   *
+   * O vínculo de parcelamento NÃO é copiado: manter o `parcelamento_id` criaria
+   * uma série com duas parcelas de número 2, e a partir daí "excluir a série"
+   * apagaria coisas que ninguém associa mais à compra. As telas que chamam isto
+   * dizem que a cópia sai solta.
+   */
+  const adicionarVarios = async (
+    lista: Array<{
+      data: string
+      descricao: string
+      payment_method_id: string | null
+      category_id: string | null
+      valor_centavos: number
+      tipo: 'gasto' | 'entrada'
+    }>,
+  ): Promise<Transaction[]> => {
+    if (lista.length === 0) return []
+    const salvos = await executarOtimista({
+      snapshot: snapshot(),
+      aplicar: () => {},
+      restaurar: (s) => definirDados(s),
+      acao: () => lancamentosSvc.criarVarios(lista),
+      confirmar: (novos) => mutar((d) => ({ ...d, lancamentos: [...d.lancamentos, ...novos] })),
+      mensagemErro: 'Não foi possível salvar os lançamentos',
+    })
+    return salvos ?? []
+  }
+
+  // ------------------------------------------------------------------
   // Investimentos (aporte por meta + avulsos)
   // ------------------------------------------------------------------
   const salvarAporteMeta = async (goal_id: string, valor_centavos: number) => {
@@ -666,6 +744,9 @@ export function useControleMensal(ano: number, mes: number) {
       adicionarLancamento,
       editarLancamento,
       removerLancamento,
+      editarVarios,
+      removerVarios,
+      adicionarVarios,
       salvarAporteMeta,
       adicionarInvestimentoAvulso,
       editarInvestimentoAvulso,

@@ -33,6 +33,7 @@ import { useGastosRecentes } from '@/lib/use-gastos-recentes'
 import { estaVigente, vaiParaFatura } from '@/lib/calculations'
 import { carregarMes } from '@/services/mes'
 import { ObservacoesMes } from './components/observacoes-mes'
+import { MOV } from '@/lib/movimento'
 
 const ATALHOS = [
   {
@@ -283,7 +284,7 @@ export function DashboardPage() {
             key={atalho.para}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 * indice, duration: 0.3 }}
+            transition={{ delay: 0.05 * indice, duration: MOV.normal }}
           >
             <Link
               to={atalho.para}

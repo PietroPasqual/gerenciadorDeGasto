@@ -100,8 +100,8 @@ function Numero({
  */
 function tamanho(texto: string, destaque?: boolean) {
   const escala = destaque
-    ? ['text-[0.9375rem] font-bold', 'text-[0.8125rem] font-bold', 'text-[0.6875rem] font-bold']
-    : ['text-[0.8125rem] font-semibold', 'text-[0.6875rem] font-semibold', 'text-[0.625rem] font-semibold']
+    ? ['text-[0.9375rem] font-bold', 'text-[0.8125rem] font-bold', 'text-micro font-bold']
+    : ['text-[0.8125rem] font-semibold', 'text-micro font-semibold', 'text-[0.625rem] font-semibold']
   if (texto.length > 13) return escala[2]
   if (texto.length > 10) return escala[1]
   return escala[0]

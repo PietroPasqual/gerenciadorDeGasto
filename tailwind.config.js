@@ -47,6 +47,11 @@ export default {
           DEFAULT: 'hsl(var(--warning))',
           foreground: 'hsl(var(--warning-foreground))',
         },
+        // Nivel 2 da escala de superficie: a caixa dentro de um card.
+        // Ver a explicacao em src/styles/themes.css.
+        superficie: 'hsl(var(--superficie))',
+        // Fundo de hover e de item ativo.
+        realce: 'hsl(var(--realce))',
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
@@ -81,6 +86,15 @@ export default {
         secao: ['1.125rem', { lineHeight: '1.3' }],
         corpo: ['0.9375rem', { lineHeight: '1.5' }],
         rotulo: ['0.75rem', { lineHeight: '1.3', letterSpacing: '0.04em' }],
+        // O degrau que faltava. Sem ele apareceram 14 usos de text-[0.7rem],
+        // text-[0.6875rem] e text-[0.65rem] — tres tamanhos entre 10,4px e
+        // 11,2px, indistinguiveis a olho e escolhidos um a um. A propria regra
+        // acima ja dizia "nada de text-[13px] avulso pelas telas".
+        // Só o tamanho, sem lineHeight nem letterSpacing: os valores arbitrarios
+        // que ele substitui nao definiam nenhum dos dois, e herdavam a
+        // entrelinha do contexto. Fixa-los aqui mudava a altura das telas — a
+        // regressao visual pegou 8px a mais no resumo do mes.
+        micro: '0.6875rem',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -93,6 +107,12 @@ export default {
         // 'Fraunces' fica logo atrás para quem já tiver a estática instalada.
         display: ['"Fraunces Variable"', '"Fraunces"', '"Playfair Display"', 'Georgia', 'serif'],
       },
+      transitionDuration: {
+        rapido: 'var(--mov-rapido)',
+        normal: 'var(--mov-normal)',
+        lento: 'var(--mov-lento)',
+      },
+      transitionTimingFunction: { padrao: 'var(--mov-easing)' },
       keyframes: {
         'fade-up': {
           from: { opacity: '0', transform: 'translateY(8px)' },

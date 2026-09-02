@@ -5,6 +5,14 @@ import { montarParcelas } from '@/lib/parcelamento'
 import type { GastoDaJanela } from '@/lib/assinaturas'
 import { ErroServico, traduzErro, unwrap, userIdAtual } from './base'
 
+/**
+ * Blocos de 200 em toda operação de muitos ids.
+ *
+ * Um `in (...)` com mil ids estoura o limite de URL do PostgREST, e um insert
+ * único do mesmo tamanho estoura o limite de corpo. O número serve aos dois.
+ */
+const TAMANHO_BLOCO = 200
+
 export async function listarLancamentos(
   ano: number,
   mes: number,
@@ -66,6 +74,18 @@ export async function atualizarLancamento(
 export async function excluirLancamento(id: string): Promise<void> {
   const { error } = await supabase.from('transactions').delete().eq('id', id)
   if (error) throw error
+}
+
+/**
+ * Existe pelo menos um lançamento nesta conta?
+ *
+ * `limit(1)` e só o id: o guia de primeiro acesso precisa de um sim ou não, e
+ * baixar o histórico inteiro para responder isso seria caro justamente na
+ * conta que ainda não tem nada — mas também na que tem três anos.
+ */
+export async function existeLancamento(): Promise<boolean> {
+  const linhas = unwrap(await supabase.from('transactions').select('id').limit(1)) ?? []
+  return linhas.length > 0
 }
 
 /** Lançamentos de um intervalo qualquer — usado para achar duplicata na importação. */
@@ -148,8 +168,6 @@ export async function criarLancamentosEmLote(
 ): Promise<ResultadoImportacao> {
   if (lista.length === 0) return { novos: 0, jaExistiam: 0 }
   const user_id = await userIdAtual()
-  const TAMANHO_BLOCO = 200
-
   let novos = 0
   let processados = 0
   for (let i = 0; i < lista.length; i += TAMANHO_BLOCO) {
@@ -269,42 +287,89 @@ export async function atualizarSerie(
 }
 
 /**
- * Põe a mesma categoria em vários lançamentos de uma vez.
+ * A mesma mudança em vários lançamentos de uma vez.
  *
- * Existe para a categorização automática: depois de importar um extrato de um
- * ano, são centenas de linhas para classificar. Uma requisição por linha seria
- * centenas de idas ao servidor; agrupando por categoria são poucas, uma por
- * categoria sugerida.
+ * Existe porque uma requisição por linha seria centenas de idas ao servidor
+ * depois de importar um extrato de um ano. Aqui é uma por bloco, e o
+ * `.in('id', ...)` deixa o Postgres fazer o trabalho.
+ *
+ * A RLS continua sendo quem decide o que entra no `in`: a policy roda por
+ * linha, então um id de outra conta simplesmente não é atingido — o update
+ * volta dizendo que alterou menos, nunca escrevendo onde não devia.
  */
-export async function atualizarCategoriaDeVarios(ids: string[], category_id: string): Promise<number> {
+export async function atualizarVarios(
+  ids: string[],
+  mudancas: Partial<Pick<Transaction, 'category_id' | 'payment_method_id'>>,
+  mensagemErro = 'Não foi possível salvar os lançamentos.',
+): Promise<number> {
   if (ids.length === 0) return 0
-  const TAMANHO_BLOCO = 200
   let alterados = 0
   for (let i = 0; i < ids.length; i += TAMANHO_BLOCO) {
     const bloco = ids.slice(i, i + TAMANHO_BLOCO)
-    const { error } = await supabase.from('transactions').update({ category_id }).in('id', bloco)
-    if (error) throw traduzErro(error, 'Não foi possível salvar as categorias.')
+    const { error } = await supabase.from('transactions').update(mudancas).in('id', bloco)
+    if (error) throw traduzErro(error, mensagemErro)
     alterados += bloco.length
   }
   return alterados
 }
 
-/**
- * Põe a mesma forma de pagamento em vários lançamentos de uma vez.
- *
- * Gêmea de `atualizarCategoriaDeVarios`, e pelo mesmo motivo: extrato de banco
- * não traz forma de pagamento, então depois de importar são centenas de linhas
- * sem ela.
- */
+/** Categorização automática: agrupa por categoria sugerida e manda uma por grupo. */
+export async function atualizarCategoriaDeVarios(ids: string[], category_id: string): Promise<number> {
+  return atualizarVarios(ids, { category_id }, 'Não foi possível salvar as categorias.')
+}
+
+/** Gêmea da de cima: extrato de banco não traz forma de pagamento. */
 export async function atualizarFormaDeVarios(ids: string[], payment_method_id: string): Promise<number> {
+  return atualizarVarios(ids, { payment_method_id }, 'Não foi possível salvar as formas de pagamento.')
+}
+
+/**
+ * Exclui vários lançamentos de uma vez.
+ *
+ * Apaga EXATAMENTE os ids passados, nunca a série de uma parcela marcada —
+ * quem quer a compra inteira usa `excluirSerie`, que é uma escolha explícita.
+ * A tela promete isso por escrito antes de confirmar (ver `textoDaExclusao`),
+ * e esta função é a metade da promessa que o código cumpre.
+ */
+export async function excluirVarios(ids: string[]): Promise<number> {
   if (ids.length === 0) return 0
-  const TAMANHO_BLOCO = 200
-  let alterados = 0
+  let excluidos = 0
   for (let i = 0; i < ids.length; i += TAMANHO_BLOCO) {
     const bloco = ids.slice(i, i + TAMANHO_BLOCO)
-    const { error } = await supabase.from('transactions').update({ payment_method_id }).in('id', bloco)
-    if (error) throw traduzErro(error, 'Não foi possível salvar as formas de pagamento.')
-    alterados += bloco.length
+    const { error } = await supabase.from('transactions').delete().in('id', bloco)
+    if (error) throw traduzErro(error, 'Não foi possível excluir os lançamentos.')
+    excluidos += bloco.length
   }
-  return alterados
+  return excluidos
+}
+
+/**
+ * Cria vários lançamentos avulsos numa tacada — é o que "duplicar" usa.
+ *
+ * Diferente de `criarLancamentosEmLote`, este NÃO é upsert por fingerprint:
+ * duplicar é justamente pedir a segunda cópia de algo, e a impressão digital
+ * existe para recusá-la. Por isso as cópias saem sem fingerprint, e a
+ * importação continua sabendo distinguir o que já importou.
+ */
+export async function criarVarios(
+  lista: Array<{
+    data: string
+    descricao: string
+    payment_method_id: string | null
+    category_id: string | null
+    valor_centavos: number
+    tipo: TipoLancamento
+  }>,
+): Promise<Transaction[]> {
+  if (lista.length === 0) return []
+  const user_id = await userIdAtual()
+  return (
+    unwrap(
+      await supabase
+        .from('transactions')
+        .insert(lista.map((l) => ({ ...l, user_id })))
+        .select(),
+      'Não foi possível duplicar os lançamentos.',
+    ) ?? []
+  )
 }

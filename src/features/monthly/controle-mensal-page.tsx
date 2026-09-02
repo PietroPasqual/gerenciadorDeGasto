@@ -18,7 +18,7 @@ import { SecaoMes, useAbaMes } from './components/abas-mes'
 import { PainelFaturas } from './components/painel-faturas'
 import { TabelaEntradasRecorrentes } from './components/tabela-entradas-recorrentes'
 import { FiltroLancamentos } from './components/filtro-lancamentos'
-import { SheetMovimentoMeta } from './components/sheet-movimento-meta'
+import { SheetMovimentoMeta } from '@/features/goals/components/sheet-movimento-meta'
 import { PainelOrcamento } from './components/painel-orcamento'
 import { PainelLembretes } from './components/painel-lembretes'
 import { PainelAssinaturas } from './components/painel-assinaturas'
@@ -32,6 +32,8 @@ import {
   type Filtro,
 } from '@/lib/filtro-lancamentos'
 import { DialogoSerie } from './components/dialogo-serie'
+import { BarraSelecao } from './components/barra-selecao'
+import { podarSelecao, resumirSelecao, textoDaAcao } from '@/lib/selecao'
 import { BarraMesCelular } from './components/barra-mes-celular'
 import type { FixedExpense, Transaction } from '@/lib/database.types'
 import { usePeriodoStore } from '@/store/periodo'
@@ -53,6 +55,7 @@ import { useSwipeMes, mesVizinho, type Direcao } from '@/lib/swipe-mes'
 import { useEhMobile } from '@/lib/hooks'
 import { useAuthStore } from '@/store/auth'
 import { atualizarPerfil } from '@/services/profiles'
+import { MOV } from '@/lib/movimento'
 
 const SEM_FIXOS: FixedExpense[] = []
 
@@ -218,6 +221,116 @@ export function ControleMensalPage() {
    */
   const gastosFiltrados = useMemo(() => aplicarFiltro(gastos, filtro), [gastos, filtro])
 
+  // ------------------------------------------------------------------
+  // Seleção e ações em lote (fase 5.2)
+  //
+  // Mora na página, e não na tabela, por dois motivos: ela precisa podar o que
+  // saiu do filtro (a lista filtrada é daqui) e precisa esconder o FAB
+  // enquanto a barra de ações ocupa o mesmo canto da tela.
+
+  const [modoSelecao, setModoSelecao] = useState(false)
+  const [selecionados, setSelecionados] = useState<ReadonlySet<string>>(() => new Set())
+
+  /**
+   * Marcado que saiu da tela sai da seleção.
+   *
+   * Trocar de mês ou digitar no filtro esconde linhas, e uma seleção que
+   * sobrevive a isso vira uma bomba: a barra diria "8 marcados" com cinco
+   * invisíveis, e excluir apagaria o que a pessoa não vê há dois minutos.
+   * `podarSelecao` devolve o MESMO conjunto quando nada saiu, e o React então
+   * nem re-renderiza.
+   */
+  useEffect(() => {
+    setSelecionados((atual) =>
+      podarSelecao(
+        atual,
+        gastosFiltrados.map((g) => g.id),
+      ),
+    )
+  }, [gastosFiltrados])
+
+  const resumoSelecao = useMemo(
+    () => resumirSelecao(gastosFiltrados, selecionados),
+    [gastosFiltrados, selecionados],
+  )
+  const todosMarcados = gastosFiltrados.length > 0 && selecionados.size === gastosFiltrados.length
+
+  const alternarModoSelecao = () => {
+    setModoSelecao((antes) => !antes)
+    setSelecionados(new Set())
+  }
+
+  const alternarSelecao = (id: string) =>
+    setSelecionados((atual) => {
+      const proximo = new Set(atual)
+      if (!proximo.delete(id)) proximo.add(id)
+      return proximo
+    })
+
+  const marcarTodos = () =>
+    setSelecionados(todosMarcados ? new Set() : new Set(gastosFiltrados.map((g) => g.id)))
+
+  /** A cópia de um lançamento — sem o vínculo de série, que não se duplica. */
+  const copiaDe = (l: Transaction) => ({
+    data: l.data,
+    descricao: l.descricao,
+    payment_method_id: l.payment_method_id,
+    category_id: l.category_id,
+    valor_centavos: l.valor_centavos,
+    tipo: l.tipo,
+  })
+
+  /** Os marcados que ainda estão na lista — a única lista em que se pode agir. */
+  const marcadosVisiveis = () => gastosFiltrados.filter((g) => selecionados.has(g.id))
+
+  const aplicarEmLote = async (mudancas: {
+    category_id?: string | null
+    payment_method_id?: string | null
+  }) => {
+    // Derivado da lista filtrada, e não de `selecionados` direto: a poda já
+    // deveria ter tirado o que sumiu da tela, mas uma ação que escreve no
+    // banco não pode depender de um efeito ter rodado antes dela.
+    const ids = marcadosVisiveis().map((g) => g.id)
+    if (ids.length === 0) return
+    await acoes.editarVarios(ids, mudancas)
+    // A seleção continua de pé: trocar categoria E forma dos mesmos itens é o
+    // caso comum depois de importar um extrato, e desmarcar entre as duas
+    // obrigaria a marcar tudo de novo.
+    toast.success(textoDaAcao(ids.length, 'alterado'))
+  }
+
+  const duplicarSelecionados = async () => {
+    const marcados = marcadosVisiveis()
+    if (marcados.length === 0) return
+    const copias = await acoes.adicionarVarios(marcados.map(copiaDe))
+    if (copias.length === 0) return
+    setSelecionados(new Set())
+    toast.success(textoDaAcao(copias.length, 'duplicado'), {
+      description: marcados.some((g) => g.parcelamento_id)
+        ? 'As cópias de parcela saem soltas, sem o vínculo com a compra parcelada.'
+        : undefined,
+      action: { label: 'Desfazer', onClick: () => void acoes.removerVarios(copias.map((c) => c.id)) },
+    })
+  }
+
+  const excluirSelecionados = async () => {
+    const marcados = marcadosVisiveis()
+    if (marcados.length === 0) return
+    // As linhas são copiadas ANTES da exclusão: depois dela elas não estão mais
+    // no estado, e o desfazer não teria de onde recriar.
+    const paraVoltar = marcados.map(copiaDe)
+    const tinhaParcela = marcados.some((g) => g.parcelamento_id)
+    setSelecionados(new Set())
+    setModoSelecao(false)
+    await acoes.removerVarios(marcados.map((g) => g.id))
+    toast(textoDaAcao(marcados.length, 'excluído'), {
+      description: tinhaParcela
+        ? 'Desfazer traz as parcelas de volta soltas, sem o vínculo com a compra.'
+        : undefined,
+      action: { label: 'Desfazer', onClick: () => void acoes.adicionarVarios(paraVoltar) },
+    })
+  }
+
   /**
    * O que vence por aqui. Recalculado a cada render de propósito: é barato
    * (dezenas de itens) e depende da data de hoje, que muda sem avisar ninguém
@@ -267,13 +380,25 @@ export function ControleMensalPage() {
 
   const salvarGastoDaSheet = (d: DadosGasto) => {
     if (gastoEditando) {
-      const { parcelas: _ignorado, ...mudancas } = d
+      // `tipo` sai junto com `parcelas`: a folha não deixa trocar gasto por
+      // entrada numa edição, então mandá-lo de volta só arriscaria reescrever
+      // com o valor errado se algum dia o formulário mudar.
+      const { parcelas: _semParcelas, tipo: _semTipo, ...mudancas } = d
       void acoes.editarLancamento(gastoEditando.id, mudancas)
       return
     }
     // O valor digitado é o TOTAL da compra; quem divide é criarParcelamento.
     if (d.parcelas && d.parcelas > 1) void acoes.adicionarParcelamento({ ...d, parcelas: d.parcelas })
-    else void acoes.adicionarLancamento({ ...d, tipo: 'gasto' })
+    else void acoes.adicionarLancamento(d)
+    // A folha lança os dois tipos, mas ela é aberta a partir da aba de Gastos:
+    // sem este aviso, uma entrada salva daqui simplesmente não aparece, e o
+    // que a pessoa vê é o lançamento ter sumido.
+    if (d.tipo === 'entrada' && aba !== 'entradas') {
+      toast.success('Entrada lançada', {
+        description: 'Ela fica na aba Entradas.',
+        action: { label: 'Ver', onClick: () => definirAba('entradas') },
+      })
+    }
   }
 
   /**
@@ -324,7 +449,9 @@ export function ControleMensalPage() {
             payment_method_id: gasto.payment_method_id,
             category_id: gasto.category_id,
             valor_centavos: gasto.valor_centavos,
-            tipo: 'gasto',
+            // O tipo do próprio lançamento, e não 'gasto' fixo: desfazer tem
+            // que devolver o que foi apagado, não uma versão parecida dele.
+            tipo: gasto.tipo,
           }),
       },
     })
@@ -417,7 +544,7 @@ export function ControleMensalPage() {
             key={`${ano}-${mes}`}
             initial={{ opacity: 0, x: direcao.current * 28 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
+            transition={{ duration: MOV.normal, ease: 'easeOut' }}
             onAnimationComplete={() => {
               direcao.current = 0
             }}
@@ -564,6 +691,27 @@ export function ControleMensalPage() {
                     }
                     temFiltroAtivo={!filtroEstaVazio(filtro)}
                     onAbrirNovo={abrirNovo}
+                    modoSelecao={modoSelecao}
+                    selecionados={selecionados}
+                    onAlternarModo={alternarModoSelecao}
+                    onAlternarSelecao={alternarSelecao}
+                    barraSelecao={
+                      modoSelecao ? (
+                        <BarraSelecao
+                          resumo={resumoSelecao}
+                          totalFiltrado={gastosFiltrados.length}
+                          totalGeral={gastos.length}
+                          todosMarcados={todosMarcados}
+                          categorias={dados.categorias}
+                          formasPagamento={dados.formasPagamento}
+                          onMarcarTodos={marcarTodos}
+                          onLimpar={alternarModoSelecao}
+                          onAplicar={(m) => void aplicarEmLote(m)}
+                          onDuplicar={() => void duplicarSelecionados()}
+                          onExcluir={() => void excluirSelecionados()}
+                        />
+                      ) : null
+                    }
                     formasPagamento={dados.formasPagamento}
                     categorias={dados.categorias}
                     onAdicionar={acoes.adicionarLancamento}
@@ -594,7 +742,7 @@ export function ControleMensalPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="min-h-11 shrink-0 md:min-h-0"
+                        className="alvo-toque shrink-0"
                         onClick={() => setMovimentoAberto(true)}
                       >
                         <ArrowRightLeft className="mr-1.5 h-4 w-4" aria-hidden />
@@ -645,7 +793,9 @@ export function ControleMensalPage() {
               fica embaixo do FAB (ele tapava o total das Entradas), e um FAB
               que lança GASTO na aba de Entradas ainda por cima mente sobre o
               que faz. Lançar gasto continua a um toque, na aba ao lado. */}
-          {aba === 'gastos' && <Fab rotulo="Novo gasto" onClick={abrirNovo} />}
+          {/* Enquanto se marca, a barra de ações ocupa este mesmo canto — e um
+              FAB por cima dela taparia o botão de excluir. */}
+          {aba === 'gastos' && !modoSelecao && <Fab rotulo="Novo gasto" onClick={abrirNovo} />}
           <SheetGasto
             aberta={sheetAberta}
             onOpenChange={(a) => {

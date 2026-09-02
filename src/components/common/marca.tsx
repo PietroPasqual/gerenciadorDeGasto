@@ -21,7 +21,7 @@ export function Wordmark({ className }: { className?: string }) {
 /** Marca completa: símbolo + nome. Usada no topo do app, na landing e no login. */
 export function Marca({ className, textoClassName }: { className?: string; textoClassName?: string }) {
   return (
-    <span className={cn('flex min-h-[2.75rem] items-center gap-2 md:min-h-0', className)}>
+    <span className={cn('alvo-toque flex items-center gap-2', className)}>
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
         <Wallet className="h-4 w-4" />
       </span>

@@ -217,6 +217,20 @@ export function relatoriosPadrao() {
       saidas: 250000 + i * 1000,
       diferenca: 330000 - i * 1000,
     })),
+    /**
+     * Gasto por categoria, mês a mês (0020). Mercado cresce ao longo do ano e
+     * Sem categoria aparece uma vez só — é o que sobra de um extrato.
+     */
+    'reports.obterGastosPorCategoriaAno': [
+      ...[1, 2, 3, 4].map((mes) => ({
+        mes,
+        category_id: 'c1',
+        nome: 'Mercado',
+        cor: '#a5f6d8',
+        gasto_centavos: 100000 + mes * 10000,
+      })),
+      { mes: 2, category_id: null, nome: 'Sem categoria', cor: '#94a3b8', gasto_centavos: 33333 },
+    ],
     'reports.obterResumoMetas': [
       {
         goal_id: 'g1',
@@ -231,7 +245,47 @@ export function relatoriosPadrao() {
       { id: 'g1', user_id: 'u', nome: 'Reserva', valor_meta_centavos: 1000000, ordem: 1, created_at: '' },
     ],
     'goals.listarAportesDoAno': [],
-    'wishlist.listarWishlist': [],
+    /**
+     * Um desejo em cada estado: sem meta (quero), ligado a g1 (juntando) e
+     * conquistado. É a fixture que faz a varredura de acessibilidade e a de
+     * alvos de toque VEREM os três — com a lista vazia elas passavam por eles
+     * sem olhar.
+     */
+    'wishlist.listarWishlist': [
+      {
+        id: 'w1',
+        user_id: 'u',
+        nome: 'Notebook',
+        valor_centavos: 400000,
+        prioridade: 5,
+        concluido: false,
+        concluido_em: null,
+        created_at: '',
+        goal_id: null,
+      },
+      {
+        id: 'w2',
+        user_id: 'u',
+        nome: 'Cadeira',
+        valor_centavos: 200000,
+        prioridade: 3,
+        concluido: false,
+        concluido_em: null,
+        created_at: '',
+        goal_id: 'g1',
+      },
+      {
+        id: 'w3',
+        user_id: 'u',
+        nome: 'Fone',
+        valor_centavos: 50000,
+        prioridade: 2,
+        concluido: true,
+        concluido_em: '2025-08-01T00:00:00Z',
+        created_at: '',
+        goal_id: null,
+      },
+    ],
     'categories.listarCategorias': [
       {
         id: 'c1',
@@ -262,6 +316,11 @@ export function relatoriosPadrao() {
     'profiles.obterPerfil': {
       id: 'u',
       nome: 'Teste',
+      // Conta que já passou do primeiro acesso — como toda conta existente
+      // ficou depois da 0022. Sem isto o guia abriria por cima de todas as
+      // outras specs.
+      onboarding_em: '2025-01-01T00:00:00Z',
+      onboarding_vistos: [],
       tema: 'rosa',
       orcamento_centavos: 0,
       preferencias_lembrete: {

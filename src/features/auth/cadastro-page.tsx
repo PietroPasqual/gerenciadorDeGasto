@@ -5,9 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { AuthLayout } from './auth-layout'
+import { CampoAuth, ErroDoFormulario } from './campos'
 import { cadastroSchema, type CadastroForm } from './schemas'
 import { useAuthStore } from '@/store/auth'
 
@@ -15,10 +14,12 @@ export function CadastroPage() {
   const { criarConta, session } = useAuthStore()
   const navegar = useNavigate()
   const [enviando, setEnviando] = useState(false)
+  const [erroGeral, setErroGeral] = useState('')
 
   const {
     register,
     handleSubmit,
+    setFocus,
     formState: { errors },
   } = useForm<CadastroForm>({ resolver: zodResolver(cadastroSchema) })
 
@@ -26,6 +27,7 @@ export function CadastroPage() {
 
   const aoEnviar = async (dados: CadastroForm) => {
     setEnviando(true)
+    setErroGeral('')
     try {
       const { precisaConfirmar } = await criarConta(dados.email, dados.senha, dados.nome)
       if (precisaConfirmar) {
@@ -36,9 +38,11 @@ export function CadastroPage() {
         navegar('/painel', { replace: true })
       }
     } catch (erro) {
-      toast.error('Não foi possível criar a conta', {
-        description: erro instanceof Error ? erro.message : undefined,
-      })
+      const mensagem = erro instanceof Error ? erro.message : 'Não foi possível criar a conta.'
+      setErroGeral(mensagem)
+      // Conta já existente é o caso mais comum, e o campo a corrigir é o
+      // e-mail — é para lá que o foco volta.
+      setFocus('email')
     } finally {
       setEnviando(false)
     }
@@ -58,56 +62,59 @@ export function CadastroPage() {
       }
     >
       <form onSubmit={handleSubmit(aoEnviar)} className="space-y-4" noValidate>
-        <div className="space-y-1.5">
-          <Label htmlFor="nome">Nome</Label>
-          <Input id="nome" autoComplete="name" placeholder="Seu nome" {...register('nome')} />
-          {errors.nome && (
-            <p role="alert" className="text-xs text-destructive">
-              {errors.nome.message}
-            </p>
+        <ErroDoFormulario>
+          {erroGeral}
+          {erroGeral.includes('Já existe') && (
+            <>
+              {' '}
+              <Link to="/entrar" className="font-medium underline">
+                Entrar nela
+              </Link>
+              .
+            </>
           )}
-        </div>
+        </ErroDoFormulario>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="email">E-mail</Label>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="voce@email.com"
-            {...register('email')}
-          />
-          {errors.email && (
-            <p role="alert" className="text-xs text-destructive">
-              {errors.email.message}
-            </p>
-          )}
-        </div>
+        <CampoAuth
+          id="nome"
+          rotulo="Nome"
+          autoComplete="name"
+          placeholder="Seu nome"
+          dica="É como o app vai te chamar. Dá para mudar depois."
+          erro={errors.nome?.message}
+          {...register('nome')}
+        />
 
-        <div className="space-y-1.5">
-          <Label htmlFor="senha">Senha</Label>
-          <Input id="senha" type="password" autoComplete="new-password" {...register('senha')} />
-          {errors.senha && (
-            <p role="alert" className="text-xs text-destructive">
-              {errors.senha.message}
-            </p>
-          )}
-        </div>
+        <CampoAuth
+          id="email"
+          rotulo="E-mail"
+          type="email"
+          autoComplete="email"
+          placeholder="voce@email.com"
+          erro={errors.email?.message}
+          {...register('email')}
+        />
 
-        <div className="space-y-1.5">
-          <Label htmlFor="confirmarSenha">Confirmar senha</Label>
-          <Input
-            id="confirmarSenha"
-            type="password"
-            autoComplete="new-password"
-            {...register('confirmarSenha')}
-          />
-          {errors.confirmarSenha && (
-            <p role="alert" className="text-xs text-destructive">
-              {errors.confirmarSenha.message}
-            </p>
-          )}
-        </div>
+        <CampoAuth
+          id="senha"
+          rotulo="Senha"
+          type="password"
+          autoComplete="new-password"
+          // A exigência aparece ANTES de errar: como instrução, não como
+          // correção depois do envio recusado.
+          dica="Pelo menos 6 caracteres."
+          erro={errors.senha?.message}
+          {...register('senha')}
+        />
+
+        <CampoAuth
+          id="confirmarSenha"
+          rotulo="Confirmar senha"
+          type="password"
+          autoComplete="new-password"
+          erro={errors.confirmarSenha?.message}
+          {...register('confirmarSenha')}
+        />
 
         <Button type="submit" className="w-full" disabled={enviando}>
           {enviando && <Loader2 className="h-4 w-4 animate-spin" />}

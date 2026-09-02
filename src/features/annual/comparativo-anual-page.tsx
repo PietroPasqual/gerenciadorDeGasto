@@ -1,12 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { useMemo } from 'react'
-import { Download, TrendingDown, TrendingUp } from 'lucide-react'
+import { Download, Minus, TrendingDown, TrendingUp } from 'lucide-react'
 import {
   Area,
   CartesianGrid,
   ComposedChart,
   Legend,
   Line,
+  ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -24,13 +25,24 @@ import { EstadoErro, EstadoVazio } from '@/components/common/estados'
 import { Cabecalho, Total } from '@/components/common/linha-planilha'
 import { useEhMobile } from '@/lib/hooks'
 import { useConsulta } from '@/lib/cache'
-import { obterComparativoAnual } from '@/services/reports'
+import { obterComparativoAnual, obterGastosPorCategoriaAno } from '@/services/reports'
 import { formatCentavos, formatCentavosCompacto } from '@/lib/money'
 import { ehFuturo, nomeCurtoDoMes, nomeDoMes } from '@/lib/dates'
 import { mediaMensal } from '@/lib/calculations'
+import {
+  compararAnos,
+  separarRealizadoPrevisto,
+  tendenciaDeGastos,
+  textoDaBase,
+  type Comparacao,
+  type Tendencia,
+} from '@/lib/comparativo'
 import { baixarCSV, csvMoeda, gerarCSV } from '@/lib/csv'
+import { seriesPorCategoria } from '@/lib/categoria-no-ano'
+import { CategoriaNoAno } from './components/categoria-no-ano'
 import { usePeriodoStore } from '@/store/periodo'
 import { cn } from '@/lib/utils'
+import { FaixaRolavel } from '@/components/common/faixa-rolavel'
 
 const TEMPLATE = 'md:grid-cols-[1fr,1fr,1fr,1fr]'
 
@@ -55,21 +67,81 @@ export function ComparativoAnualPage() {
     obterComparativoAnual(anoComparativo),
   )
 
+  /**
+   * O ano anterior, para a comparação.
+   *
+   * Consulta separada e com a MESMA chave de cache do ano de cima: abrir 2026
+   * e depois 2025 reaproveita o que já foi baixado, em vez de perguntar duas
+   * vezes a mesma coisa ao banco.
+   *
+   * O erro dela não vira estado de erro da página. Sem o ano anterior a
+   * comparação some e o resto continua de pé — derrubar o comparativo inteiro
+   * porque a comparação falhou seria trocar uma tela útil por nada.
+   */
+  const { dados: dadosAnteriores } = useConsulta(['comparativo-anual', anoComparativo - 1], () =>
+    obterComparativoAnual(anoComparativo - 1),
+  )
+
+  /**
+   * Gasto por categoria, mês a mês (0020).
+   *
+   * Uma chamada e não doze: `gastos_por_categoria` responde por mês, e pedir os
+   * doze seriam doze idas ao servidor para desenhar uma linha. Como a de cima,
+   * o erro dela não derruba a página — o bloco de categoria some e o resto
+   * continua servindo.
+   */
+  const { dados: porCategoria } = useConsulta(['categoria-no-ano', anoComparativo], () =>
+    obterGastosPorCategoriaAno(anoComparativo),
+  )
+
   // O `?? []` precisa ficar memoizado: sem isso ele cria um array novo a cada
   // render e o useMemo abaixo recalcula sempre, que é o oposto do que ele faz ali.
   const meses = useMemo(() => dados ?? [], [dados])
 
+  /**
+   * Realizado e previsto, separados.
+   *
+   * Antes os três indicadores somavam os doze meses. Em abril isso quer dizer
+   * que "Total de gastos" já trazia os fixos de dezembro embutidos — um número
+   * que mistura fato com previsão e não avisa. Agora o destaque é o realizado,
+   * e o previsto aparece embaixo, escrito.
+   */
+  const separacao = useMemo(() => separarRealizadoPrevisto(meses, anoComparativo), [meses, anoComparativo])
+
   const totais = useMemo(() => {
-    const entradas = meses.reduce((s, m) => s + m.entradas, 0)
-    const saidas = meses.reduce((s, m) => s + m.saidas, 0)
+    const { entradas, saidas } = separacao.totalRealizado
     return {
       entradas,
       saidas,
       diferenca: entradas - saidas,
-      mediaEntradas: mediaMensal(meses.map((m) => m.entradas)),
-      mediaSaidas: mediaMensal(meses.map((m) => m.saidas)),
+      // Média só do que ACONTECEU. Incluir os meses futuros (que já trazem os
+      // gastos fixos) fazia a média de gastos ser puxada por uma previsão, e a
+      // régua do gráfico marcava um "normal" que ninguém viveu.
+      mediaEntradas: mediaMensal(separacao.realizados.map((m) => m.entradas)),
+      mediaSaidas: mediaMensal(separacao.realizados.map((m) => m.saidas)),
     }
-  }, [meses])
+  }, [separacao])
+
+  const comparacao = useMemo(
+    () => compararAnos(meses, dadosAnteriores ?? [], anoComparativo),
+    [meses, dadosAnteriores, anoComparativo],
+  )
+
+  const tendencia = useMemo(() => tendenciaDeGastos(meses, anoComparativo), [meses, anoComparativo])
+
+  /** O primeiro mês previsto, para marcar a faixa do gráfico onde ele começa. */
+  const primeiroPrevisto = separacao.previstos[0]?.mes ?? null
+
+  /** Os meses realizados COM movimento — a base honesta do total por categoria. */
+  const mesesRealizados = useMemo(
+    () => separacao.realizados.filter((m) => m.entradas !== 0 || m.saidas !== 0).map((m) => m.mes),
+    [separacao],
+  )
+
+  const series = useMemo(
+    () => seriesPorCategoria(porCategoria ?? [], separacao.realizados.length),
+    [porCategoria, separacao],
+  )
 
   const dadosGrafico = meses.map((m) => ({
     // `numeroMes` viaja junto com o ponto só para o clique no gráfico saber
@@ -160,20 +232,40 @@ export function ComparativoAnualPage() {
               antes do primeiro dado do ano aparecer. Viram uma faixa que
               desliza, com snap para o card parar inteiro; de sm para cima
               voltam a ser as três colunas. */}
-          <div
+          <FaixaRolavel
+            rotulo="Totais do ano"
             className={cn(
-              'sem-barra-rolagem -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1',
+              '-mx-4 flex snap-x snap-mandatory gap-3 px-4 pb-1',
               'sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0',
             )}
           >
-            <CardIndicador rotulo="Total de entradas" valor={totais.entradas} className="text-success" />
-            <CardIndicador rotulo="Total de gastos" valor={totais.saidas} className="text-destructive" />
             <CardIndicador
-              rotulo="Diferença no ano"
+              rotulo="Entradas realizadas"
+              valor={totais.entradas}
+              className="text-success"
+              previsto={separacao.totalPrevisto.entradas}
+              delta={<Delta comparacao={comparacao} campo="entradas" anoAnterior={anoComparativo - 1} />}
+            />
+            <CardIndicador
+              rotulo="Gastos realizados"
+              valor={totais.saidas}
+              className="text-destructive"
+              previsto={separacao.totalPrevisto.saidas}
+              delta={<Delta comparacao={comparacao} campo="saidas" anoAnterior={anoComparativo - 1} />}
+            />
+            <CardIndicador
+              rotulo="Diferença realizada"
               valor={totais.diferenca}
               className={totais.diferenca < 0 ? 'text-destructive' : 'text-success'}
             />
-          </div>
+          </FaixaRolavel>
+
+          <Leitura
+            comparacao={comparacao}
+            tendencia={tendencia}
+            ano={anoComparativo}
+            temPrevisto={separacao.previstos.length > 0}
+          />
 
           {/* 5+7 na grade de 12 (D2): a lista de doze meses é texto curto e
               cabe em 5; o gráfico de linhas precisa de largura para os meses
@@ -204,9 +296,17 @@ export function ComparativoAnualPage() {
                   const classe = cn(
                     'grid grid-cols-1 gap-0.5 rounded-xl border border-border px-3 py-2 text-left transition-colors',
                     'md:grid-cols-[1fr,1fr,1fr,1fr] md:items-center md:gap-2 md:rounded-none md:border-0 md:border-b md:py-1.5',
-                    'hover:bg-accent/40',
+                    'hover:bg-realce',
                     negativo && !futuro && 'bg-destructive/5',
-                    futuro && 'opacity-60',
+                    // Fundo tingido, NUNCA opacidade: `opacity` multiplica o
+                    // texto junto com o resto e derrubava a linha inteira
+                    // abaixo de AA — o valor em text-success ia a 2,54:1 no
+                    // claro e 3,17:1 no escuro, contra o mínimo de 4,5:1. E
+                    // valia nos quatro temas, porque a opacidade age depois da
+                    // cor, contornando por fora a calibração do themes.css.
+                    // O que distingue o mês futuro é a etiqueta "previsto",
+                    // que é texto; o fundo só reforça.
+                    futuro && 'bg-superficie',
                   )
 
                   const corpo = (
@@ -277,15 +377,17 @@ export function ComparativoAnualPage() {
                       {corpo}
                     </button>
                   ) : (
-                    <div key={linha.mes} role="row" className={classe}>
+                    <div key={linha.mes} className={classe}>
                       {corpo}
                     </div>
                   )
                 })}
 
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <Total rotulo="Média de entradas" valor={formatCentavos(totais.mediaEntradas)} />
-                  <Total rotulo="Média de gastos" valor={formatCentavos(totais.mediaSaidas)} />
+                  {/* "por mês realizado", e não "no ano": a média conta só os
+                      meses que aconteceram e tiveram movimento. */}
+                  <Total rotulo="Entradas por mês realizado" valor={formatCentavos(totais.mediaEntradas)} />
+                  <Total rotulo="Gastos por mês realizado" valor={formatCentavos(totais.mediaSaidas)} />
                 </div>
               </CardContent>
             </Card>
@@ -367,6 +469,24 @@ export function ComparativoAnualPage() {
                         />
                       )}
 
+                      {/* A partir daqui é PREVISÃO, não medição. Sem a faixa a
+                          linha continua reta até dezembro e parece que o ano
+                          inteiro já aconteceu. */}
+                      {primeiroPrevisto !== null && (
+                        <ReferenceArea
+                          x1={nomeCurtoDoMes(primeiroPrevisto)}
+                          x2={nomeCurtoDoMes(12)}
+                          fill="hsl(var(--muted-foreground))"
+                          fillOpacity={0.07}
+                          label={{
+                            value: 'previsto',
+                            position: 'insideTopLeft',
+                            fill: 'hsl(var(--muted-foreground))',
+                            fontSize: 11,
+                          }}
+                        />
+                      )}
+
                       {/* legendType="none": a área e a linha usam a mesma
                           dataKey, e sem isto a legenda lista "Entradas" e
                           "Gastos" duas vezes cada. */}
@@ -408,6 +528,13 @@ export function ComparativoAnualPage() {
               </CardContent>
             </Card>
           </div>
+
+          <CategoriaNoAno
+            series={series}
+            ano={anoComparativo}
+            mesesRealizados={mesesRealizados}
+            primeiroPrevisto={primeiroPrevisto}
+          />
         </>
       )}
     </div>
@@ -478,18 +605,176 @@ function Linhinha({
   )
 }
 
-function CardIndicador({ rotulo, valor, className }: { rotulo: string; valor: number; className?: string }) {
+function CardIndicador({
+  rotulo,
+  valor,
+  className,
+  previsto = 0,
+  delta,
+}: {
+  rotulo: string
+  valor: number
+  className?: string
+  /** O que ainda vai acontecer, dito separado do que já aconteceu. */
+  previsto?: number
+  delta?: React.ReactNode
+}) {
   const Icone = valor < 0 ? TrendingDown : TrendingUp
   return (
     // 72% da largura: o pedaço do próximo card à direita é o que conta que a
     // faixa desliza. 100% esconderia os outros dois.
     <Card className="w-[72%] shrink-0 snap-start sm:w-auto sm:shrink">
-      <CardContent className="flex items-center justify-between gap-3 p-5">
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">{rotulo}</p>
-          <p className={cn('tabular text-xl font-semibold', className)}>{formatCentavos(valor)}</p>
+      <CardContent className="space-y-1.5 p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <p className="text-sm text-muted-foreground">{rotulo}</p>
+            <p className={cn('tabular text-xl font-semibold', className)}>{formatCentavos(valor)}</p>
+          </div>
+          <Icone className={cn('h-5 w-5 shrink-0', className)} aria-hidden />
         </div>
-        <Icone className={cn('h-5 w-5', className)} />
+        {delta}
+        {previsto > 0 && (
+          <p className="text-xs text-muted-foreground">
+            + <span className="tabular">{formatCentavos(previsto)}</span> previstos até dezembro
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
+ * "+12% vs 2025 (Jan–Abr)" — a variação, com a base à vista.
+ *
+ * A base entre parênteses não é enfeite: é o que separa a frase de um palpite.
+ * "Gastei 12% a mais" comparando quatro meses contra doze seria um número
+ * bonito e falso, e a única defesa contra isso é dizer sempre sobre quais
+ * meses ele foi calculado.
+ *
+ * Quando o ano anterior era zero naquele recorte, não há percentual que
+ * signifique alguma coisa — a tela mostra a diferença em reais.
+ */
+function Delta({
+  comparacao,
+  campo,
+  anoAnterior,
+}: {
+  comparacao: Comparacao
+  campo: 'entradas' | 'saidas'
+  anoAnterior: number
+}) {
+  if (comparacao.impedimento) return null
+
+  const variacao = campo === 'entradas' ? comparacao.variacaoEntradas : comparacao.variacaoSaidas
+  const atual = campo === 'entradas' ? comparacao.entradasAtual : comparacao.saidasAtual
+  const anterior = campo === 'entradas' ? comparacao.entradasAnterior : comparacao.saidasAnterior
+  const base = textoDaBase(comparacao.mesesComuns)
+
+  // Para entradas, subir é bom; para gastos, é o contrário. A cor segue o
+  // SIGNIFICADO, não o sinal — verde em "gastei 30% a mais" seria elogio.
+  const diferenca = atual - anterior
+  const bom = campo === 'entradas' ? diferenca > 0 : diferenca < 0
+  const Icone = diferenca === 0 ? Minus : diferenca > 0 ? TrendingUp : TrendingDown
+
+  return (
+    <p
+      className={cn(
+        'flex flex-wrap items-center gap-1 text-xs',
+        diferenca === 0 ? 'text-muted-foreground' : bom ? 'text-success' : 'text-destructive',
+      )}
+    >
+      <Icone className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      <span className="tabular font-medium">
+        {variacao === null
+          ? `${diferenca >= 0 ? '+' : '−'}${formatCentavos(Math.abs(diferenca))}`
+          : `${variacao > 0 ? '+' : ''}${variacao.toLocaleString('pt-BR')}%`}
+      </span>
+      <span className="text-muted-foreground">
+        vs {anoAnterior} ({base})
+      </span>
+    </p>
+  )
+}
+
+/**
+ * Como ler os números acima.
+ *
+ * Três frases curtas que respondem o que os cartões deixam no ar: de onde saiu
+ * a comparação, quanto do ano ainda é previsão, e para onde os gastos estão
+ * indo. Elas ficam JUNTAS num bloco porque respondem à mesma pergunta — "posso
+ * confiar nesses números?" — e separadas em três cantos da tela ninguém as
+ * lê como conjunto.
+ *
+ * Cada frase some quando não tem o que dizer. Um bloco que insiste em falar
+ * sem base é como o app perde a credibilidade dos números que ele acerta.
+ */
+function Leitura({
+  comparacao,
+  tendencia,
+  ano,
+  temPrevisto,
+}: {
+  comparacao: Comparacao
+  tendencia: Tendencia | null
+  ano: number
+  temPrevisto: boolean
+}) {
+  const frases: React.ReactNode[] = []
+
+  if (comparacao.impedimento === 'sem-meses-comuns') {
+    frases.push(
+      <>
+        Não dá para comparar com {ano - 1}: não há nenhum mês com movimento nos dois anos. Comparar contra um
+        mês vazio devolveria um aumento infinito.
+      </>,
+    )
+  } else if (!comparacao.impedimento) {
+    frases.push(
+      <>
+        A comparação com {ano - 1} usa <strong>{textoDaBase(comparacao.mesesComuns)}</strong> dos dois anos —
+        só os meses que já aconteceram e tiveram movimento nos dois lados.
+      </>,
+    )
+  }
+
+  if (temPrevisto) {
+    frases.push(
+      <>
+        Os meses marcados como <strong>previsto</strong> ainda não aconteceram: eles trazem só os gastos fixos
+        que se repetem, que é o único que dá para saber com antecedência.
+      </>,
+    )
+  }
+
+  if (tendencia) {
+    const verbo =
+      tendencia.direcao === 'estavel'
+        ? 'estão estáveis'
+        : tendencia.direcao === 'subindo'
+          ? 'estão subindo'
+          : 'estão caindo'
+    frases.push(
+      <>
+        Os gastos {verbo}:{' '}
+        <strong>
+          {formatCentavos(tendencia.mediaRecente)} por mês em {textoDaBase(tendencia.mesesRecentes)}
+        </strong>
+        , contra {formatCentavos(tendencia.mediaAnterior)} em {textoDaBase(tendencia.mesesAnteriores)}.
+      </>,
+    )
+  }
+
+  if (frases.length === 0) return null
+
+  return (
+    <Card>
+      <CardContent className="space-y-2 p-4 text-sm text-muted-foreground">
+        {frases.map((frase, i) => (
+          <p key={i} className="flex gap-2">
+            <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+            <span>{frase}</span>
+          </p>
+        ))}
       </CardContent>
     </Card>
   )

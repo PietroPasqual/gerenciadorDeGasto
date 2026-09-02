@@ -90,7 +90,7 @@ export function TabelaEntradasRecorrentes({
       </p>
 
       {duplicadas.length > 0 && (
-        <p className="flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+        <p className="flex items-start gap-2 rounded-lg bg-superficie px-3 py-2 text-sm text-muted-foreground">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>
             {duplicadas.map((r) => r.descricao).join(', ')} também aparece nas entradas avulsas deste mês. As
@@ -109,7 +109,7 @@ export function TabelaEntradasRecorrentes({
         {recorrentes.map((item) => {
           const vale = estaVigente(item, ano, mes)
           return (
-            <Linha key={item.id} template={TEMPLATE} className={cn(!vale && 'opacity-55')}>
+            <Linha key={item.id} template={TEMPLATE} className={cn(!vale && 'bg-superficie')}>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 md:contents">
                 <div className="min-w-0 flex-1 basis-full md:basis-auto">
                   <Input
@@ -131,7 +131,7 @@ export function TabelaEntradasRecorrentes({
                         ? `Quando ${item.descricao} é recebido: ${textoVigencia(item)}`
                         : `${item.descricao} não é recebido em ${nomeDoMes(mes)} (${textoVigencia(item)})`
                     }
-                    className="mt-0.5 inline-flex min-h-11 items-center gap-1.5 rounded-md px-1 text-xs text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground md:min-h-0 md:py-1"
+                    className="alvo-toque mt-0.5 inline-flex items-center gap-1.5 rounded-md px-1 text-xs text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground md:py-1"
                   >
                     <CalendarClock className="h-3.5 w-3.5" aria-hidden />
                     {textoVigencia(item)}

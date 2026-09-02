@@ -51,6 +51,46 @@
   --sombra-1: 0 1px 2px hsl(var(--primary) / 0.06), 0 1px 3px hsl(var(--primary) / 0.04);
   --sombra-2: 0 4px 12px hsl(var(--primary) / 0.1), 0 2px 4px hsl(var(--primary) / 0.06);
 
+  /* SUPERFÍCIES E REALCE
+     
+     Três níveis, e não uma opacidade escolhida caso a caso:
+       nível 0  --background  o fundo da página
+       nível 1  --card        a superfície que se destaca do fundo
+       nível 2  --superficie  a caixa DENTRO de um card (cabeçalho de tabela,
+                              rodapé de total, caixa de aviso, régua de meses)
+     
+     O nível 2 nasceu de 22 usos de `bg-muted/30`, `/40`, `/50` e `/60`
+     espalhados por dezoito arquivos — quatro cinzas quase iguais fazendo o
+     mesmo trabalho, cada um escolhido no olho. Com um token, o redesign muda
+     um valor em vez de vinte e dois, e ninguém precisa lembrar qual opacidade
+     era a "certa".
+     
+     --realce é o outro papel que estava misturado nisso: fundo de hover e de
+     item ativo, antes escrito como `bg-accent/40`, `/50` e `/60` em onze
+     lugares.
+     
+     Os dois são cores compostas, não opacidades aplicadas por classe: assim o
+     texto por cima continua com o contraste que o themes.css calibra, sem a
+     multiplicação que a opacidade faria (foi exatamente esse o defeito do
+     `opacity-60` no comparativo anual). */
+  --superficie: 260 20% 97%;
+  --realce: 260 20% 95%;
+
+  /* MOVIMENTO
+     
+     Havia nove durações distintas no app — 0,22s, 0,25s, 0,3s (três vezes),
+     0,4s, 0,5s (duas vezes) e 0,6s — nenhuma delas escolhida em relação às
+     outras. Três degraus bastam, e é o que os componentes passam a usar.
+     
+     A regra global de `prefers-reduced-motion` no index.css continua zerando
+     tudo isto; os tokens não a contornam. */
+  --mov-rapido: 150ms;
+  --mov-normal: 250ms;
+  --mov-lento: 400ms;
+  /* Sai rápido e desacelera: é o que faz o conteúdo parecer que chegou, e não
+     que foi empurrado. Um easing só, para o app inteiro. */
+  --mov-easing: cubic-bezier(0.22, 1, 0.36, 1);
+
   /* Densidade das linhas de planilha (seletor compacto/confortável, D3). */
   --altura-linha: 2.75rem;
 
@@ -162,6 +202,10 @@
   --input: 260 14% 22%;
   --secondary: 260 14% 18%;
   --secondary-foreground: 260 15% 92%;
+  /* No escuro a hierarquia inverte: a caixa aninhada é mais CLARA que o card,
+     porque o que separa camadas aqui é luz, não sombra (ver --sombra-1). */
+  --superficie: 260 14% 17%;
+  --realce: 260 14% 21%;
   --accent: 260 14% 20%;
   --accent-foreground: 260 15% 92%;
   --destructive: 0 65% 63%;

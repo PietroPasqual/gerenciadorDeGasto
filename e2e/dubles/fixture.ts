@@ -31,6 +31,21 @@ const EH_LEITURA = /\.(listar|obter|carregar)/
  * duas vezes; o conserto é o nome, não a regex.
  */
 
+/**
+ * A fixture pode responder diferente POR ARGUMENTO.
+ *
+ * `reports.obterComparativoAnual#[2026]` ganha de `reports.obterComparativoAnual`.
+ * Existe porque o comparativo passou a pedir dois anos ao mesmo serviço, e com
+ * uma resposta só para os dois o teste da comparação entre anos comparava um
+ * ano consigo mesmo — passaria com a lógica invertida.
+ *
+ * A chave curta continua valendo como padrão, então nenhuma fixture existente
+ * precisou mudar.
+ */
+function chaveComArgs(chave: string, args: unknown[]): string {
+  return `${chave}#${JSON.stringify(args)}`
+}
+
 export async function doFixture(chave: string, args: unknown[]): Promise<unknown> {
   const fixture = window.__FIXTURE__ ?? {}
   const ehLeitura = EH_LEITURA.test(chave)
@@ -50,8 +65,10 @@ export async function doFixture(chave: string, args: unknown[]): Promise<unknown
     window.__ESCRITAS__.push({ chave, args })
   }
 
-  if (chave in fixture) {
-    const valor = fixture[chave]
+  // A específica por argumento primeiro; a genérica é o padrão.
+  for (const candidata of [chaveComArgs(chave, args), chave]) {
+    if (!(candidata in fixture)) continue
+    const valor = fixture[candidata]
     if (typeof valor === 'object' && valor !== null && 'erro' in (valor as object)) {
       // Permite ao teste exercitar o estado de erro das telas.
       throw new Error(String((valor as { erro: unknown }).erro))

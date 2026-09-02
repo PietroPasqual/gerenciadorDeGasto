@@ -6,12 +6,26 @@ import { ProvedorCache, criarClienteCache } from '@/lib/cache'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 /**
- * Varredura automática de acessibilidade nas telas principais.
+ * Varredura automática de acessibilidade nas telas principais, em jsdom.
  *
- * Não substitui conferir à mão — axe pega o que é verificável por regra
- * (contraste, rótulo ausente, papel errado, ordem de cabeçalho) e não pega o
- * que depende de sentido. Mas o que ele pega, ele pega toda vez, e é
- * exatamente a classe de defeito que volta sozinha a cada componente novo.
+ * O QUE ESTA SUÍTE PEGA: rótulo ausente, papel ARIA inválido, ordem de
+ * cabeçalho, atributo mal formado — tudo que se decide lendo a marcação.
+ * Roda em `npm run test`, em segundos, a cada salvamento.
+ *
+ * O QUE ELA NÃO PEGA, E NÃO É QUESTÃO DE CONFIGURAÇÃO: contraste e tamanho de
+ * alvo. Ambos precisam de layout PINTADO — o axe não tem como compor cor de
+ * texto com cor de fundo, nem medir um botão, sem um motor de renderização.
+ * Em jsdom ele devolve essas regras como `incomplete`, categoria que este
+ * arquivo ignora. Prova: um parágrafo #eeeeee sobre #ffffff, praticamente
+ * invisível, passava por aqui sem uma violação sequer.
+ *
+ * Este comentário já afirmou que a suíte cobria contraste. Não cobria, e
+ * dentro desse ponto cego morava uma violação real: os meses futuros do
+ * comparativo anual usavam `opacity-60`, que derrubava o texto para 2,54:1
+ * contra o mínimo de 4,5:1, nos quatro temas.
+ *
+ * Quem cobre o que falta aqui é `e2e/acessibilidade.spec.ts`, que roda o mesmo
+ * axe num Chromium de verdade.
  */
 vi.mock('@/lib/supabase', () => ({ supabase: {} }))
 vi.mock('@/services/mes', () => ({
@@ -45,7 +59,6 @@ vi.mock('@/services/reports', () => ({
   obterResumoMetas: vi.fn(async () => []),
 }))
 vi.mock('@/services/goals', () => ({
-  MAX_METAS: 10,
   listarMetas: vi.fn(async () => []),
   listarAportesDoAno: vi.fn(async () => []),
   listarAportesDoMes: vi.fn(async () => []),

@@ -116,11 +116,15 @@ preço cheio, não o preço).
 | No PC                                                               | No celular                                              |
 | ------------------------------------------------------------------- | ------------------------------------------------------- |
 | Ver os 12 meses — tabela de 4 colunas                               | Cards de duas linhas (mês + diferença / entrou + saiu)  |
-| Totais e médias do ano — três cards lado a lado                     | Faixa que desliza, com snap                             |
+| Totais e médias do REALIZADO — três cards lado a lado               | Faixa que desliza, com snap                             |
 | Abrir um mês no controle mensal — clicar no nome                    | Tocar no card inteiro                                   |
 | Abrir um mês — clique na linha da tabela **ou** no ponto do gráfico | Toque no card do mês **ou** tocando no ponto do gráfico |
 | Exportar CSV — botão no cabeçalho                                   | Menu **⋯**                                              |
 | Gráfico entrada × gastos, com média e tooltip                       | O mesmo gráfico                                         |
+| Ver realizado e previsto separados, com o previsto escrito          | Os mesmos cartões, na faixa que desliza                 |
+| Ver a variação vs o ano anterior, com a base entre parênteses       | O mesmo                                                 |
+| Ler de onde saiu a comparação, o que é previsão e a tendência       | O mesmo bloco de leitura                                |
+| Ver a faixa de "previsto" no gráfico                                | O mesmo                                                 |
 
 ## Metas
 

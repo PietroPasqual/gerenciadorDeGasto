@@ -370,6 +370,135 @@ async function medirAlvos(page: import('@playwright/test').Page) {
   })
 }
 
+/** Um ano de doze meses com os valores dados a partir de janeiro. */
+function anoDe(pares: Array<[number, number]>) {
+  return Array.from({ length: 12 }, (_, i) => {
+    const [entradas, saidas] = pares[i] ?? [0, 0]
+    return { mes: i + 1, entradas, saidas, diferenca: entradas - saidas }
+  })
+}
+
+test.describe('comparativo anual', () => {
+  /**
+   * Abril de 2026: Jan–Abr já aconteceram, Mai–Dez são previsão.
+   *
+   * 2026 gasta mais que 2025 nos mesmos meses, e 2025 só passa a ter movimento
+   * em fevereiro — é isso que prova que a comparação usa a interseção, e não os
+   * doze meses de um contra os quatro do outro.
+   */
+  async function abrirAno(page: import('@playwright/test').Page) {
+    await fixarHoje(page, '2026-04-15T10:00:00')
+    await prepararApp(page, {
+      ...relatoriosPadrao(),
+      'reports.obterComparativoAnual#[2026]': anoDe([
+        [100000, 60000],
+        [100000, 60000],
+        [100000, 60000],
+        [100000, 60000],
+        // De maio em diante só os fixos, que é o que o agregado devolve para
+        // mês futuro.
+        [0, 20000],
+        [0, 20000],
+        [0, 20000],
+        [0, 20000],
+        [0, 20000],
+        [0, 20000],
+        [0, 20000],
+        [0, 20000],
+      ]),
+      'reports.obterComparativoAnual#[2025]': anoDe([
+        // Janeiro de 2025 sem movimento: o app ainda não era usado.
+        [0, 0],
+        [100000, 50000],
+        [100000, 50000],
+        [100000, 50000],
+        [100000, 50000],
+      ]),
+    })
+    await page.addInitScript(() =>
+      localStorage.setItem(
+        'gdg-periodo',
+        JSON.stringify({ state: { ano: 2026, mes: 4, anoComparativo: 2026 }, version: 0 }),
+      ),
+    )
+    await page.goto('/comparativo')
+    await expect(page.getByRole('heading', { name: 'Comparativo anual' })).toBeVisible()
+  }
+
+  test('o total destacado é o REALIZADO, com o previsto dito à parte', async ({ page }) => {
+    await abrirAno(page)
+    // Jan–Abr: 4 x R$ 600,00 = R$ 2.400,00. Os R$ 200,00/mês de maio a dezembro
+    // NÃO entram no número grande — eles aparecem escritos como previsão.
+    await expect(page.getByText('Gastos realizados')).toBeVisible()
+    await expect(page.locator('text=/R\\$\\s*2\\.400,00/').locator('visible=true').first()).toBeVisible()
+    await expect(page.getByText(/R\$\s*1\.600,00 previstos até dezembro/)).toBeVisible()
+  })
+
+  test('a comparação com o ano anterior usa só os meses comuns, e diz quais', async ({ page }) => {
+    await abrirAno(page)
+    // Janeiro de 2025 não teve movimento, então a base é Fev–Abr: R$ 1.800,00
+    // contra R$ 1.500,00, ou seja +20%.
+    await expect(page.getByText('+20%')).toBeVisible()
+    // Entradas iguais nos dois anos: a variação delas é 0%.
+    await expect(page.getByText('0%', { exact: true })).toBeVisible()
+    await expect(page.getByText('vs 2025 (Fev–Abr)').first()).toBeVisible()
+    await expect(page.getByText(/usa .*Fev–Abr.* dos dois anos/)).toBeVisible()
+  })
+
+  test('gastar mais que no ano passado não é comemorado em verde', async ({ page }) => {
+    await abrirAno(page)
+    // A cor segue o SIGNIFICADO: subir gasto é ruim, subir entrada é bom.
+    const deltaGastos = page.locator('p', { hasText: 'vs 2025 (Fev–Abr)' }).nth(1)
+    await expect(deltaGastos).toHaveClass(/text-destructive/)
+  })
+
+  test('a faixa de previsto aparece no gráfico', async ({ page, isMobile }) => {
+    await abrirAno(page)
+    if (isMobile) {
+      await page.getByRole('heading', { name: 'Entrada x gastos' }).scrollIntoViewIfNeeded()
+    }
+    const grafico = page.locator('svg.recharts-surface').first()
+    await expect(grafico).toBeVisible()
+    // O rótulo DENTRO do gráfico, e não a etiqueta "previsto" das linhas do
+    // mês: são duas marcas diferentes da mesma ideia, e conferir a errada
+    // deixaria a faixa do gráfico sem teste nenhum.
+    await expect(grafico.locator('text', { hasText: 'previsto' })).toBeVisible()
+  })
+
+  test('sem seis meses realizados, não há frase de tendência', async ({ page }) => {
+    await abrirAno(page)
+    // Só quatro meses aconteceram: o app prefere não dizer nada a dizer algo
+    // que ele mesmo não sustenta.
+    await expect(page.getByText(/Os gastos est/)).toHaveCount(0)
+  })
+
+  test('com o ano fechado, a tendência aparece com as duas janelas escritas', async ({ page }) => {
+    await fixarHoje(page, '2026-12-20T10:00:00')
+    await prepararApp(page, {
+      ...relatoriosPadrao(),
+      'reports.obterComparativoAnual#[2026]': anoDe([
+        [100000, 100000],
+        [100000, 100000],
+        [100000, 100000],
+        [100000, 150000],
+        [100000, 150000],
+        [100000, 150000],
+      ]),
+      'reports.obterComparativoAnual#[2025]': [],
+    })
+    await page.addInitScript(() =>
+      localStorage.setItem(
+        'gdg-periodo',
+        JSON.stringify({ state: { ano: 2026, mes: 12, anoComparativo: 2026 }, version: 0 }),
+      ),
+    )
+    await page.goto('/comparativo')
+    await expect(page.getByText(/Os gastos estão subindo/)).toBeVisible()
+    await expect(page.getByText(/em Abr–Jun/)).toBeVisible()
+    await expect(page.getByText(/em Jan–Mar/)).toBeVisible()
+  })
+})
+
 test.describe('ajuda', () => {
   test.beforeEach(async ({ page }) => {
     await prepararApp(page, fixtureMes())

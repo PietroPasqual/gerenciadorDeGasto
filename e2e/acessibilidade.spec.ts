@@ -202,6 +202,64 @@ test.describe('acessibilidade no navegador', () => {
   })
 
   /**
+   * O comparativo COM a variação entre anos na tela.
+   *
+   * A fixture padrão devolve o mesmo ano duas vezes, então a variação dá 0% e
+   * o texto sai em `muted-foreground`. As cores que importam — verde de
+   * "entrou mais", vermelho de "gastei mais" — só aparecem quando os dois anos
+   * diferem, e sem esta passada elas nunca foram medidas.
+   */
+  test('contraste da variação entre anos no comparativo', async ({ page }) => {
+    const ano = (pares: Array<[number, number]>) =>
+      Array.from({ length: 12 }, (_, i) => {
+        const [entradas, saidas] = pares[i] ?? [0, 0]
+        return { mes: i + 1, entradas, saidas, diferenca: entradas - saidas }
+      })
+
+    const problemas: string[] = []
+    for (const escuro of [false, true]) {
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await prepararApp(page, {
+        ...appCompleto(),
+        ...assinaturasPadrao(),
+        // Entradas caindo e gastos subindo: sai um verde e um vermelho, mais
+        // as seis janelas da tendência.
+        'reports.obterComparativoAnual#[2026]': ano([
+          [90000, 120000],
+          [90000, 120000],
+          [90000, 120000],
+          [90000, 180000],
+          [90000, 180000],
+          [90000, 180000],
+        ]),
+        'reports.obterComparativoAnual#[2025]': ano([
+          [100000, 100000],
+          [100000, 100000],
+          [100000, 100000],
+          [100000, 100000],
+          [100000, 100000],
+          [100000, 100000],
+        ]),
+      })
+      await page.addInitScript((e) => {
+        localStorage.setItem('gdg-tema', JSON.stringify({ state: { tema: 'rosa', escuro: e }, version: 0 }))
+        localStorage.setItem(
+          'gdg-periodo',
+          JSON.stringify({ state: { ano: 2026, mes: 12, anoComparativo: 2026 }, version: 0 }),
+        )
+      }, escuro)
+      await page.clock.setFixedTime(new Date('2026-12-20T10:00:00'))
+      await page.goto('/comparativo')
+      await expect(page.getByText(/vs 2025/).first()).toBeVisible()
+      await expect(page.getByText(/Os gastos estão subindo/)).toBeVisible()
+      await page.waitForTimeout(400)
+      const v = await rodarAxe(page, ['color-contrast'])
+      if (v.length) problemas.push(relatar('/comparativo com variação', escuro ? 'escuro' : 'claro', v))
+    }
+    expect(problemas.join('\n'), 'contraste abaixo de AA na variação entre anos').toBe('')
+  })
+
+  /**
    * A ajuda COM uma busca digitada.
    *
    * O realce (`<mark>`) só existe enquanto alguém está buscando: a varredura de
